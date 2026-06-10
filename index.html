@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg"/>
+  <meta name="apple-mobile-web-app-title" content="shuazi"/> content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="刷子"/>
+  <meta name="theme-color" content="#0e1215"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <title>刷子</title>
+  <style>
+    :root {
+      --safe-t: env(safe-area-inset-top,    0px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-l: env(safe-area-inset-left,   0px);
+      --safe-r: env(safe-area-inset-right,  0px);
+    }
+    [data-theme="dark"] {
+      --bg:        #0e1215;
+      --surf:      #161c21;
+      --surf2:     #1d252c;
+      --bdr:       rgba(255,255,255,.08);
+      --txt:       #e8f0f4;
+      --muted:     #8fa4b0;
+      --faint:     #4a5c68;
+      --red:       #d9705a;
+      --red-bg:    rgba(217,112,90,.15);
+      --green:     #68bf8a;
+      --green-bg:  rgba(104,191,138,.14);
+      --blue:      #64a0e6;
+      --blue-bg:   rgba(100,160,230,.15);
+      --sh:        0 28px 70px rgba(0,0,0,.6), 0 4px 14px rgba(0,0,0,.3);
+      --tabbar:    rgba(14,18,21,.88);
+      --bar-bg:    rgba(255,255,255,.18);
+      --bar-act:   rgba(255,255,255,.92);
+    }
+    [data-theme="light"] {
+      --bg:        #f0ebe4;
+      --surf:      #faf6f1;
+      --surf2:     #ffffff;
+      --bdr:       rgba(0,0,0,.08);
+      --txt:       #1c1510;
+      --muted:     #7a6d63;
+      --faint:     #b0a49a;
+      --red:       #b04030;
+      --red-bg:    rgba(176,64,48,.11);
+      --green:     #3a7a56;
+      --green-bg:  rgba(58,122,86,.11);
+      --blue:      #2560b0;
+      --blue-bg:   rgba(37,96,176,.11);
+      --sh:        0 28px 70px rgba(28,21,16,.18), 0 4px 14px rgba(28,21,16,.08);
+      --tabbar:    rgba(240,235,228,.92);
+      --bar-bg:    rgba(0,0,0,.18);
+      --bar-act:   rgba(0,0,0,.85);
+    }
+
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    html,body {
+      width:100%; height:100%; height:100dvh;
+      overflow:hidden; overscroll-behavior:none;
+      -webkit-text-size-adjust:100%;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:none;
+    }
+    body {
+      font-family:-apple-system,'Helvetica Neue',sans-serif;
+      background:var(--bg); color:var(--txt);
+      -webkit-font-smoothing:antialiased;
+    }
+    button { font:inherit; color:inherit; border:none; background:none; cursor:pointer; }
+
+    /* ── ROOT LAYOUT ── */
+    .root {
+      height:100dvh;
+      display:grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    /* ── SCREENS ── */
+    .screens {
+      overflow:hidden; position:relative;
+    }
+    .screen {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      padding-top:    max(14px, var(--safe-t));
+      padding-left:   max(16px, var(--safe-l));
+      padding-right:  max(16px, var(--safe-r));
+      padding-bottom: 8px;
+      gap:10px;
+      opacity:0; pointer-events:none;
+      transition: opacity 220ms ease;
+    }
+    .screen.active { opacity:1; pointer-events:all; }
+
+    /* ── TAB BAR ── */
+    .tabbar {
+      display:flex;
+      background: var(--tabbar);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--bdr);
+      padding-bottom: max(4px, var(--safe-b));
+      padding-top: 2px;
+    }
+    .tab {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:1px; padding:4px 0;
+      color:var(--faint);
+      transition: color 180ms ease;
+      min-height:36px;
+    }
+    .tab.active { color:var(--blue); }
+    .tab svg { width:16px; height:16px; }
+    .tab span { font-size:.52rem; font-weight:600; letter-spacing:.02em; }
+
+    /* ══════════════════════════════
+       SCREEN 1 — FLASHCARDS
+    ══════════════════════════════ */
+    .header {
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .logo {
+      width:34px; height:34px; flex-shrink:0;
+      border-radius:10px; background:var(--red-bg); border:1px solid var(--bdr);
+      display:grid; place-items:center; font-size:14px; line-height:1;
+      color:var(--red); padding-right:2px;
+    }
+    .title   { font-size:.95rem; font-weight:700; line-height:1.1; }
+    .sub     { font-size:.62rem; color:var(--faint); margin-top:0px; }
+    .hdr-stats { display:flex; gap:14px; align-items:center; }
+    .st { text-align:center; }
+    .st .v { font-size:.92rem; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
+    .st .l { font-size:.56rem; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); }
+    #sKnown .v  { color:var(--green); }
+    #sRepaso .v { color:var(--red); }
+    .icon-btn {
+      width:28px; height:28px; display:grid; place-items:center;
+      border-radius:50%; background:var(--surf); border:1px solid var(--bdr); color:var(--muted);
+    }
+    .icon-btn:active { opacity:.6; }
+
+    /* deck */
+    .deck-wrap { position:relative; flex:1; }
+    .deck      { position:absolute; inset:0; }
+
+    /* card */
+    .card {
+      position:absolute; inset:0; border-radius:24px;
+      background:var(--surf2); border:1px solid var(--bdr);
+      box-shadow:var(--sh); overflow:hidden;
+      touch-action:none; user-select:none;
+      display:flex; flex-direction:column;
+    }
+    .card::before {
+      content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(ellipse 55% 30% at 80% 8%,  rgba(217,112,90,.07),transparent),
+        radial-gradient(ellipse 45% 25% at 15% 92%, rgba(104,191,138,.05),transparent);
+    }
+    .card.stack-under { transform:scale(.97) translateY(8px); opacity:.5; z-index:0; }
+    .card.top   { z-index:1; }
+    .card.fly   { transition:transform 230ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease; }
+    .card.snap  { transition:transform 260ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease; }
+
+    .tint { position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; opacity:0; }
+    .tint-l { background:var(--red-bg); }
+    .tint-r { background:var(--green-bg); }
+    .chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.62rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
+    .chip-l { left:16px;  background:var(--red-bg);   color:var(--red);   }
+    .chip-r { right:16px; background:var(--green-bg); color:var(--green); }
+
+    /* story bar */
+    .story-bar { position:relative; z-index:4; display:flex; gap:5px; padding:10px 14px 0; }
+    .seg { flex:1; height:3px; border-radius:2px; background:var(--bar-bg); }
+    .seg.active { background:var(--bar-act); }
+
+    /* tap zones */
+    .tap-zones { position:absolute; inset:0; z-index:5; display:grid; grid-template-columns:28% 1fr 28%; pointer-events:none; }
+    .tz { pointer-events:auto; background:transparent; -webkit-tap-highlight-color:transparent; }
+
+    /* card body */
+    .card-body {
+      position:relative; z-index:3; flex:1;
+      display:flex; flex-direction:column;
+      padding:10px 20px 18px; overflow:hidden;
+    }
+    .card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+    .prog { font-size:.62rem; color:var(--faint); }
+
+    /* HSK pills */
+    .hsk-pill { padding:4px 11px; border-radius:999px; font-size:.6rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .hsk-1 { background:rgba(104,191,138,.18); color:#68bf8a; border:1px solid rgba(104,191,138,.25); }
+    .hsk-2 { background:rgba(100,160,230,.18); color:#64a0e6; border:1px solid rgba(100,160,230,.25); }
+    .hsk-3 { background:rgba(217,112,90,.18);  color:#d9705a; border:1px solid rgba(217,112,90,.25); }
+
+    /* hanzi — fills remaining space, always centred */
+    .hanzi-wrap {
+      flex:1; display:flex; align-items:center; justify-content:center;
+    }
+    .hanzi {
+      font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+      font-size:130px; font-weight:400; line-height:1;
+      color:var(--txt); -webkit-text-fill-color:var(--txt);
+    }
+
+    /* answer block fades in below */
+    .answer-area {
+      min-height:90px; display:flex; flex-direction:column;
+      align-items:center; gap:6px; padding-top:6px;
+    }
+    .answer-block { width:100%; display:flex; flex-direction:column; align-items:center; gap:7px; animation:fadeUp 180ms ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .ans-pinyin  { font-size:1.25rem; font-weight:600; color:var(--txt); }
+    .ans-meaning { font-size:.9rem; color:var(--muted); }
+    .ans-example {
+      margin-top:2px; background:var(--surf); border:1px solid var(--bdr);
+      border-radius:14px; padding:9px 14px;
+      font-size:.76rem; color:var(--muted); text-align:center; line-height:1.5; width:100%;
+    }
+    .ans-example span { display:block; font-size:.56rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); margin-bottom:2px; }
+    .ans-hint { font-size:.56rem; color:var(--faint); margin-top:2px; }
+    .tap-hint { font-size:.56rem; color:var(--faint); text-align:center; }
+
+    /* card bottom */
+    .card-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+
+    /* pages slider */
+    .pages { position:absolute; inset:0; display:flex; transition:transform 280ms cubic-bezier(0.4,0,0.2,1); will-change:transform; }
+    .page { min-width:100%; height:100%; display:flex; flex-direction:column; padding:10px 20px 18px; overflow:hidden; }
+
+    /* info page */
+    .page.info-page { gap:10px; overflow-y:auto; -webkit-overflow-scrolling:touch; justify-content:flex-start; }
+    .page.info-page::-webkit-scrollbar { display:none; }
+    .info-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; width:100%; }
+    .info-cell { background:var(--surf); border:1px solid var(--bdr); border-radius:14px; padding:9px 12px; }
+    .info-cell .lbl { font-size:.57rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+    .info-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
+    .info-cell.full { grid-column:1/-1; }
+    .words-title { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
+    .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
+    .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
+    .word-item:last-child { border-bottom:none; }
+    .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+    .word-pinyin  { font-size:.7rem; color:var(--muted); }
+    .word-meaning { font-size:.7rem; color:var(--faint); }
+
+    /* done */
+    .done {
+      position:absolute; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:14px; text-align:center; padding:28px;
+      background:var(--surf2); border:1px solid var(--bdr); border-radius:24px; box-shadow:var(--sh);
+    }
+    .done-emoji { font-size:2.8rem; }
+    .done h2 { font-size:1.2rem; font-weight:700; }
+    .done p  { font-size:.84rem; color:var(--muted); }
+    .done-pills { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:4px; }
+    .pill { min-height:44px; padding:10px 16px; border-radius:999px; background:var(--surf); border:1px solid var(--bdr); font-size:.8rem; font-weight:600; }
+    .pill:active { opacity:.7; transform:scale(.96); }
+
+    /* ══════════════════════════════
+       SCREEN 2 — HSK GROUPS
+    ══════════════════════════════ */
+    .groups-header {
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .groups-title { font-size:1.1rem; font-weight:700; }
+    .groups-sub   { font-size:.65rem; color:var(--faint); margin-top:1px; }
+
+    .groups-scroll {
+      flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+      display:flex; flex-direction:column; gap:16px;
+      padding-bottom:4px;
+    }
+    .groups-scroll::-webkit-scrollbar { display:none; }
+
+    .hsk-group { display:flex; flex-direction:column; gap:10px; }
+    .hsk-group-header {
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .hsk-group-label {
+      display:flex; align-items:center; gap:8px;
+    }
+    .hsk-group-label .badge {
+      padding:4px 12px; border-radius:999px;
+      font-size:.65rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+    }
+    .hsk-group-label .count { font-size:.72rem; color:var(--faint); }
+    .hsk-prog-bar {
+      height:4px; background:var(--bdr); border-radius:2px; overflow:hidden; flex:1; max-width:80px;
+    }
+    .hsk-prog-fill { height:100%; border-radius:2px; transition:width 400ms ease; }
+    .hsk-1-fill { background:#68bf8a; }
+    .hsk-2-fill { background:#64a0e6; }
+    .hsk-3-fill { background:#d9705a; }
+
+    .char-grid {
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:8px;
+    }
+    .char-tile {
+      aspect-ratio:1;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      border-radius:14px;
+      background:var(--surf); border:1px solid var(--bdr);
+      position:relative; cursor:pointer;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+    .char-tile:active { transform:scale(.93); }
+    .char-tile .tc {
+      font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+      font-size:26px; line-height:1; color:var(--txt);
+      -webkit-text-fill-color:var(--txt);
+    }
+    .char-tile .tp { font-size:.52rem; color:var(--faint); margin-top:2px; }
+    .char-tile.known {
+      background:var(--green-bg); border-color:rgba(104,191,138,.3);
+    }
+    .char-tile.known .tc { color:var(--green); -webkit-text-fill-color:var(--green); }
+    .char-tile .known-dot {
+      position:absolute; top:5px; right:5px;
+      width:7px; height:7px; border-radius:50%;
+      background:var(--green); display:none;
+    }
+    .char-tile.known .known-dot { display:block; }
+
+    /* char detail modal */
+    .modal-backdrop {
+      position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,.5); backdrop-filter:blur(4px);
+      display:none; align-items:flex-end; justify-content:center;
+      padding:0; padding-bottom:max(0px,var(--safe-b));
+    }
+    .modal-backdrop.open { display:flex; }
+    .modal {
+      width:100%; max-width:480px;
+      background:var(--surf2); border:1px solid var(--bdr);
+      border-radius:24px 24px 0 0;
+      box-shadow:var(--sh);
+      padding:20px 20px max(24px,var(--safe-b));
+      display:flex; flex-direction:column; gap:14px;
+      max-height:72dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+      animation:slideUp 220ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .modal::-webkit-scrollbar { display:none; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 4px; }
+    .modal-char {
+      font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+      font-size:72px; line-height:1; text-align:center;
+      color:var(--txt); -webkit-text-fill-color:var(--txt);
+    }
+    .modal-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .modal-cell { background:var(--surf); border:1px solid var(--bdr); border-radius:12px; padding:9px 12px; }
+    .modal-cell .lbl { font-size:.57rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+    .modal-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
+    .modal-cell.full { grid-column:1/-1; }
+    .modal-words-title { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); }
+    .modal-words { background:var(--surf); border:1px solid var(--bdr); border-radius:14px; overflow:hidden; }
+    .modal-words .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
+    .modal-words .word-item:last-child { border-bottom:none; }
+    .modal-words .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
+    }
+  </style>
+</head>
+<body>
+<div class="root">
+
+  <!-- SCREENS -->
+  <div class="screens">
+
+    <!-- ── SCREEN 1: FLASHCARDS ── -->
+    <div class="screen active" id="screen-cards">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">刷子</div>
+          <div>
+            <div class="title">shuazi</div>
+            <div class="sub">HSK 1–3 · 刷子</div>
+          </div>
+        </div>
+        <div class="hdr-stats">
+          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l">Quedan</div></div>
+          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l">Conoce</div></div>
+          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l">Repasar</div></div>
+          <button class="icon-btn" id="themeBtn" aria-label="Tema">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="deck-wrap"><div class="deck" id="deck"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
+        <span>← No lo conozco</span><span>Toca · desliza</span><span>Lo conozco →</span>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 2: GRUPOS HSK ── -->
+    <div class="screen" id="screen-groups">
+      <div class="groups-header">
+        <div>
+          <div class="groups-title">Grupos HSK</div>
+          <div class="groups-sub">Toca un carácter para ver detalles</div>
+        </div>
+        <button class="icon-btn" id="themeBtnG" aria-label="Tema">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+      <div class="groups-scroll" id="groups-scroll"></div>
+    </div>
+
+  </div>
+
+  <!-- TAB BAR -->
+  <nav class="tabbar" style="min-height:52px">
+    <button class="tab active" id="tab-cards" aria-label="Flashcards">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="4" width="20" height="16" rx="3"/>
+        <path d="M8 10h8M8 14h5"/>
+      </svg>
+      <span>Tarjetas</span>
+    </button>
+    <button class="tab" id="tab-groups" aria-label="Grupos HSK">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      <span>Grupos</span>
+    </button>
+  </nav>
+</div>
+
+<!-- CHAR DETAIL MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-char" id="modal-char"></div>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-words-title">Palabras compuestas</div>
+    <div class="modal-words" id="modal-words"></div>
+  </div>
+</div>
+
+<script>
+const CARDS = [{"char": "你", "pinyin": "nǐ", "meaning": "tú / usted", "hsk": 1, "example": "你好 nǐhǎo", "words": ["你好 nǐhǎo · hola", "你们 nǐmen · vosotros", "你的 nǐ de · tuyo"]}, {"char": "好", "pinyin": "hǎo", "meaning": "bueno, bien", "hsk": 1, "example": "很好 hěn hǎo", "words": ["你好 nǐhǎo · hola", "好看 hǎokàn · bonito", "爱好 àihào · afición"]}, {"char": "我", "pinyin": "wǒ", "meaning": "yo", "hsk": 1, "example": "我是 wǒ shì", "words": ["我们 wǒmen · nosotros", "我的 wǒ de · mío", "自我 zìwǒ · uno mismo"]}, {"char": "是", "pinyin": "shì", "meaning": "ser / estar", "hsk": 1, "example": "我是 wǒ shì", "words": ["是不是 shìbushì · ¿es o no?", "就是 jiùshì · precisamente", "可是 kěshì · pero"]}, {"char": "不", "pinyin": "bù", "meaning": "no (negación)", "hsk": 1, "example": "不好 bù hǎo", "words": ["不是 búshì · no es", "不要 búyào · no querer", "不客气 búkèqi · de nada"]}, {"char": "他", "pinyin": "tā", "meaning": "él", "hsk": 1, "example": "他们 tāmen", "words": ["他们 tāmen · ellos", "他的 tā de · suyo", "他人 tārén · otra persona"]}, {"char": "她", "pinyin": "tā", "meaning": "ella", "hsk": 1, "example": "她好 tā hǎo", "words": ["她们 tāmen · ellas", "她的 tā de · suya", "她家 tā jiā · su casa"]}, {"char": "们", "pinyin": "men", "meaning": "sufijo plural", "hsk": 1, "example": "我们 wǒmen", "words": ["我们 wǒmen · nosotros", "你们 nǐmen · vosotros", "他们 tāmen · ellos"]}, {"char": "的", "pinyin": "de", "meaning": "partícula posesiva", "hsk": 1, "example": "我的 wǒ de", "words": ["你的 nǐ de · tuyo", "我的 wǒ de · mío", "好的 hǎo de · vale"]}, {"char": "了", "pinyin": "le", "meaning": "partícula aspectual", "hsk": 1, "example": "来了 lái le", "words": ["好了 hǎo le · ya está", "下雨了 xiàyǔ le · ha llovido", "到了 dào le · llegó"]}, {"char": "人", "pinyin": "rén", "meaning": "persona, gente", "hsk": 1, "example": "中国人 Zhōngguórén", "words": ["男人 nánrén · hombre", "女人 nǚrén · mujer", "别人 biérén · otra persona"]}, {"char": "中", "pinyin": "zhōng", "meaning": "centro, China", "hsk": 1, "example": "中国 Zhōngguó", "words": ["中国 Zhōngguó · China", "中间 zhōngjiān · medio", "中文 Zhōngwén · chino"]}, {"char": "国", "pinyin": "guó", "meaning": "país, nación", "hsk": 1, "example": "中国 Zhōngguó", "words": ["国家 guójiā · país", "中国 Zhōngguó · China", "外国 wàiguó · extranjero"]}, {"char": "来", "pinyin": "lái", "meaning": "venir", "hsk": 1, "example": "过来 guòlai", "words": ["回来 huílai · volver", "过来 guòlai · ven aquí", "原来 yuánlái · resulta que"]}, {"char": "大", "pinyin": "dà", "meaning": "grande", "hsk": 1, "example": "大学 dàxué", "words": ["大学 dàxué · universidad", "大家 dàjiā · todos", "大人 dàrén · adulto"]}, {"char": "因", "pinyin": "yīn", "meaning": "causa, porque", "hsk": 2, "example": "因为 yīnwèi", "words": ["因为 yīnwèi · porque", "原因 yuányīn · razón", "因此 yīncǐ · por eso"]}, {"char": "为", "pinyin": "wèi", "meaning": "por, para", "hsk": 2, "example": "因为 yīnwèi", "words": ["为了 wèile · para", "因为 yīnwèi · porque", "认为 rènwéi · considerar"]}, {"char": "所", "pinyin": "suǒ", "meaning": "lugar, lo que", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · por eso", "所有 suǒyǒu · todo", "厕所 cèsuǒ · baño"]}, {"char": "以", "pinyin": "yǐ", "meaning": "usar, con", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · por eso", "可以 kěyǐ · poder", "以后 yǐhòu · después"]}, {"char": "但", "pinyin": "dàn", "meaning": "pero, sin embargo", "hsk": 2, "example": "但是 dànshì", "words": ["但是 dànshì · pero", "不但 bùdàn · no solo", "但愿 dànyuàn · ojalá"]}, {"char": "还", "pinyin": "hái", "meaning": "todavía, también", "hsk": 2, "example": "还有 hái yǒu", "words": ["还是 háishì · todavía / o", "还有 hái yǒu · además", "还好 háihǎo · menos mal"]}, {"char": "都", "pinyin": "dōu", "meaning": "todo, todos", "hsk": 2, "example": "都是 dōu shì", "words": ["都好 dōu hǎo · todo bien", "首都 shǒudū · capital", "都市 dūshì · ciudad"]}, {"char": "很", "pinyin": "hěn", "meaning": "muy, bastante", "hsk": 2, "example": "很好 hěn hǎo", "words": ["很好 hěn hǎo · muy bien", "很多 hěn duō · mucho", "很快 hěn kuài · muy rápido"]}, {"char": "时", "pinyin": "shí", "meaning": "tiempo, hora", "hsk": 2, "example": "时候 shíhou", "words": ["时间 shíjiān · tiempo", "时候 shíhou · momento", "小时 xiǎoshí · hora"]}, {"char": "候", "pinyin": "hòu", "meaning": "momento, esperar", "hsk": 2, "example": "时候 shíhou", "words": ["时候 shíhou · momento", "气候 qìhòu · clima", "问候 wènhòu · saludar"]}, {"char": "知", "pinyin": "zhī", "meaning": "saber, conocer", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · saber", "知识 zhīshi · conocimiento", "通知 tōngzhī · notificar"]}, {"char": "道", "pinyin": "dào", "meaning": "camino, decir", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · saber", "道路 dàolù · camino", "道理 dàoli · lógica"]}, {"char": "想", "pinyin": "xiǎng", "meaning": "querer, pensar", "hsk": 2, "example": "想要 xiǎng yào", "words": ["想要 xiǎngyào · querer", "想法 xiǎngfǎ · idea", "理想 lǐxiǎng · ideal"]}, {"char": "说", "pinyin": "shuō", "meaning": "hablar, decir", "hsk": 2, "example": "说话 shuōhuà", "words": ["说话 shuōhuà · hablar", "小说 xiǎoshuō · novela", "说明 shuōmíng · explicar"]}, {"char": "看", "pinyin": "kàn", "meaning": "mirar, ver", "hsk": 2, "example": "看书 kàn shū", "words": ["看见 kànjiàn · ver", "好看 hǎokàn · bonito", "看法 kànfǎ · opinión"]}, {"char": "虽", "pinyin": "suī", "meaning": "aunque", "hsk": 3, "example": "虽然 suīrán", "words": ["虽然 suīrán · aunque", "虽说 suīshuō · aunque se diga"]}, {"char": "然", "pinyin": "rán", "meaning": "así, natural", "hsk": 3, "example": "虽然 suīrán", "words": ["然后 ránhòu · después", "当然 dāngrán · por supuesto", "自然 zìrán · naturaleza"]}, {"char": "除", "pinyin": "chú", "meaning": "excepto, además", "hsk": 3, "example": "除了 chúle", "words": ["除了 chúle · excepto", "除非 chúfēi · a menos que", "消除 xiāochú · eliminar"]}, {"char": "才", "pinyin": "cái", "meaning": "recién, solo", "hsk": 3, "example": "才能 cáinéng", "words": ["才好 cái hǎo · solo entonces", "刚才 gāngcái · hace un momento", "人才 réncái · talento"]}, {"char": "就", "pinyin": "jiù", "meaning": "entonces, enseguida", "hsk": 3, "example": "就是 jiùshì", "words": ["就是 jiùshì · precisamente", "就要 jiùyào · estar a punto", "成就 chéngjiù · logro"]}, {"char": "已", "pinyin": "yǐ", "meaning": "ya, cesar", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · ya", "已婚 yǐhūn · casado", "而已 éryǐ · nada más"]}, {"char": "经", "pinyin": "jīng", "meaning": "pasar, clásico", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · ya", "经过 jīngguò · pasar por", "经常 jīngcháng · a menudo"]}, {"char": "对", "pinyin": "duì", "meaning": "correcto, hacia", "hsk": 3, "example": "对不起 duìbuqǐ", "words": ["对不起 duìbuqǐ · perdón", "对话 duìhuà · diálogo", "面对 miànduì · afrontar"]}, {"char": "让", "pinyin": "ràng", "meaning": "dejar, hacer que", "hsk": 3, "example": "让我 ràng wǒ", "words": ["让开 ràngkāi · apartarse", "让给 rànggěi · ceder", "转让 zhuǎnràng · transferir"]}, {"char": "把", "pinyin": "bǎ", "meaning": "partícula BA (objeto)", "hsk": 3, "example": "把书 bǎ shū", "words": ["把手 bǎshou · asa", "把门 bǎ mén · vigilar puerta", "火把 huǒbǎ · antorcha"]}, {"char": "被", "pinyin": "bèi", "meaning": "partícula pasiva", "hsk": 3, "example": "被打 bèi dǎ", "words": ["被子 bèizi · manta", "被动 bèidòng · pasivo", "被告 bèigào · acusado"]}, {"char": "着", "pinyin": "zhe", "meaning": "partícula de estado", "hsk": 3, "example": "看着 kàn zhe", "words": ["看着 kànzhe · mirando", "穿着 chuānzhuó · vestimenta", "接着 jiēzhe · a continuación"]}, {"char": "过", "pinyin": "guò", "meaning": "pasar, experiencia", "hsk": 3, "example": "过去 guòqù", "words": ["过去 guòqù · pasado", "过来 guòlai · venir", "超过 chāoguò · superar"]}, {"char": "起", "pinyin": "qǐ", "meaning": "levantarse, juntos", "hsk": 3, "example": "起来 qǐlái", "words": ["起来 qǐlái · levantarse", "一起 yìqǐ · juntos", "引起 yǐnqǐ · causar"]}, {"char": "离", "pinyin": "lí", "meaning": "separarse, lejos de", "hsk": 3, "example": "离开 líkāi", "words": ["离开 líkāi · irse", "距离 jùlí · distancia", "分离 fēnlí · separarse"]}, {"char": "向", "pinyin": "xiàng", "meaning": "hacia, dirección", "hsk": 3, "example": "向前 xiàng qián", "words": ["向前 xiàngqián · hacia delante", "方向 fāngxiàng · dirección", "一向 yíxiàng · siempre"]}, {"char": "比", "pinyin": "bǐ", "meaning": "comparar, que (comp.)", "hsk": 3, "example": "比较 bǐjiào", "words": ["比较 bǐjiào · comparar", "比赛 bǐsài · competición", "比如 bǐrú · por ejemplo"]}, {"char": "像", "pinyin": "xiàng", "meaning": "parecerse, imagen", "hsk": 3, "example": "像你 xiàng nǐ", "words": ["画像 huàxiàng · retrato", "好像 hǎoxiàng · parecer", "像样 xiàngyàng · decente"]}, {"char": "再", "pinyin": "zài", "meaning": "de nuevo, otra vez", "hsk": 3, "example": "再见 zàijiàn", "words": ["再见 zàijiàn · adiós", "再次 zàicì · otra vez", "再说 zàishuō · ya veremos"]}, {"char": "又", "pinyin": "yòu", "meaning": "otra vez, y también", "hsk": 3, "example": "又来 yòu lái", "words": ["又要 yòuyào · otra vez querer", "又是 yòushì · otra vez es", "又好又快 yòu hǎo yòu kuài · bueno y rápido"]}];
+
+/* ── STATE ── */
+let deck=[], idx=0, known=new Set(), unknown=new Set();
+
+const deckEl  = document.getElementById('deck');
+const vRest   = document.getElementById('vRest');
+const vKnown  = document.getElementById('vKnown');
+const vRepaso = document.getElementById('vRepaso');
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]]; } }
+function stats(){
+  vRest.textContent  = Math.max(deck.length-idx,0);
+  vKnown.textContent  = known.size;
+  vRepaso.textContent = unknown.size;
+  renderGroups();
+}
+
+/* ── WORD PARSER ── */
+function parseWord(w){
+  const parts=w.split(' · ');
+  const first=parts[0].trim();
+  const m=first.match(/^([一-鿿㐀-䶿]+)\s*(.*)$/);
+  return { hanzi:m?m[1]:first, pinyin:m?m[2].trim():'', meaning:parts.slice(1).join(' · ') };
+}
+
+/* ══════════════════════
+   FLASHCARD ENGINE
+══════════════════════ */
+const PAGES=2;
+
+function makeCard(card,isStack){
+  const el=document.createElement('article');
+  el.className='card '+(isStack?'stack-under':'top');
+  el.dataset.page='0';
+
+  const wordsHTML=card.words.map(w=>{
+    const p=parseWord(w);
+    return `<div class="word-item"><strong>${p.hanzi}</strong>${p.pinyin?`<span class="word-pinyin">${p.pinyin}</span>`:''}<span class="word-meaning">${p.meaning}</span></div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="tint tint-l"></div>
+    <div class="tint tint-r"></div>
+    <div class="chip chip-l">Repasar</div>
+    <div class="chip chip-r">Conocido</div>
+    <div class="story-bar">
+      <div class="seg active" data-i="0"></div>
+      <div class="seg"        data-i="1"></div>
+    </div>
+    <div class="tap-zones">
+      <button class="tz tz-left"   tabindex="-1"></button>
+      <button class="tz tz-center" tabindex="-1"></button>
+      <button class="tz tz-right"  tabindex="-1"></button>
+    </div>
+    <div class="pages" id="pages">
+      <div class="page" style="justify-content:space-between;">
+        <div class="card-top">
+          <span class="prog">${idx+1} / ${deck.length}</span>
+        </div>
+        <div class="hanzi-wrap"><div class="hanzi">${card.char}</div></div>
+        <div class="answer-area" id="aa"></div>
+        <div class="card-bottom">
+          <span class="tap-hint">Toca centro para respuesta</span>
+          <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+        </div>
+      </div>
+      <div class="page info-page">
+        <div class="card-top">
+          <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+          <span style="font-size:.9rem;font-weight:600;font-family:'PingFang SC',sans-serif;color:var(--txt)">${card.char}</span>
+        </div>
+        <div class="info-row">
+          <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+          <div class="info-cell"><div class="lbl">Nivel</div><div class="val">HSK ${card.hsk}</div></div>
+          <div class="info-cell full"><div class="lbl">Significado</div><div class="val">${card.meaning}</div></div>
+          <div class="info-cell full"><div class="lbl">Ejemplo</div><div class="val">${card.example}</div></div>
+        </div>
+        <div class="words-title">Palabras compuestas</div>
+        <div class="words-list">${wordsHTML}</div>
+      </div>
+    </div>
+  `;
+
+  const pages  = el.querySelector('#pages');
+  const segs   = el.querySelectorAll('.seg');
+  const tzL    = el.querySelector('.tz-left');
+  const tzC    = el.querySelector('.tz-center');
+  const tzR    = el.querySelector('.tz-right');
+  const aa     = el.querySelector('#aa');
+
+  function goPage(n){
+    el.dataset.page=String(n);
+    pages.style.transform=`translateX(-${n*100}%)`;
+    segs.forEach((s,i)=>s.classList.toggle('active',i===n));
+  }
+
+  tzL.addEventListener('click',e=>{ e.stopPropagation(); const c=+el.dataset.page; if(c>0) goPage(c-1); });
+  tzR.addEventListener('click',e=>{ e.stopPropagation(); const c=+el.dataset.page; if(c<PAGES-1) goPage(c+1); });
+  tzC.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(+el.dataset.page!==0) return;
+    if(el.dataset.answer==='1'){
+      el.dataset.answer='0'; aa.innerHTML='';
+    } else {
+      el.dataset.answer='1';
+      aa.innerHTML=`<div class="answer-block">
+        <div class="ans-pinyin">${card.pinyin}</div>
+        <div class="ans-meaning">${card.meaning}</div>
+        <div class="ans-example"><span>Ejemplo</span>${card.example}</div>
+        <div class="ans-hint">Toca lateral → para más info</div>
+      </div>`;
+    }
+  });
+
+  if(!isStack) attachDrag(el);
+  return el;
+}
+
+function render(){
+  deckEl.innerHTML=''; stats();
+  if(idx>=deck.length){ showDone(); return; }
+  if(idx+1<deck.length) deckEl.appendChild(makeCard(deck[idx+1],true));
+  deckEl.appendChild(makeCard(deck[idx],false));
+}
+
+function classify(isKnown){
+  if(idx>=deck.length) return;
+  const top=deckEl.querySelector('.card.top'); if(!top) return;
+  top.classList.add('fly');
+  top.style.transform=`translateX(${isKnown?'140%':'-140%'}) rotate(${isKnown?16:-16}deg)`;
+  top.style.opacity='0';
+  const card=deck[idx];
+  if(isKnown){ known.add(card.char); unknown.delete(card.char); }
+  else { unknown.add(card.char); known.delete(card.char); }
+  idx++; setTimeout(render,210);
+}
+
+function showDone(){
+  const el=document.createElement('div'); el.className='done';
+  el.innerHTML=`
+    <div class="done-emoji">🎉</div>
+    <h2>¡Sesión terminada!</h2>
+    <p>Conocidos: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Repasar: <strong style="color:var(--red)">${unknown.size}</strong></p>
+    <div class="done-pills">
+      <button class="pill" id="pW">Repasar difíciles</button>
+      <button class="pill" id="pA">Reiniciar todo</button>
+    </div>`;
+  deckEl.appendChild(el);
+  el.querySelector('#pW').onclick=()=>init(CARDS.filter(c=>unknown.has(c.char)).length?CARDS.filter(c=>unknown.has(c.char)):CARDS);
+  el.querySelector('#pA').onclick=()=>init(CARDS);
+}
+
+function attachDrag(cardEl){
+  const tl=cardEl.querySelector('.tint-l'),tr=cardEl.querySelector('.tint-r');
+  const cl=cardEl.querySelector('.chip-l'),cr=cardEl.querySelector('.chip-r');
+  let sx=0,sy=0,dx=0,active=false,locked=false;
+  function start(x,y){ sx=x;sy=y;dx=0;active=true;locked=false;cardEl.classList.remove('fly','snap'); }
+  function move(x,y){
+    if(!active||locked)return;
+    dx=x-sx; const dy=y-sy;
+    if(Math.abs(dy)>Math.abs(dx)+10&&Math.abs(dx)<15){locked=true;active=false;snap();return;}
+    if(Math.abs(dx)<5)return;
+    cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.05}deg)`;
+    cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dx)/360));
+    const a=Math.min(1,Math.abs(dx)/120);
+    tl.style.opacity=dx<0?String(a*.85):'0'; tr.style.opacity=dx>0?String(a*.85):'0';
+    cl.style.opacity=dx<-50?'1':'0'; cr.style.opacity=dx>50?'1':'0';
+  }
+  function end(){ if(!active)return; active=false; if(dx>100)classify(true); else if(dx<-100)classify(false); else snap(); }
+  function snap(){
+    cardEl.classList.add('snap');
+    cardEl.style.transform=''; cardEl.style.opacity='';
+    tl.style.opacity=tr.style.opacity='0'; cl.style.opacity=cr.style.opacity='0';
+  }
+  cardEl.addEventListener('pointerdown',e=>{start(e.clientX,e.clientY);cardEl.setPointerCapture(e.pointerId);});
+  cardEl.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
+  cardEl.addEventListener('pointerup',()=>end());
+  cardEl.addEventListener('pointercancel',()=>{active=false;snap();});
+}
+
+/* ══════════════════════
+   GROUPS SCREEN
+══════════════════════ */
+function renderGroups(){
+  const container=document.getElementById('groups-scroll');
+  const levels=[1,2,3];
+  container.innerHTML='';
+  levels.forEach(hsk=>{
+    const group=CARDS.filter(c=>c.hsk===hsk);
+    const knownCount=group.filter(c=>known.has(c.char)).length;
+    const pct=group.length?Math.round(knownCount/group.length*100):0;
+
+    const colors={1:'hsk-1',2:'hsk-2',3:'hsk-3'};
+    const fillClass={1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill'};
+
+    const div=document.createElement('div');
+    div.className='hsk-group';
+    div.innerHTML=`
+      <div class="hsk-group-header">
+        <div class="hsk-group-label">
+          <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
+          <span class="count">${knownCount}/${group.length} conocidos</span>
+        </div>
+        <div class="hsk-prog-bar"><div class="hsk-prog-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="char-grid" id="grid-${hsk}"></div>
+    `;
+    container.appendChild(div);
+
+    const grid=div.querySelector(`#grid-${hsk}`);
+    group.forEach(card=>{
+      const tile=document.createElement('button');
+      tile.className='char-tile'+(known.has(card.char)?' known':'');
+      tile.innerHTML=`<div class="tc">${card.char}</div><div class="tp">${card.pinyin}</div><div class="known-dot"></div>`;
+      tile.addEventListener('click',()=>openModal(card));
+      grid.appendChild(tile);
+    });
+  });
+}
+
+/* ══════════════════════
+   MODAL
+══════════════════════ */
+const backdrop=document.getElementById('modal-backdrop');
+const modalChar=document.getElementById('modal-char');
+const modalMeta=document.getElementById('modal-meta');
+const modalWords=document.getElementById('modal-words');
+
+function openModal(card){
+  modalChar.textContent=card.char;
+  modalMeta.innerHTML=`
+    <div class="modal-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+    <div class="modal-cell"><div class="lbl">Nivel</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+    <div class="modal-cell full"><div class="lbl">Significado</div><div class="val">${card.meaning}</div></div>
+    <div class="modal-cell full"><div class="lbl">Ejemplo</div><div class="val">${card.example}</div></div>
+  `;
+  modalWords.innerHTML=card.words.map(w=>{
+    const p=parseWord(w);
+    return `<div class="word-item"><strong>${p.hanzi}</strong><span class="word-pinyin">${p.pinyin}</span><span class="word-meaning">${p.meaning}</span></div>`;
+  }).join('');
+  backdrop.classList.add('open');
+}
+backdrop.addEventListener('click',e=>{ if(e.target===backdrop) backdrop.classList.remove('open'); });
+
+/* ══════════════════════
+   TABS
+══════════════════════ */
+const tabCards  = document.getElementById('tab-cards');
+const tabGroups = document.getElementById('tab-groups');
+const scrCards  = document.getElementById('screen-cards');
+const scrGroups = document.getElementById('screen-groups');
+
+function showTab(tab){
+  [scrCards,scrGroups].forEach(s=>s.classList.remove('active'));
+  [tabCards,tabGroups].forEach(t=>t.classList.remove('active'));
+  if(tab==='cards'){ scrCards.classList.add('active'); tabCards.classList.add('active'); }
+  else { scrGroups.classList.add('active'); tabGroups.classList.add('active'); renderGroups(); }
+}
+tabCards.onclick=()=>showTab('cards');
+tabGroups.onclick=()=>showTab('groups');
+
+/* ══════════════════════
+   THEME
+══════════════════════ */
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  const icon = t==='dark'
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  document.getElementById('themeBtn').innerHTML=icon;
+  document.getElementById('themeBtnG').innerHTML=icon;
+}
+document.getElementById('themeBtn').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+document.getElementById('themeBtnG').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+
+/* keyboard */
+document.addEventListener('keydown',e=>{
+  const top=deckEl.querySelector('.card.top'); if(!top) return;
+  if(e.key==='ArrowRight'||e.key.toLowerCase()==='d') classify(true);
+  else if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a') classify(false);
+  else if(e.key===' '){ e.preventDefault(); top.querySelector('.tz-center')?.click(); }
+  else if(e.key==='i') top.querySelector('.tz-right')?.click();
+});
+
+if('serviceWorker'in navigator)
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>null));
+
+function init(src){ deck=[...src]; shuffle(deck); idx=0; render(); }
+init(CARDS);
+renderGroups();
+</script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered', reg))
+          .catch(err => console.log('SW fail', err));
+      });
+    }
+  </script>
+  
+</body>
+</html>
