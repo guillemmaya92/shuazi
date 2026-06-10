@@ -279,7 +279,7 @@
     }
     .groups-scroll::-webkit-scrollbar { display:none; }
 
-    .hsk-group { display:flex; flex-direction:column; gap:10px; }
+    .hsk-group { display:flex; flex-direction:column; gap:8px; }
     .hsk-group-header {
       display:flex; align-items:center; justify-content:space-between;
     }
@@ -298,12 +298,36 @@
     .hsk-1-fill { background:#68bf8a; }
     .hsk-2-fill { background:#64a0e6; }
     .hsk-3-fill { background:#d9705a; }
+    .hsk-full-bar {
+      height:5px; background:var(--bdr); border-radius:3px; overflow:hidden; width:100%;
+    }
+    .hsk-full-bar-fill { height:100%; border-radius:3px; transition:width 400ms ease; }
 
     .char-grid {
       display:grid;
       grid-template-columns: repeat(5, 1fr);
       gap:8px;
+      overflow:hidden;
+      transition: max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 240ms ease, margin-top 320ms ease;
+      max-height: 2000px;
+      opacity: 1;
+      margin-top: 0;
     }
+    .char-grid.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+      margin-top: -4px;
+    }
+    .hsk-group-header {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hsk-group-header:active { opacity: .7; }
+    .chevron {
+      width:16px; height:16px; color:var(--faint); flex-shrink:0;
+      transition: transform 280ms cubic-bezier(0.4,0,0.2,1);
+    }
+    .chevron.open { transform: rotate(180deg); }
     .char-tile {
       aspect-ratio:1;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -323,19 +347,20 @@
       background:var(--green-bg); border-color:rgba(104,191,138,.3);
     }
     .char-tile.known .tc { color:var(--green); -webkit-text-fill-color:var(--green); }
-    .char-tile .known-dot {
-      position:absolute; top:5px; right:5px;
-      width:7px; height:7px; border-radius:50%;
-      background:var(--green); display:none;
+    .char-tile.known .tp { color:var(--green); opacity:.6; }
+    .char-tile.repaso {
+      background:var(--red-bg); border-color:rgba(217,112,90,.3);
     }
-    .char-tile.known .known-dot { display:block; }
+    .char-tile.repaso .tc { color:var(--red); -webkit-text-fill-color:var(--red); }
+    .char-tile.repaso .tp { color:var(--red); opacity:.6; }
+    .char-tile .toggle-btn { display:none; }
 
     /* char detail modal */
     .modal-backdrop {
       position:fixed; inset:0; z-index:100;
       background:rgba(0,0,0,.5); backdrop-filter:blur(4px);
       display:none; align-items:flex-end; justify-content:center;
-      padding:0; padding-bottom:max(0px,var(--safe-b));
+      padding:0;
     }
     .modal-backdrop.open { display:flex; }
     .modal {
@@ -343,9 +368,10 @@
       background:var(--surf2); border:1px solid var(--bdr);
       border-radius:24px 24px 0 0;
       box-shadow:var(--sh);
-      padding:20px 20px max(24px,var(--safe-b));
+      padding:20px 20px;
+      padding-bottom:max(28px, var(--safe-b));
       display:flex; flex-direction:column; gap:14px;
-      max-height:72dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+      max-height:88dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
       animation:slideUp 220ms cubic-bezier(0.16,1,0.3,1);
     }
     .modal::-webkit-scrollbar { display:none; }
@@ -673,6 +699,8 @@ function attachDrag(cardEl){
 /* ══════════════════════
    GROUPS SCREEN
 ══════════════════════ */
+const collapsedGroups = new Set();
+
 function renderGroups(){
   const container=document.getElementById('groups-scroll');
   const levels=[1,2,3];
@@ -684,6 +712,7 @@ function renderGroups(){
 
     const colors={1:'hsk-1',2:'hsk-2',3:'hsk-3'};
     const fillClass={1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill'};
+    const isCollapsed = collapsedGroups.has(hsk);
 
     const div=document.createElement('div');
     div.className='hsk-group';
@@ -693,18 +722,71 @@ function renderGroups(){
           <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
           <span class="count">${knownCount}/${group.length} conocidos</span>
         </div>
-        <div class="hsk-prog-bar"><div class="hsk-prog-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="hsk-prog-bar"><div class="hsk-prog-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
+          <svg class="chevron ${isCollapsed?'':'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
       </div>
-      <div class="char-grid" id="grid-${hsk}"></div>
+      <div class="hsk-full-bar"><div class="hsk-full-bar-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
+      <div class="char-grid ${isCollapsed?'collapsed':''}" id="grid-${hsk}"></div>
     `;
     container.appendChild(div);
 
-    const grid=div.querySelector(`#grid-${hsk}`);
+    const header = div.querySelector('.hsk-group-header');
+    const grid   = div.querySelector(`#grid-${hsk}`);
+    const chev   = div.querySelector('.chevron');
+
+    header.addEventListener('click', ()=>{
+      if(collapsedGroups.has(hsk)){ collapsedGroups.delete(hsk); grid.classList.remove('collapsed'); chev.classList.add('open'); }
+      else { collapsedGroups.add(hsk); grid.classList.add('collapsed'); chev.classList.remove('open'); }
+    });
+
     group.forEach(card=>{
       const tile=document.createElement('button');
-      tile.className='char-tile'+(known.has(card.char)?' known':'');
-      tile.innerHTML=`<div class="tc">${card.char}</div><div class="tp">${card.pinyin}</div><div class="known-dot"></div>`;
-      tile.addEventListener('click',()=>openModal(card));
+      const isKnown = known.has(card.char);
+      const isRepaso = unknown.has(card.char);
+      tile.className='char-tile'+(isKnown?' known':isRepaso?' repaso':'');
+      tile.innerHTML=`
+        <div class="tc">${card.char}</div>
+        <div class="tp">${card.pinyin}</div>
+        <div class="toggle-btn">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2,6 5,9 10,3"/>
+          </svg>
+        </div>`;
+
+      // long-press logic
+      let pressTimer=null;
+      function startPress(){
+        pressTimer=setTimeout(()=>{
+          pressTimer=null;
+          if(known.has(card.char)){
+            known.delete(card.char); unknown.delete(card.char);
+            tile.classList.remove('known');
+          } else {
+            known.add(card.char); unknown.delete(card.char);
+            tile.classList.remove('repaso');
+            tile.classList.add('known');
+            deck=deck.filter(c=>c.char!==card.char);
+          }
+          saveState();
+          const newKnownCount=group.filter(c=>known.has(c.char)).length;
+          const newPct=group.length?Math.round(newKnownCount/group.length*100):0;
+          div.querySelector('.count').textContent=`${newKnownCount}/${group.length} conocidos`;
+          div.querySelector('.hsk-prog-fill').style.width=newPct+'%';
+          vKnown.textContent=known.size;
+          vRepaso.textContent=unknown.size;
+          vRest.textContent=deck.length;
+          if(navigator.vibrate) navigator.vibrate(30);
+        }, 450);
+      }
+      function cancelPress(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } }
+
+      tile.addEventListener('pointerdown', e=>{ e.stopPropagation(); startPress(); });
+      tile.addEventListener('pointerup',   ()=>{ if(pressTimer){ cancelPress(); openModal(card); } });
+      tile.addEventListener('pointercancel', cancelPress);
+      tile.addEventListener('pointermove', e=>{ if(Math.abs(e.movementX)>6||Math.abs(e.movementY)>6) cancelPress(); });
+      tile.addEventListener('contextmenu', e=>e.preventDefault());
       grid.appendChild(tile);
     });
   });
