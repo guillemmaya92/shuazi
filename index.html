@@ -508,7 +508,7 @@ function makeCard(card,isStack){
   el.className='card '+(isStack?'stack-under':'top');
   el.dataset.page='0';
 
-  const wordsHTML=card.words.map(w=>{
+  const wordsHTML=card.words.slice(0,5).map(w=>{
     const p=parseWord(w);
     return `<div class="word-item"><strong>${p.hanzi}</strong>${p.pinyin?`<span class="word-pinyin">${p.pinyin}</span>`:''}<span class="word-meaning">${p.meaning}</span></div>`;
   }).join('');
@@ -540,15 +540,11 @@ function makeCard(card,isStack){
         </div>
       </div>
       <div class="page info-page">
-        <div class="card-top">
-          <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
-          <span style="font-size:.9rem;font-weight:600;font-family:'PingFang SC',sans-serif;color:var(--txt)">${card.char}</span>
-        </div>
+        <div class="hanzi-wrap" style="flex:0;padding:10px 0 4px"><div class="hanzi" style="font-size:80px">${card.char}</div></div>
         <div class="info-row">
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
-          <div class="info-cell"><div class="lbl">Nivel</div><div class="val">HSK ${card.hsk}</div></div>
+          <div class="info-cell"><div class="lbl">Nivel</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
           <div class="info-cell full"><div class="lbl">Significado</div><div class="val">${card.meaning}</div></div>
-          <div class="info-cell full"><div class="lbl">Ejemplo</div><div class="val">${card.example}</div></div>
         </div>
         <div class="words-title">Palabras compuestas</div>
         <div class="words-list">${wordsHTML}</div>
