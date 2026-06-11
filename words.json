@@ -1,0 +1,1121 @@
+[
+  {
+    "id": "你好",
+    "pinyin": "nǐhǎo",
+    "meaning": "hello",
+    "chars": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "你们",
+    "pinyin": "nǐmen",
+    "meaning": "you (plural)",
+    "chars": [
+      1,
+      8
+    ]
+  },
+  {
+    "id": "你的",
+    "pinyin": "nǐ de",
+    "meaning": "yours",
+    "chars": [
+      1,
+      9
+    ]
+  },
+  {
+    "id": "好看",
+    "pinyin": "hǎokàn",
+    "meaning": "pretty",
+    "chars": [
+      2,
+      30
+    ]
+  },
+  {
+    "id": "爱好",
+    "pinyin": "àihào",
+    "meaning": "hobby",
+    "chars": [
+      2
+    ]
+  },
+  {
+    "id": "我们",
+    "pinyin": "wǒmen",
+    "meaning": "we, us",
+    "chars": [
+      3,
+      8
+    ]
+  },
+  {
+    "id": "我的",
+    "pinyin": "wǒ de",
+    "meaning": "mine",
+    "chars": [
+      3,
+      9
+    ]
+  },
+  {
+    "id": "自我",
+    "pinyin": "zìwǒ",
+    "meaning": "oneself",
+    "chars": [
+      3
+    ]
+  },
+  {
+    "id": "是不是",
+    "pinyin": "shìbushì",
+    "meaning": "is it or not?",
+    "chars": [
+      4,
+      5,
+      4
+    ]
+  },
+  {
+    "id": "就是",
+    "pinyin": "jiùshì",
+    "meaning": "precisely",
+    "chars": [
+      35,
+      4
+    ]
+  },
+  {
+    "id": "可是",
+    "pinyin": "kěshì",
+    "meaning": "but",
+    "chars": [
+      4
+    ]
+  },
+  {
+    "id": "不是",
+    "pinyin": "búshì",
+    "meaning": "is not",
+    "chars": [
+      5,
+      4
+    ]
+  },
+  {
+    "id": "不要",
+    "pinyin": "búyào",
+    "meaning": "to not want",
+    "chars": [
+      5
+    ]
+  },
+  {
+    "id": "不客气",
+    "pinyin": "búkèqi",
+    "meaning": "you're welcome",
+    "chars": [
+      5
+    ]
+  },
+  {
+    "id": "他们",
+    "pinyin": "tāmen",
+    "meaning": "them (m)",
+    "chars": [
+      6,
+      8
+    ]
+  },
+  {
+    "id": "他的",
+    "pinyin": "tā de",
+    "meaning": "his",
+    "chars": [
+      6,
+      9
+    ]
+  },
+  {
+    "id": "他人",
+    "pinyin": "tārén",
+    "meaning": "another person",
+    "chars": [
+      6,
+      11
+    ]
+  },
+  {
+    "id": "她们",
+    "pinyin": "tāmen",
+    "meaning": "them (f)",
+    "chars": [
+      7,
+      8
+    ]
+  },
+  {
+    "id": "她的",
+    "pinyin": "tā de",
+    "meaning": "hers",
+    "chars": [
+      7,
+      9
+    ]
+  },
+  {
+    "id": "她家",
+    "pinyin": "tā jiā",
+    "meaning": "her home",
+    "chars": [
+      7
+    ]
+  },
+  {
+    "id": "好的",
+    "pinyin": "hǎo de",
+    "meaning": "okay",
+    "chars": [
+      2,
+      9
+    ]
+  },
+  {
+    "id": "好了",
+    "pinyin": "hǎo le",
+    "meaning": "that's it",
+    "chars": [
+      2,
+      10
+    ]
+  },
+  {
+    "id": "下雨了",
+    "pinyin": "xiàyǔ le",
+    "meaning": "it has rained",
+    "chars": [
+      10
+    ]
+  },
+  {
+    "id": "到了",
+    "pinyin": "dào le",
+    "meaning": "arrived",
+    "chars": [
+      10
+    ]
+  },
+  {
+    "id": "男人",
+    "pinyin": "nánrén",
+    "meaning": "man",
+    "chars": [
+      11
+    ]
+  },
+  {
+    "id": "女人",
+    "pinyin": "nǚrén",
+    "meaning": "woman",
+    "chars": [
+      11
+    ]
+  },
+  {
+    "id": "别人",
+    "pinyin": "biérén",
+    "meaning": "another person",
+    "chars": [
+      11
+    ]
+  },
+  {
+    "id": "中国",
+    "pinyin": "Zhōngguó",
+    "meaning": "China",
+    "chars": [
+      12,
+      13
+    ]
+  },
+  {
+    "id": "中间",
+    "pinyin": "zhōngjiān",
+    "meaning": "middle",
+    "chars": [
+      12
+    ]
+  },
+  {
+    "id": "中文",
+    "pinyin": "Zhōngwén",
+    "meaning": "Chinese",
+    "chars": [
+      12
+    ]
+  },
+  {
+    "id": "国家",
+    "pinyin": "guójiā",
+    "meaning": "país",
+    "chars": [
+      13
+    ]
+  },
+  {
+    "id": "外国",
+    "pinyin": "wàiguó",
+    "meaning": "foreign",
+    "chars": [
+      13
+    ]
+  },
+  {
+    "id": "回来",
+    "pinyin": "huílai",
+    "meaning": "to return",
+    "chars": [
+      14
+    ]
+  },
+  {
+    "id": "过来",
+    "pinyin": "guòlai",
+    "meaning": "come here",
+    "chars": [
+      43,
+      14
+    ]
+  },
+  {
+    "id": "原来",
+    "pinyin": "yuánlái",
+    "meaning": "it turns out",
+    "chars": [
+      14
+    ]
+  },
+  {
+    "id": "大学",
+    "pinyin": "dàxué",
+    "meaning": "university",
+    "chars": [
+      15
+    ]
+  },
+  {
+    "id": "大家",
+    "pinyin": "dàjiā",
+    "meaning": "everyone",
+    "chars": [
+      15
+    ]
+  },
+  {
+    "id": "大人",
+    "pinyin": "dàrén",
+    "meaning": "adult",
+    "chars": [
+      15,
+      11
+    ]
+  },
+  {
+    "id": "因为",
+    "pinyin": "yīnwèi",
+    "meaning": "because",
+    "chars": [
+      16,
+      17
+    ]
+  },
+  {
+    "id": "原因",
+    "pinyin": "yuányīn",
+    "meaning": "reason",
+    "chars": [
+      16
+    ]
+  },
+  {
+    "id": "因此",
+    "pinyin": "yīncǐ",
+    "meaning": "therefore",
+    "chars": [
+      16
+    ]
+  },
+  {
+    "id": "为了",
+    "pinyin": "wèile",
+    "meaning": "for",
+    "chars": [
+      17,
+      10
+    ]
+  },
+  {
+    "id": "认为",
+    "pinyin": "rènwéi",
+    "meaning": "to consider",
+    "chars": [
+      17
+    ]
+  },
+  {
+    "id": "所以",
+    "pinyin": "suǒyǐ",
+    "meaning": "therefore",
+    "chars": [
+      18,
+      19
+    ]
+  },
+  {
+    "id": "所有",
+    "pinyin": "suǒyǒu",
+    "meaning": "everything",
+    "chars": [
+      18
+    ]
+  },
+  {
+    "id": "厕所",
+    "pinyin": "cèsuǒ",
+    "meaning": "bathroom",
+    "chars": [
+      18
+    ]
+  },
+  {
+    "id": "可以",
+    "pinyin": "kěyǐ",
+    "meaning": "to be able",
+    "chars": [
+      19
+    ]
+  },
+  {
+    "id": "以后",
+    "pinyin": "yǐhòu",
+    "meaning": "after, later",
+    "chars": [
+      19
+    ]
+  },
+  {
+    "id": "但是",
+    "pinyin": "dànshì",
+    "meaning": "but",
+    "chars": [
+      20,
+      4
+    ]
+  },
+  {
+    "id": "不但",
+    "pinyin": "bùdàn",
+    "meaning": "not only",
+    "chars": [
+      5,
+      20
+    ]
+  },
+  {
+    "id": "但愿",
+    "pinyin": "dànyuàn",
+    "meaning": "hopefully",
+    "chars": [
+      20
+    ]
+  },
+  {
+    "id": "还是",
+    "pinyin": "háishì",
+    "meaning": "still / or",
+    "chars": [
+      21,
+      4
+    ]
+  },
+  {
+    "id": "还有",
+    "pinyin": "hái yǒu",
+    "meaning": "furthermore",
+    "chars": [
+      21
+    ]
+  },
+  {
+    "id": "还好",
+    "pinyin": "háihǎo",
+    "meaning": "thank goodness",
+    "chars": [
+      21,
+      2
+    ]
+  },
+  {
+    "id": "都好",
+    "pinyin": "dōu hǎo",
+    "meaning": "all good",
+    "chars": [
+      22,
+      2
+    ]
+  },
+  {
+    "id": "首都",
+    "pinyin": "shǒudū",
+    "meaning": "capital city",
+    "chars": [
+      22
+    ]
+  },
+  {
+    "id": "都市",
+    "pinyin": "dūshì",
+    "meaning": "city",
+    "chars": [
+      22
+    ]
+  },
+  {
+    "id": "很好",
+    "pinyin": "hěn hǎo",
+    "meaning": "very good",
+    "chars": [
+      23,
+      2
+    ]
+  },
+  {
+    "id": "很多",
+    "pinyin": "hěn duō",
+    "meaning": "a lot",
+    "chars": [
+      23
+    ]
+  },
+  {
+    "id": "很快",
+    "pinyin": "hěn kuài",
+    "meaning": "very fast",
+    "chars": [
+      23
+    ]
+  },
+  {
+    "id": "时间",
+    "pinyin": "shíjiān",
+    "meaning": "time",
+    "chars": [
+      24
+    ]
+  },
+  {
+    "id": "时候",
+    "pinyin": "shíhou",
+    "meaning": "moment",
+    "chars": [
+      24,
+      25
+    ]
+  },
+  {
+    "id": "小时",
+    "pinyin": "xiǎoshí",
+    "meaning": "hour",
+    "chars": [
+      24
+    ]
+  },
+  {
+    "id": "气候",
+    "pinyin": "qìhòu",
+    "meaning": "climate",
+    "chars": [
+      25
+    ]
+  },
+  {
+    "id": "问候",
+    "pinyin": "wènhòu",
+    "meaning": "to greet",
+    "chars": [
+      25
+    ]
+  },
+  {
+    "id": "知道",
+    "pinyin": "zhīdào",
+    "meaning": "to know",
+    "chars": [
+      26,
+      27
+    ]
+  },
+  {
+    "id": "知识",
+    "pinyin": "zhīshi",
+    "meaning": "knowledge",
+    "chars": [
+      26
+    ]
+  },
+  {
+    "id": "通知",
+    "pinyin": "tōngzhī",
+    "meaning": "to notify",
+    "chars": [
+      26
+    ]
+  },
+  {
+    "id": "道路",
+    "pinyin": "dàolù",
+    "meaning": "road, path",
+    "chars": [
+      27
+    ]
+  },
+  {
+    "id": "道理",
+    "pinyin": "dàoli",
+    "meaning": "logic",
+    "chars": [
+      27
+    ]
+  },
+  {
+    "id": "想要",
+    "pinyin": "xiǎngyào",
+    "meaning": "to want",
+    "chars": [
+      28
+    ]
+  },
+  {
+    "id": "想法",
+    "pinyin": "xiǎngfǎ",
+    "meaning": "idea",
+    "chars": [
+      28
+    ]
+  },
+  {
+    "id": "理想",
+    "pinyin": "lǐxiǎng",
+    "meaning": "ideal",
+    "chars": [
+      28
+    ]
+  },
+  {
+    "id": "说话",
+    "pinyin": "shuōhuà",
+    "meaning": "to talk",
+    "chars": [
+      29
+    ]
+  },
+  {
+    "id": "小说",
+    "pinyin": "xiǎoshuō",
+    "meaning": "novel",
+    "chars": [
+      29
+    ]
+  },
+  {
+    "id": "说明",
+    "pinyin": "shuōmíng",
+    "meaning": "to explain",
+    "chars": [
+      29
+    ]
+  },
+  {
+    "id": "看见",
+    "pinyin": "kànjiàn",
+    "meaning": "to see",
+    "chars": [
+      30
+    ]
+  },
+  {
+    "id": "看法",
+    "pinyin": "kànfǎ",
+    "meaning": "opinion",
+    "chars": [
+      30
+    ]
+  },
+  {
+    "id": "虽然",
+    "pinyin": "suīrán",
+    "meaning": "although",
+    "chars": [
+      31,
+      32
+    ]
+  },
+  {
+    "id": "虽说",
+    "pinyin": "suīshuō",
+    "meaning": "even if said",
+    "chars": [
+      31,
+      29
+    ]
+  },
+  {
+    "id": "然后",
+    "pinyin": "ránhòu",
+    "meaning": "after, later",
+    "chars": [
+      32
+    ]
+  },
+  {
+    "id": "当然",
+    "pinyin": "dāngrán",
+    "meaning": "of course",
+    "chars": [
+      32
+    ]
+  },
+  {
+    "id": "自然",
+    "pinyin": "zìrán",
+    "meaning": "nature",
+    "chars": [
+      32
+    ]
+  },
+  {
+    "id": "除了",
+    "pinyin": "chúle",
+    "meaning": "except",
+    "chars": [
+      33,
+      10
+    ]
+  },
+  {
+    "id": "除非",
+    "pinyin": "chúfēi",
+    "meaning": "unless",
+    "chars": [
+      33
+    ]
+  },
+  {
+    "id": "消除",
+    "pinyin": "xiāochú",
+    "meaning": "to eliminate",
+    "chars": [
+      33
+    ]
+  },
+  {
+    "id": "才好",
+    "pinyin": "cái hǎo",
+    "meaning": "only then",
+    "chars": [
+      34,
+      2
+    ]
+  },
+  {
+    "id": "刚才",
+    "pinyin": "gāngcái",
+    "meaning": "a moment ago",
+    "chars": [
+      34
+    ]
+  },
+  {
+    "id": "人才",
+    "pinyin": "réncái",
+    "meaning": "talent",
+    "chars": [
+      11,
+      34
+    ]
+  },
+  {
+    "id": "就要",
+    "pinyin": "jiùyào",
+    "meaning": "to be about to",
+    "chars": [
+      35
+    ]
+  },
+  {
+    "id": "成就",
+    "pinyin": "chéngjiù",
+    "meaning": "achievement",
+    "chars": [
+      35
+    ]
+  },
+  {
+    "id": "已经",
+    "pinyin": "yǐjīng",
+    "meaning": "already",
+    "chars": [
+      36,
+      37
+    ]
+  },
+  {
+    "id": "已婚",
+    "pinyin": "yǐhūn",
+    "meaning": "married",
+    "chars": [
+      36
+    ]
+  },
+  {
+    "id": "而已",
+    "pinyin": "éryǐ",
+    "meaning": "nothing more",
+    "chars": [
+      36
+    ]
+  },
+  {
+    "id": "经过",
+    "pinyin": "jīngguò",
+    "meaning": "to pass through",
+    "chars": [
+      37,
+      43
+    ]
+  },
+  {
+    "id": "经常",
+    "pinyin": "jīngcháng",
+    "meaning": "often",
+    "chars": [
+      37
+    ]
+  },
+  {
+    "id": "对不起",
+    "pinyin": "duìbuqǐ",
+    "meaning": "sorry",
+    "chars": [
+      38,
+      5,
+      44
+    ]
+  },
+  {
+    "id": "对话",
+    "pinyin": "duìhuà",
+    "meaning": "dialogue",
+    "chars": [
+      38
+    ]
+  },
+  {
+    "id": "面对",
+    "pinyin": "miànduì",
+    "meaning": "to face",
+    "chars": [
+      38
+    ]
+  },
+  {
+    "id": "让开",
+    "pinyin": "ràngkāi",
+    "meaning": "to step aside",
+    "chars": [
+      39
+    ]
+  },
+  {
+    "id": "让给",
+    "pinyin": "rànggěi",
+    "meaning": "to yield",
+    "chars": [
+      39
+    ]
+  },
+  {
+    "id": "转让",
+    "pinyin": "zhuǎnràng",
+    "meaning": "to transfer",
+    "chars": [
+      39
+    ]
+  },
+  {
+    "id": "把手",
+    "pinyin": "bǎshou",
+    "meaning": "handle",
+    "chars": [
+      40
+    ]
+  },
+  {
+    "id": "把门",
+    "pinyin": "bǎ mén",
+    "meaning": "to guard door",
+    "chars": [
+      40
+    ]
+  },
+  {
+    "id": "火把",
+    "pinyin": "huǒbǎ",
+    "meaning": "torch",
+    "chars": [
+      40
+    ]
+  },
+  {
+    "id": "被子",
+    "pinyin": "bèizi",
+    "meaning": "blanket",
+    "chars": [
+      41
+    ]
+  },
+  {
+    "id": "被动",
+    "pinyin": "bèidòng",
+    "meaning": "passive",
+    "chars": [
+      41
+    ]
+  },
+  {
+    "id": "被告",
+    "pinyin": "bèigào",
+    "meaning": "accused",
+    "chars": [
+      41
+    ]
+  },
+  {
+    "id": "看着",
+    "pinyin": "kànzhe",
+    "meaning": "watching",
+    "chars": [
+      30,
+      42
+    ]
+  },
+  {
+    "id": "穿着",
+    "pinyin": "chuānzhuó",
+    "meaning": "clothing",
+    "chars": [
+      42
+    ]
+  },
+  {
+    "id": "接着",
+    "pinyin": "jiēzhe",
+    "meaning": "next, then",
+    "chars": [
+      42
+    ]
+  },
+  {
+    "id": "过去",
+    "pinyin": "guòqù",
+    "meaning": "past",
+    "chars": [
+      43
+    ]
+  },
+  {
+    "id": "超过",
+    "pinyin": "chāoguò",
+    "meaning": "to surpass",
+    "chars": [
+      43
+    ]
+  },
+  {
+    "id": "起来",
+    "pinyin": "qǐlái",
+    "meaning": "to stand up",
+    "chars": [
+      44,
+      14
+    ]
+  },
+  {
+    "id": "一起",
+    "pinyin": "yìqǐ",
+    "meaning": "together",
+    "chars": [
+      44
+    ]
+  },
+  {
+    "id": "引起",
+    "pinyin": "yǐnqǐ",
+    "meaning": "to cause",
+    "chars": [
+      44
+    ]
+  },
+  {
+    "id": "离开",
+    "pinyin": "líkāi",
+    "meaning": "to leave",
+    "chars": [
+      45
+    ]
+  },
+  {
+    "id": "距离",
+    "pinyin": "jùlí",
+    "meaning": "distance",
+    "chars": [
+      45
+    ]
+  },
+  {
+    "id": "分离",
+    "pinyin": "fēnlí",
+    "meaning": "to separate",
+    "chars": [
+      45
+    ]
+  },
+  {
+    "id": "向前",
+    "pinyin": "xiàngqián",
+    "meaning": "forward",
+    "chars": [
+      46
+    ]
+  },
+  {
+    "id": "方向",
+    "pinyin": "fāngxiàng",
+    "meaning": "direction",
+    "chars": [
+      46
+    ]
+  },
+  {
+    "id": "一向",
+    "pinyin": "yíxiàng",
+    "meaning": "always",
+    "chars": [
+      46
+    ]
+  },
+  {
+    "id": "比较",
+    "pinyin": "bǐjiào",
+    "meaning": "to compare",
+    "chars": [
+      47
+    ]
+  },
+  {
+    "id": "比赛",
+    "pinyin": "bǐsài",
+    "meaning": "competition",
+    "chars": [
+      47
+    ]
+  },
+  {
+    "id": "比如",
+    "pinyin": "bǐrú",
+    "meaning": "for example",
+    "chars": [
+      47
+    ]
+  },
+  {
+    "id": "画像",
+    "pinyin": "huàxiàng",
+    "meaning": "portrait",
+    "chars": [
+      48
+    ]
+  },
+  {
+    "id": "好像",
+    "pinyin": "hǎoxiàng",
+    "meaning": "to seem",
+    "chars": [
+      2,
+      48
+    ]
+  },
+  {
+    "id": "像样",
+    "pinyin": "xiàngyàng",
+    "meaning": "decent",
+    "chars": [
+      48
+    ]
+  },
+  {
+    "id": "再见",
+    "pinyin": "zàijiàn",
+    "meaning": "goodbye",
+    "chars": [
+      49
+    ]
+  },
+  {
+    "id": "再次",
+    "pinyin": "zàicì",
+    "meaning": "again",
+    "chars": [
+      49
+    ]
+  },
+  {
+    "id": "再说",
+    "pinyin": "zàishuō",
+    "meaning": "we'll see",
+    "chars": [
+      49,
+      29
+    ]
+  },
+  {
+    "id": "又要",
+    "pinyin": "yòuyào",
+    "meaning": "to want again",
+    "chars": [
+      50
+    ]
+  },
+  {
+    "id": "又是",
+    "pinyin": "yòushì",
+    "meaning": "it is again",
+    "chars": [
+      50,
+      4
+    ]
+  },
+  {
+    "id": "又好又快",
+    "pinyin": "yòu hǎo yòu kuài",
+    "meaning": "good and fast",
+    "chars": [
+      50,
+      2,
+      50
+    ]
+  }
+]

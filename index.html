@@ -482,7 +482,30 @@
 </div>
 
 <script>
-const CARDS = [{"char": "你", "pinyin": "nǐ", "meaning": "you / you (formal)", "hsk": 1, "example": "你好 nǐhǎo", "words": ["你好 nǐhǎo · hello", "你们 nǐmen · you (plural)", "你的 nǐ de · yours"]}, {"char": "好", "pinyin": "hǎo", "meaning": "good, well", "hsk": 1, "example": "很好 hěn hǎo", "words": ["你好 nǐhǎo · hello", "好看 hǎokàn · pretty", "爱好 àihào · hobby"]}, {"char": "我", "pinyin": "wǒ", "meaning": "I, me", "hsk": 1, "example": "我是 wǒ shì", "words": ["我们 wǒmen · we, us", "我的 wǒ de · mine", "自我 zìwǒ · oneself"]}, {"char": "是", "pinyin": "shì", "meaning": "to be", "hsk": 1, "example": "我是 wǒ shì", "words": ["是不是 shìbushì · is it or not?", "就是 jiùshì · precisely", "可是 kěshì · but"]}, {"char": "不", "pinyin": "bù", "meaning": "no (negation)", "hsk": 1, "example": "不好 bù hǎo", "words": ["不是 búshì · is not", "不要 búyào · to not want", "不客气 búkèqi · you're welcome"]}, {"char": "他", "pinyin": "tā", "meaning": "he, him", "hsk": 1, "example": "他们 tāmen", "words": ["他们 tāmen · them (m)", "他的 tā de · his", "他人 tārén · another person"]}, {"char": "她", "pinyin": "tā", "meaning": "she, her", "hsk": 1, "example": "她好 tā hǎo", "words": ["她们 tāmen · them (f)", "她的 tā de · hers", "她家 tā jiā · her home"]}, {"char": "们", "pinyin": "men", "meaning": "plural suffix", "hsk": 1, "example": "我们 wǒmen", "words": ["我们 wǒmen · we, us", "你们 nǐmen · you (plural)", "他们 tāmen · them (m)"]}, {"char": "的", "pinyin": "de", "meaning": "possessive particle", "hsk": 1, "example": "我的 wǒ de", "words": ["你的 nǐ de · yours", "我的 wǒ de · mine", "好的 hǎo de · okay"]}, {"char": "了", "pinyin": "le", "meaning": "aspect particle", "hsk": 1, "example": "来了 lái le", "words": ["好了 hǎo le · that's it", "下雨了 xiàyǔ le · it has rained", "到了 dào le · arrived"]}, {"char": "人", "pinyin": "rén", "meaning": "person, people", "hsk": 1, "example": "中国人 Zhōngguórén", "words": ["男人 nánrén · man", "女人 nǚrén · woman", "别人 biérén · another person"]}, {"char": "中", "pinyin": "zhōng", "meaning": "center, China", "hsk": 1, "example": "中国 Zhōngguó", "words": ["中国 Zhōngguó · China", "中间 zhōngjiān · middle", "中文 Zhōngwén · Chinese"]}, {"char": "国", "pinyin": "guó", "meaning": "country, nation", "hsk": 1, "example": "中国 Zhōngguó", "words": ["国家 guójiā · país", "中国 Zhōngguó · China", "外国 wàiguó · foreign"]}, {"char": "来", "pinyin": "lái", "meaning": "to come", "hsk": 1, "example": "过来 guòlai", "words": ["回来 huílai · to return", "过来 guòlai · come here", "原来 yuánlái · it turns out"]}, {"char": "大", "pinyin": "dà", "meaning": "big, large", "hsk": 1, "example": "大学 dàxué", "words": ["大学 dàxué · university", "大家 dàjiā · everyone", "大人 dàrén · adult"]}, {"char": "因", "pinyin": "yīn", "meaning": "cause, because", "hsk": 2, "example": "因为 yīnwèi", "words": ["因为 yīnwèi · because", "原因 yuányīn · reason", "因此 yīncǐ · therefore"]}, {"char": "为", "pinyin": "wèi", "meaning": "for, because of", "hsk": 2, "example": "因为 yīnwèi", "words": ["为了 wèile · for", "因为 yīnwèi · because", "认为 rènwéi · to consider"]}, {"char": "所", "pinyin": "suǒ", "meaning": "place, that which", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · therefore", "所有 suǒyǒu · everything", "厕所 cèsuǒ · bathroom"]}, {"char": "以", "pinyin": "yǐ", "meaning": "to use, with", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · therefore", "可以 kěyǐ · to be able", "以后 yǐhòu · after, later"]}, {"char": "但", "pinyin": "dàn", "meaning": "but, however", "hsk": 2, "example": "但是 dànshì", "words": ["但是 dànshì · but", "不但 bùdàn · not only", "但愿 dànyuàn · hopefully"]}, {"char": "还", "pinyin": "hái", "meaning": "still, also", "hsk": 2, "example": "还有 hái yǒu", "words": ["还是 háishì · still / or", "还有 hái yǒu · furthermore", "还好 háihǎo · thank goodness"]}, {"char": "都", "pinyin": "dōu", "meaning": "all, everyone", "hsk": 2, "example": "都是 dōu shì", "words": ["都好 dōu hǎo · all good", "首都 shǒudū · capital city", "都市 dūshì · city"]}, {"char": "很", "pinyin": "hěn", "meaning": "very, quite", "hsk": 2, "example": "很好 hěn hǎo", "words": ["很好 hěn hǎo · very good", "很多 hěn duō · a lot", "很快 hěn kuài · very fast"]}, {"char": "时", "pinyin": "shí", "meaning": "time, hour", "hsk": 2, "example": "时候 shíhou", "words": ["时间 shíjiān · time", "时候 shíhou · moment", "小时 xiǎoshí · hour"]}, {"char": "候", "pinyin": "hòu", "meaning": "moment, to wait", "hsk": 2, "example": "时候 shíhou", "words": ["时候 shíhou · moment", "气候 qìhòu · climate", "问候 wènhòu · to greet"]}, {"char": "知", "pinyin": "zhī", "meaning": "to know", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · to know", "知识 zhīshi · knowledge", "通知 tōngzhī · to notify"]}, {"char": "道", "pinyin": "dào", "meaning": "road, to say", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · to know", "道路 dàolù · road, path", "道理 dàoli · logic"]}, {"char": "想", "pinyin": "xiǎng", "meaning": "to want, to think", "hsk": 2, "example": "想要 xiǎng yào", "words": ["想要 xiǎngyào · to want", "想法 xiǎngfǎ · idea", "理想 lǐxiǎng · ideal"]}, {"char": "说", "pinyin": "shuō", "meaning": "to speak, to say", "hsk": 2, "example": "说话 shuōhuà", "words": ["说话 shuōhuà · to talk", "小说 xiǎoshuō · novel", "说明 shuōmíng · to explain"]}, {"char": "看", "pinyin": "kàn", "meaning": "to look, to see", "hsk": 2, "example": "看书 kàn shū", "words": ["看见 kànjiàn · to see", "好看 hǎokàn · pretty", "看法 kànfǎ · opinion"]}, {"char": "虽", "pinyin": "suī", "meaning": "although", "hsk": 3, "example": "虽然 suīrán", "words": ["虽然 suīrán · although", "虽说 suīshuō · even if said"]}, {"char": "然", "pinyin": "rán", "meaning": "so, natural", "hsk": 3, "example": "虽然 suīrán", "words": ["然后 ránhòu · after, later", "当然 dāngrán · of course", "自然 zìrán · nature"]}, {"char": "除", "pinyin": "chú", "meaning": "except, besides", "hsk": 3, "example": "除了 chúle", "words": ["除了 chúle · except", "除非 chúfēi · unless", "消除 xiāochú · to eliminate"]}, {"char": "才", "pinyin": "cái", "meaning": "just, only then", "hsk": 3, "example": "才能 cáinéng", "words": ["才好 cái hǎo · only then", "刚才 gāngcái · a moment ago", "人才 réncái · talent"]}, {"char": "就", "pinyin": "jiù", "meaning": "then, right away", "hsk": 3, "example": "就是 jiùshì", "words": ["就是 jiùshì · precisely", "就要 jiùyào · to be about to", "成就 chéngjiù · achievement"]}, {"char": "已", "pinyin": "yǐ", "meaning": "already, to stop", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · already", "已婚 yǐhūn · married", "而已 éryǐ · nothing more"]}, {"char": "经", "pinyin": "jīng", "meaning": "to pass, classic", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · already", "经过 jīngguò · to pass through", "经常 jīngcháng · often"]}, {"char": "对", "pinyin": "duì", "meaning": "correct, toward", "hsk": 3, "example": "对不起 duìbuqǐ", "words": ["对不起 duìbuqǐ · sorry", "对话 duìhuà · dialogue", "面对 miànduì · to face"]}, {"char": "让", "pinyin": "ràng", "meaning": "to let, to make", "hsk": 3, "example": "让我 ràng wǒ", "words": ["让开 ràngkāi · to step aside", "让给 rànggěi · to yield", "转让 zhuǎnràng · to transfer"]}, {"char": "把", "pinyin": "bǎ", "meaning": "BA particle (object marker)", "hsk": 3, "example": "把书 bǎ shū", "words": ["把手 bǎshou · handle", "把门 bǎ mén · to guard door", "火把 huǒbǎ · torch"]}, {"char": "被", "pinyin": "bèi", "meaning": "passive particle", "hsk": 3, "example": "被打 bèi dǎ", "words": ["被子 bèizi · blanket", "被动 bèidòng · passive", "被告 bèigào · accused"]}, {"char": "着", "pinyin": "zhe", "meaning": "state particle", "hsk": 3, "example": "看着 kàn zhe", "words": ["看着 kànzhe · watching", "穿着 chuānzhuó · clothing", "接着 jiēzhe · next, then"]}, {"char": "过", "pinyin": "guò", "meaning": "to pass, experience", "hsk": 3, "example": "过去 guòqù", "words": ["过去 guòqù · past", "过来 guòlai · to come", "超过 chāoguò · to surpass"]}, {"char": "起", "pinyin": "qǐ", "meaning": "to rise, together", "hsk": 3, "example": "起来 qǐlái", "words": ["起来 qǐlái · to stand up", "一起 yìqǐ · together", "引起 yǐnqǐ · to cause"]}, {"char": "离", "pinyin": "lí", "meaning": "to separate, away from", "hsk": 3, "example": "离开 líkāi", "words": ["离开 líkāi · to leave", "距离 jùlí · distance", "分离 fēnlí · to separate"]}, {"char": "向", "pinyin": "xiàng", "meaning": "toward, direction", "hsk": 3, "example": "向前 xiàng qián", "words": ["向前 xiàngqián · forward", "方向 fāngxiàng · direction", "一向 yíxiàng · always"]}, {"char": "比", "pinyin": "bǐ", "meaning": "to compare, than", "hsk": 3, "example": "比较 bǐjiào", "words": ["比较 bǐjiào · to compare", "比赛 bǐsài · competition", "比如 bǐrú · for example"]}, {"char": "像", "pinyin": "xiàng", "meaning": "to resemble, image", "hsk": 3, "example": "像你 xiàng nǐ", "words": ["画像 huàxiàng · portrait", "好像 hǎoxiàng · to seem", "像样 xiàngyàng · decent"]}, {"char": "再", "pinyin": "zài", "meaning": "again, once more", "hsk": 3, "example": "再见 zàijiàn", "words": ["再见 zàijiàn · goodbye", "再次 zàicì · again", "再说 zàishuō · we'll see"]}, {"char": "又", "pinyin": "yòu", "meaning": "again, and also", "hsk": 3, "example": "又来 yòu lái", "words": ["又要 yòuyào · to want again", "又是 yòushì · it is again", "又好又快 yòu hǎo yòu kuài · good and fast"]}];
+/* ── DATA ── */
+let CHARACTERS = [];   // [{ id, char, pinyin, meaning, hsk, example }]
+let WORDS = [];        // [{ id, pinyin, meaning, chars:[id,...] }]
+let charById = {};     // id → character
+let wordsByChar = {};  // char → [word, ...]
+
+async function loadData(){
+  const [chars, words] = await Promise.all([
+    fetch('./characters.json').then(r=>r.json()),
+    fetch('./words.json').then(r=>r.json())
+  ]);
+  CHARACTERS = chars;
+  WORDS = words;
+  charById = Object.fromEntries(chars.map(c=>[c.id, c]));
+  // Index words by each char they contain
+  words.forEach(w=>{
+    w.chars.forEach(cid=>{
+      const ch = charById[cid]?.char;
+      if(!ch) return;
+      if(!wordsByChar[ch]) wordsByChar[ch]=[];
+      wordsByChar[ch].push(w);
+    });
+  });
+}
 
 /* ── PERSISTENCE ── */
 const STORE_KEY = 'shuazi-v1';
@@ -520,14 +543,6 @@ function stats(){
   renderGroups();
 }
 
-/* ── WORD PARSER ── */
-function parseWord(w){
-  const parts=w.split(' · ');
-  const first=parts[0].trim();
-  const m=first.match(/^([一-鿿㐀-䶿]+)\s*(.*)$/);
-  return { hanzi:m?m[1]:first, pinyin:m?m[2].trim():'', meaning:parts.slice(1).join(' · ') };
-}
-
 /* ══════════════════════
    FLASHCARD ENGINE
 ══════════════════════ */
@@ -538,10 +553,10 @@ function makeCard(card,isStack){
   el.className='card '+(isStack?'stack-under':'top');
   el.dataset.page='0';
 
-  const wordsHTML=card.words.slice(0,5).map(w=>{
-    const p=parseWord(w);
-    return `<div class="word-item"><strong>${p.hanzi}</strong>${p.pinyin?`<span class="word-pinyin">${p.pinyin}</span>`:''}<span class="word-meaning">${p.meaning}</span></div>`;
-  }).join('');
+  const cardWords = (wordsByChar[card.char]||[]).slice(0,5);
+  const wordsHTML = cardWords.map(w=>
+    `<div class="word-item"><strong>${w.id}</strong>${w.pinyin?`<span class="word-pinyin">${w.pinyin}</span>`:''}<span class="word-meaning">${w.meaning}</span></div>`
+  ).join('');
 
   el.innerHTML=`
     <div class="tint tint-l"></div>
@@ -628,7 +643,6 @@ function makeCard(card,isStack){
    en posición aleatoria para que no salga siempre la misma. */
 
 function buildDeck(src){
-  // filtra ya conocidas y baraja
   const cards = src.filter(c=>!known.has(c.char));
   shuffle(cards);
   return cards;
@@ -690,8 +704,8 @@ function showDone(){
       <button class="pill" id="pA">Reset all</button>
     </div>`;
   deckEl.appendChild(el);
-  el.querySelector('#pW').onclick=()=>{ deck=buildDeck(CARDS); render(); };
-  el.querySelector('#pA').onclick=()=>init(CARDS, true);
+  el.querySelector('#pW').onclick=()=>{ deck=buildDeck(CHARACTERS); render(); };
+  el.querySelector('#pA').onclick=()=>init(CHARACTERS, true);
 }
 
 
@@ -762,7 +776,7 @@ function renderGroups(){
   const levels=[1,2,3];
   container.innerHTML='';
   levels.forEach(hsk=>{
-    const group=CARDS.filter(c=>c.hsk===hsk);
+    const group=CHARACTERS.filter(c=>c.hsk===hsk);
     const knownCount=group.filter(c=>known.has(c.char)).length;
     const pct=group.length?Math.round(knownCount/group.length*100):0;
 
@@ -864,10 +878,9 @@ function openModal(card){
     <div class="modal-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
     <div class="modal-cell full"><div class="lbl">Example</div><div class="val">${card.example}</div></div>
   `;
-  modalWords.innerHTML=card.words.map(w=>{
-    const p=parseWord(w);
-    return `<div class="word-item"><strong>${p.hanzi}</strong><span class="word-pinyin">${p.pinyin}</span><span class="word-meaning">${p.meaning}</span></div>`;
-  }).join('');
+  modalWords.innerHTML=(wordsByChar[card.char]||[]).map(w=>
+    `<div class="word-item"><strong>${w.id}</strong><span class="word-pinyin">${w.pinyin}</span><span class="word-meaning">${w.meaning}</span></div>`
+  ).join('');
   backdrop.classList.add('open');
 }
 backdrop.addEventListener('click',e=>{ if(e.target===backdrop) backdrop.classList.remove('open'); });
@@ -920,8 +933,8 @@ if('serviceWorker'in navigator)
 function init(src, forceNew){
   if(forceNew){ known=new Set(); unknown=new Set(); }
   const saved = !forceNew && loadState();
-  if(saved && src===CARDS && saved.deckChars && saved.deckChars.length){
-    const charMap = Object.fromEntries(CARDS.map(c=>[c.char,c]));
+  if(saved && saved.deckChars && saved.deckChars.length){
+    const charMap = Object.fromEntries(CHARACTERS.map(c=>[c.char,c]));
     deck    = saved.deckChars.map(ch=>charMap[ch]).filter(Boolean);
     known   = new Set(saved.known   || []);
     unknown = new Set(saved.unknown || []);
@@ -939,8 +952,13 @@ function init(src, forceNew){
   } catch(e){}
 })();
 
-init(CARDS);
-renderGroups();
+loadData().then(()=>{
+  init(CHARACTERS);
+  renderGroups();
+}).catch(err=>{
+  console.error('Failed to load data:', err);
+  document.getElementById('deck').innerHTML='<div class="done"><div class="done-emoji">⚠️</div><h2>Error loading data</h2><p>Make sure characters.json and words.json are in the same folder.</p></div>';
+});
 </script>
 
   <script>

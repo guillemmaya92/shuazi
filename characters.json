@@ -1,0 +1,402 @@
+[
+  {
+    "id": 1,
+    "char": "你",
+    "pinyin": "nǐ",
+    "meaning": "you / you (formal)",
+    "hsk": 1,
+    "example": "你好 nǐhǎo"
+  },
+  {
+    "id": 2,
+    "char": "好",
+    "pinyin": "hǎo",
+    "meaning": "good, well",
+    "hsk": 1,
+    "example": "很好 hěn hǎo"
+  },
+  {
+    "id": 3,
+    "char": "我",
+    "pinyin": "wǒ",
+    "meaning": "I, me",
+    "hsk": 1,
+    "example": "我是 wǒ shì"
+  },
+  {
+    "id": 4,
+    "char": "是",
+    "pinyin": "shì",
+    "meaning": "to be",
+    "hsk": 1,
+    "example": "我是 wǒ shì"
+  },
+  {
+    "id": 5,
+    "char": "不",
+    "pinyin": "bù",
+    "meaning": "no (negation)",
+    "hsk": 1,
+    "example": "不好 bù hǎo"
+  },
+  {
+    "id": 6,
+    "char": "他",
+    "pinyin": "tā",
+    "meaning": "he, him",
+    "hsk": 1,
+    "example": "他们 tāmen"
+  },
+  {
+    "id": 7,
+    "char": "她",
+    "pinyin": "tā",
+    "meaning": "she, her",
+    "hsk": 1,
+    "example": "她好 tā hǎo"
+  },
+  {
+    "id": 8,
+    "char": "们",
+    "pinyin": "men",
+    "meaning": "plural suffix",
+    "hsk": 1,
+    "example": "我们 wǒmen"
+  },
+  {
+    "id": 9,
+    "char": "的",
+    "pinyin": "de",
+    "meaning": "possessive particle",
+    "hsk": 1,
+    "example": "我的 wǒ de"
+  },
+  {
+    "id": 10,
+    "char": "了",
+    "pinyin": "le",
+    "meaning": "aspect particle",
+    "hsk": 1,
+    "example": "来了 lái le"
+  },
+  {
+    "id": 11,
+    "char": "人",
+    "pinyin": "rén",
+    "meaning": "person, people",
+    "hsk": 1,
+    "example": "中国人 Zhōngguórén"
+  },
+  {
+    "id": 12,
+    "char": "中",
+    "pinyin": "zhōng",
+    "meaning": "center, China",
+    "hsk": 1,
+    "example": "中国 Zhōngguó"
+  },
+  {
+    "id": 13,
+    "char": "国",
+    "pinyin": "guó",
+    "meaning": "country, nation",
+    "hsk": 1,
+    "example": "中国 Zhōngguó"
+  },
+  {
+    "id": 14,
+    "char": "来",
+    "pinyin": "lái",
+    "meaning": "to come",
+    "hsk": 1,
+    "example": "过来 guòlai"
+  },
+  {
+    "id": 15,
+    "char": "大",
+    "pinyin": "dà",
+    "meaning": "big, large",
+    "hsk": 1,
+    "example": "大学 dàxué"
+  },
+  {
+    "id": 16,
+    "char": "因",
+    "pinyin": "yīn",
+    "meaning": "cause, because",
+    "hsk": 2,
+    "example": "因为 yīnwèi"
+  },
+  {
+    "id": 17,
+    "char": "为",
+    "pinyin": "wèi",
+    "meaning": "for, because of",
+    "hsk": 2,
+    "example": "因为 yīnwèi"
+  },
+  {
+    "id": 18,
+    "char": "所",
+    "pinyin": "suǒ",
+    "meaning": "place, that which",
+    "hsk": 2,
+    "example": "所以 suǒyǐ"
+  },
+  {
+    "id": 19,
+    "char": "以",
+    "pinyin": "yǐ",
+    "meaning": "to use, with",
+    "hsk": 2,
+    "example": "所以 suǒyǐ"
+  },
+  {
+    "id": 20,
+    "char": "但",
+    "pinyin": "dàn",
+    "meaning": "but, however",
+    "hsk": 2,
+    "example": "但是 dànshì"
+  },
+  {
+    "id": 21,
+    "char": "还",
+    "pinyin": "hái",
+    "meaning": "still, also",
+    "hsk": 2,
+    "example": "还有 hái yǒu"
+  },
+  {
+    "id": 22,
+    "char": "都",
+    "pinyin": "dōu",
+    "meaning": "all, everyone",
+    "hsk": 2,
+    "example": "都是 dōu shì"
+  },
+  {
+    "id": 23,
+    "char": "很",
+    "pinyin": "hěn",
+    "meaning": "very, quite",
+    "hsk": 2,
+    "example": "很好 hěn hǎo"
+  },
+  {
+    "id": 24,
+    "char": "时",
+    "pinyin": "shí",
+    "meaning": "time, hour",
+    "hsk": 2,
+    "example": "时候 shíhou"
+  },
+  {
+    "id": 25,
+    "char": "候",
+    "pinyin": "hòu",
+    "meaning": "moment, to wait",
+    "hsk": 2,
+    "example": "时候 shíhou"
+  },
+  {
+    "id": 26,
+    "char": "知",
+    "pinyin": "zhī",
+    "meaning": "to know",
+    "hsk": 2,
+    "example": "知道 zhīdào"
+  },
+  {
+    "id": 27,
+    "char": "道",
+    "pinyin": "dào",
+    "meaning": "road, to say",
+    "hsk": 2,
+    "example": "知道 zhīdào"
+  },
+  {
+    "id": 28,
+    "char": "想",
+    "pinyin": "xiǎng",
+    "meaning": "to want, to think",
+    "hsk": 2,
+    "example": "想要 xiǎng yào"
+  },
+  {
+    "id": 29,
+    "char": "说",
+    "pinyin": "shuō",
+    "meaning": "to speak, to say",
+    "hsk": 2,
+    "example": "说话 shuōhuà"
+  },
+  {
+    "id": 30,
+    "char": "看",
+    "pinyin": "kàn",
+    "meaning": "to look, to see",
+    "hsk": 2,
+    "example": "看书 kàn shū"
+  },
+  {
+    "id": 31,
+    "char": "虽",
+    "pinyin": "suī",
+    "meaning": "although",
+    "hsk": 3,
+    "example": "虽然 suīrán"
+  },
+  {
+    "id": 32,
+    "char": "然",
+    "pinyin": "rán",
+    "meaning": "so, natural",
+    "hsk": 3,
+    "example": "虽然 suīrán"
+  },
+  {
+    "id": 33,
+    "char": "除",
+    "pinyin": "chú",
+    "meaning": "except, besides",
+    "hsk": 3,
+    "example": "除了 chúle"
+  },
+  {
+    "id": 34,
+    "char": "才",
+    "pinyin": "cái",
+    "meaning": "just, only then",
+    "hsk": 3,
+    "example": "才能 cáinéng"
+  },
+  {
+    "id": 35,
+    "char": "就",
+    "pinyin": "jiù",
+    "meaning": "then, right away",
+    "hsk": 3,
+    "example": "就是 jiùshì"
+  },
+  {
+    "id": 36,
+    "char": "已",
+    "pinyin": "yǐ",
+    "meaning": "already, to stop",
+    "hsk": 3,
+    "example": "已经 yǐjīng"
+  },
+  {
+    "id": 37,
+    "char": "经",
+    "pinyin": "jīng",
+    "meaning": "to pass, classic",
+    "hsk": 3,
+    "example": "已经 yǐjīng"
+  },
+  {
+    "id": 38,
+    "char": "对",
+    "pinyin": "duì",
+    "meaning": "correct, toward",
+    "hsk": 3,
+    "example": "对不起 duìbuqǐ"
+  },
+  {
+    "id": 39,
+    "char": "让",
+    "pinyin": "ràng",
+    "meaning": "to let, to make",
+    "hsk": 3,
+    "example": "让我 ràng wǒ"
+  },
+  {
+    "id": 40,
+    "char": "把",
+    "pinyin": "bǎ",
+    "meaning": "BA particle (object marker)",
+    "hsk": 3,
+    "example": "把书 bǎ shū"
+  },
+  {
+    "id": 41,
+    "char": "被",
+    "pinyin": "bèi",
+    "meaning": "passive particle",
+    "hsk": 3,
+    "example": "被打 bèi dǎ"
+  },
+  {
+    "id": 42,
+    "char": "着",
+    "pinyin": "zhe",
+    "meaning": "state particle",
+    "hsk": 3,
+    "example": "看着 kàn zhe"
+  },
+  {
+    "id": 43,
+    "char": "过",
+    "pinyin": "guò",
+    "meaning": "to pass, experience",
+    "hsk": 3,
+    "example": "过去 guòqù"
+  },
+  {
+    "id": 44,
+    "char": "起",
+    "pinyin": "qǐ",
+    "meaning": "to rise, together",
+    "hsk": 3,
+    "example": "起来 qǐlái"
+  },
+  {
+    "id": 45,
+    "char": "离",
+    "pinyin": "lí",
+    "meaning": "to separate, away from",
+    "hsk": 3,
+    "example": "离开 líkāi"
+  },
+  {
+    "id": 46,
+    "char": "向",
+    "pinyin": "xiàng",
+    "meaning": "toward, direction",
+    "hsk": 3,
+    "example": "向前 xiàng qián"
+  },
+  {
+    "id": 47,
+    "char": "比",
+    "pinyin": "bǐ",
+    "meaning": "to compare, than",
+    "hsk": 3,
+    "example": "比较 bǐjiào"
+  },
+  {
+    "id": 48,
+    "char": "像",
+    "pinyin": "xiàng",
+    "meaning": "to resemble, image",
+    "hsk": 3,
+    "example": "像你 xiàng nǐ"
+  },
+  {
+    "id": 49,
+    "char": "再",
+    "pinyin": "zài",
+    "meaning": "again, once more",
+    "hsk": 3,
+    "example": "再见 zàijiàn"
+  },
+  {
+    "id": 50,
+    "char": "又",
+    "pinyin": "yòu",
+    "meaning": "again, and also",
+    "hsk": 3,
+    "example": "又来 yòu lái"
+  }
+]
