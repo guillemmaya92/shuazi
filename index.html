@@ -395,12 +395,15 @@
 
     /* ── SPEAK BUTTON ── */
     .speak-btn {
-      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+      display:inline-flex; align-items:center; justify-content:center;
       width:30px; height:30px; padding:0; border-radius:50%;
       background:var(--blue-bg); border:1px solid rgba(100,160,230,.25);
       color:var(--blue);
       cursor:pointer; transition:opacity 140ms ease, transform 120ms ease;
       flex-shrink:0;
+      position:relative; z-index:10;
+      touch-action:manipulation;
+      -webkit-tap-highlight-color:rgba(100,160,230,.2);
     }
     .speak-btn:active { opacity:.65; transform:scale(.94); }
     .speak-btn svg { width:13px; height:13px; flex-shrink:0; }
