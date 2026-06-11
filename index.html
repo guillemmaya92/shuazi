@@ -169,16 +169,16 @@
     .card.snap  { transition:transform 260ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease; }
 
     .tint { position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; opacity:0; }
-    .tint-l { background:rgba(74,92,104,.25); }
+    .tint-l { background:rgba(143,164,176,.2); }
     .tint-r { background:var(--green-bg); }
     .tint-u { background:var(--blue-bg); }
     .chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.62rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
-    .chip-l { left:16px;  background:rgba(74,92,104,.3);  color:var(--muted); }
+    .chip-l { left:16px;  background:rgba(143,164,176,.25); color:var(--muted); }
     .chip-r { right:16px; background:var(--green-bg); color:var(--green); }
     .chip-u { left:50%; transform:translateX(-50%); top:18px; background:var(--blue-bg); color:var(--blue); }
 
     /* story bar */
-    .story-bar { position:relative; z-index:4; display:flex; gap:5px; padding:10px 14px 0; }
+    .story-bar { position:relative; z-index:4; display:flex; gap:5px; padding:14px 14px 0; }
     .seg { flex:1; height:3px; border-radius:2px; background:var(--bar-bg); }
     .seg.active { background:var(--bar-act); }
 
@@ -395,26 +395,6 @@
     .modal-words .word-item:last-child { border-bottom:none; }
     .modal-words .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
 
-    /* ── SPEAK BUTTON ── */
-    .speak-btn {
-      display:inline-flex; align-items:center; justify-content:center;
-      width:30px; height:30px; padding:0; border-radius:50%;
-      background:var(--blue-bg); border:1px solid rgba(100,160,230,.25);
-      color:var(--blue);
-      cursor:pointer; transition:opacity 140ms ease, transform 120ms ease;
-      flex-shrink:0;
-      position:relative; z-index:10;
-      touch-action:manipulation;
-      -webkit-tap-highlight-color:rgba(100,160,230,.2);
-    }
-    .speak-btn:active { opacity:.65; transform:scale(.94); }
-    .speak-btn svg { width:13px; height:13px; flex-shrink:0; }
-    .speak-btn.speaking { animation:speakPulse 600ms ease infinite alternate; }
-    @keyframes speakPulse { from{opacity:1} to{opacity:.5} }
-
-    /* Modal speak */
-    .modal-char-row { display:flex; align-items:center; justify-content:center; gap:12px; }
-
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
     }
@@ -447,7 +427,7 @@
       </header>
       <div class="deck-wrap"><div class="deck" id="deck"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span>← Skip</span><span>↑ Review · Tap/swipe</span><span>Known →</span>
+        <span>← Left</span><span>↑ Review · Tap</span><span>Known →</span>
       </div>
     </div>
 
@@ -494,9 +474,6 @@
     <div class="modal-handle"></div>
     <div class="modal-char-row">
       <div class="modal-char" id="modal-char"></div>
-      <button class="speak-btn" id="modal-speak-btn" aria-label="Pronounce">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      </button>
     </div>
     <div class="modal-meta" id="modal-meta"></div>
     <div class="modal-words-title">Compound words</div>
@@ -552,33 +529,6 @@ function parseWord(w){
 }
 
 /* ══════════════════════
-   SPEAK HANZI
-══════════════════════ */
-function speakHanzi(text, btn){
-  if(!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  function doSpeak(){
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'zh-CN';
-    utter.rate = 0.85;
-    const voices = window.speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => v.lang.startsWith('zh'));
-    if(zhVoice) utter.voice = zhVoice;
-    if(btn){ btn.classList.add('speaking'); utter.onend = () => btn.classList.remove('speaking'); }
-    window.speechSynthesis.speak(utter);
-  }
-  // Voices may not be loaded yet (especially on first call in Chrome/iOS)
-  const voices = window.speechSynthesis.getVoices();
-  if(voices.length > 0){
-    doSpeak();
-  } else {
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; doSpeak(); };
-    // Fallback: try anyway after 200ms in case onvoiceschanged never fires
-    setTimeout(doSpeak, 200);
-  }
-}
-
-/* ══════════════════════
    FLASHCARD ENGINE
 ══════════════════════ */
 const PAGES=2;
@@ -597,7 +547,7 @@ function makeCard(card,isStack){
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
     <div class="tint tint-u"></div>
-    <div class="chip chip-l">Skip</div>
+    <div class="chip chip-l">Left</div>
     <div class="chip chip-r">Known</div>
     <div class="chip chip-u">Review</div>
     <div class="story-bar">
@@ -619,9 +569,6 @@ function makeCard(card,isStack){
         <div class="card-bottom">
           <span class="tap-hint">Tap center to reveal</span>
           <div style="display:flex;align-items:center;gap:8px">
-            <button class="speak-btn speak-main" aria-label="Pronounce">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-            </button>
             <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
           </div>
         </div>
@@ -629,9 +576,6 @@ function makeCard(card,isStack){
       <div class="page info-page">
         <div class="hanzi-wrap" style="flex:0;padding:10px 0 4px;gap:12px">
           <div class="hanzi" style="font-size:80px">${card.char}</div>
-          <button class="speak-btn speak-info" aria-label="Pronounce">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          </button>
         </div>
         <div class="info-row">
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
@@ -675,14 +619,6 @@ function makeCard(card,isStack){
     }
   });
 
-  // Speak buttons — intercept at pointer level before card capture grabs them
-  ['.speak-main', '.speak-info'].forEach(sel => {
-    const btn = el.querySelector(sel);
-    btn.addEventListener('pointerdown', e => e.stopPropagation());
-    btn.addEventListener('pointerup',   e => { e.stopPropagation(); speakHanzi(card.char, btn); });
-    btn.addEventListener('click',       e => e.stopPropagation());
-  });
-
   if(!isStack) attachDrag(el);
   return el;
 }
@@ -705,40 +641,40 @@ function render(){
   deckEl.appendChild(makeCard(deck[0],false));
 }
 
-function classify(isKnown){
+function classifyKnown(){
   if(deck.length===0) return;
   const top=deckEl.querySelector('.card.top'); if(!top) return;
   top.classList.add('fly');
-  top.style.transform=`translateX(${isKnown?'140%':'-140%'}) rotate(${isKnown?16:-16}deg)`;
+  top.style.transform='translateX(140%) rotate(16deg)';
   top.style.opacity='0';
-  const card=deck[0];
-  deck.shift(); // quita la carta actual
-  if(isKnown){
-    known.add(card.char);
-    unknown.delete(card.char);
-    // ya no está en el deck
-  } else {
-    unknown.add(card.char);
-    known.delete(card.char);
-    // la reinserta en posición aleatoria (no la primera) para variedad
-    const pos = deck.length>1 ? 1+Math.floor(Math.random()*deck.length) : deck.length;
-    deck.splice(pos, 0, card);
-  }
+  const card=deck.shift();
+  known.add(card.char); unknown.delete(card.char);
   setTimeout(render, 210);
 }
 
-function classifyUp(){
-  // Mark as repaso (pending review) — same as left swipe was before
+function classifyLeft(){
+  if(deck.length===0) return;
+  const top=deckEl.querySelector('.card.top'); if(!top) return;
+  top.classList.add('fly');
+  top.style.transform='translateX(-140%) rotate(-16deg)';
+  top.style.opacity='0';
+  const card=deck.shift();
+  // Devuelve a "left": ni known ni review
+  known.delete(card.char); unknown.delete(card.char);
+  const pos=deck.length>1 ? 1+Math.floor(Math.random()*deck.length) : deck.length;
+  deck.splice(pos, 0, card);
+  setTimeout(render, 210);
+}
+
+function classifyReview(dirUp){
   if(deck.length===0) return;
   const top=deckEl.querySelector('.card.top'); if(!top) return;
   top.classList.add('fly');
   top.style.transform=`translateY(-140%) rotate(${(Math.random()-.5)*10}deg)`;
   top.style.opacity='0';
-  const card=deck[0];
-  deck.shift();
-  unknown.add(card.char);
-  known.delete(card.char);
-  const pos = deck.length>1 ? 1+Math.floor(Math.random()*deck.length) : deck.length;
+  const card=deck.shift();
+  unknown.add(card.char); known.delete(card.char);
+  const pos=deck.length>1 ? 1+Math.floor(Math.random()*deck.length) : deck.length;
   deck.splice(pos, 0, card);
   setTimeout(render, 210);
 }
@@ -748,7 +684,7 @@ function showDone(){
   el.innerHTML=`
     <div class="done-emoji">🎉</div>
     <h2>Session complete!</h2>
-    <p>Known: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Review: <strong style="color:var(--red)">${unknown.size}</strong></p>
+    <p>Known: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Review: <strong style="color:var(--blue)">${unknown.size}</strong></p>
     <div class="done-pills">
       <button class="pill" id="pW">Review hard ones</button>
       <button class="pill" id="pA">Reset all</button>
@@ -758,85 +694,61 @@ function showDone(){
   el.querySelector('#pA').onclick=()=>init(CARDS, true);
 }
 
+
 function attachDrag(cardEl){
-  const tl=cardEl.querySelector('.tint-l'),tr=cardEl.querySelector('.tint-r'),tu=cardEl.querySelector('.tint-u');
-  const cl=cardEl.querySelector('.chip-l'),cr=cardEl.querySelector('.chip-r'),cu=cardEl.querySelector('.chip-u');
-  let sx=0,sy=0,dx=0,dy=0,active=false,axisLocked=null;
+  const tl=cardEl.querySelector('.tint-l'), tr=cardEl.querySelector('.tint-r'), tu=cardEl.querySelector('.tint-u');
+  const cl=cardEl.querySelector('.chip-l'), cr=cardEl.querySelector('.chip-r'), cu=cardEl.querySelector('.chip-u');
+  let sx=0, sy=0, dx=0, dy=0, active=false, axis=null;
 
   function resetVisuals(){
     tl.style.opacity=tr.style.opacity=tu.style.opacity='0';
     cl.style.opacity=cr.style.opacity=cu.style.opacity='0';
   }
-
-  function start(x,y){
-    sx=x; sy=y; dx=0; dy=0; active=true; axisLocked=null;
-    cardEl.classList.remove('fly','snap');
-  }
-
-  function move(x,y){
-    if(!active) return;
-    dx=x-sx; dy=y-sy;
-
-    // Lock axis after 10px of movement
-    if(!axisLocked){
-      if(Math.abs(dx)>10||Math.abs(dy)>10){
-        axisLocked = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
-      } else {
-        return;
-      }
-    }
-
-    if(axisLocked==='y'){
-      // Only respond to upward swipe
-      if(dy>=0){ snap(); return; }
-      const dist=Math.min(1,Math.abs(dy)/100);
-      cardEl.style.transform=`translateY(${dy}px) rotate(${dx*0.02}deg)`;
-      cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dy)/360));
-      tu.style.opacity=String(dist*.85);
-      cu.style.opacity=Math.abs(dy)>50?'1':'0';
-      tl.style.opacity=tr.style.opacity='0';
-      cl.style.opacity=cr.style.opacity='0';
-    } else {
-      // Horizontal axis
-      cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.05}deg)`;
-      cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dx)/360));
-      const a=Math.min(1,Math.abs(dx)/120);
-      tl.style.opacity=dx<0?String(a*.85):'0';
-      tr.style.opacity=dx>0?String(a*.85):'0';
-      tu.style.opacity='0';
-      cl.style.opacity=dx<-50?'1':'0';
-      cr.style.opacity=dx>50?'1':'0';
-      cu.style.opacity='0';
-    }
-  }
-
-  function end(){
-    if(!active) return;
-    active=false;
-    if(axisLocked==='y'){
-      if(dy<-90){ classifyUp(); } else { snap(); }
-    } else if(axisLocked==='x'){
-      if(dx>100){ classify(true); }
-      // left swipe: skip — just snap back, do nothing
-      else { snap(); }
-    } else {
-      snap();
-    }
-  }
-
   function snap(){
     cardEl.classList.add('snap');
     cardEl.style.transform=''; cardEl.style.opacity='';
     resetVisuals();
   }
+  function onStart(x,y){
+    sx=x; sy=y; dx=0; dy=0; active=true; axis=null;
+    cardEl.classList.remove('fly','snap');
+  }
+  function onMove(x,y){
+    if(!active) return;
+    dx=x-sx; dy=y-sy;
+    if(!axis){
+      if(Math.abs(dx)>8||Math.abs(dy)>8)
+        axis = Math.abs(dy)>Math.abs(dx) ? 'y' : 'x';
+      else return;
+    }
+    if(axis==='y'){
+      if(dy>=0){ resetVisuals(); cardEl.style.transform=''; cardEl.style.opacity=''; return; }
+      const t=Math.min(1, Math.abs(dy)/100);
+      cardEl.style.transform=`translateY(${dy}px) rotate(${dx*0.01}deg)`;
+      cardEl.style.opacity=String(Math.max(.7, 1-Math.abs(dy)/360));
+      tu.style.opacity=String(t*.85); cu.style.opacity=Math.abs(dy)>50?'1':'0';
+      tl.style.opacity=tr.style.opacity='0'; cl.style.opacity=cr.style.opacity='0';
+    } else {
+      cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.05}deg)`;
+      cardEl.style.opacity=String(Math.max(.7, 1-Math.abs(dx)/360));
+      const a=Math.min(1, Math.abs(dx)/120);
+      tl.style.opacity=dx<0?String(a*.85):'0'; tr.style.opacity=dx>0?String(a*.85):'0';
+      cl.style.opacity=dx<-50?'1':'0'; cr.style.opacity=dx>50?'1':'0';
+      tu.style.opacity='0'; cu.style.opacity='0';
+    }
+  }
+  function onEnd(){
+    if(!active) return; active=false;
+    if(axis==='y'){
+      if(dy<-90) classifyReview(true); else snap();
+    } else if(axis==='x'){
+      if(dx>100) classifyKnown(); else if(dx<-100) classifyLeft(); else snap();
+    } else { snap(); }
+  }
 
-  cardEl.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.speak-btn')) return;
-    start(e.clientX,e.clientY);
-    cardEl.setPointerCapture(e.pointerId);
-  });
-  cardEl.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
-  cardEl.addEventListener('pointerup',()=>end());
+  cardEl.addEventListener('pointerdown', e=>{ onStart(e.clientX,e.clientY); cardEl.setPointerCapture(e.pointerId); });
+  cardEl.addEventListener('pointermove', e=>onMove(e.clientX,e.clientY));
+  cardEl.addEventListener('pointerup',   ()=>onEnd());
   cardEl.addEventListener('pointercancel',()=>{ active=false; snap(); });
 }
 
@@ -943,12 +855,6 @@ const backdrop=document.getElementById('modal-backdrop');
 const modalChar=document.getElementById('modal-char');
 const modalMeta=document.getElementById('modal-meta');
 const modalWords=document.getElementById('modal-words');
-const modalSpeakBtn=document.getElementById('modal-speak-btn');
-
-modalSpeakBtn.addEventListener('click', e=>{
-  e.stopPropagation();
-  speakHanzi(modalChar.textContent, modalSpeakBtn);
-});
 
 function openModal(card){
   modalChar.textContent=card.char;
@@ -1001,9 +907,9 @@ document.getElementById('themeBtnG').onclick=()=>setTheme(document.documentEleme
 /* keyboard */
 document.addEventListener('keydown',e=>{
   const top=deckEl.querySelector('.card.top'); if(!top) return;
-  if(e.key==='ArrowRight'||e.key.toLowerCase()==='d') classify(true);
-  else if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') classifyUp();
-  else if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a') { /* skip — do nothing */ }
+  if(e.key==='ArrowRight'||e.key.toLowerCase()==='d') classifyKnown();
+  else if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a') classifyLeft();
+  else if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') classifyReview(true);
   else if(e.key===' '){ e.preventDefault(); top.querySelector('.tz-center')?.click(); }
   else if(e.key==='i') top.querySelector('.tz-right')?.click();
 });
