@@ -552,19 +552,26 @@ function parseWord(w){
 function speakHanzi(text, btn){
   if(!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'zh-CN';
-  utter.rate = 0.85;
-  // Prefer a zh-CN voice if available
+  function doSpeak(){
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'zh-CN';
+    utter.rate = 0.85;
+    const voices = window.speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+    if(zhVoice) utter.voice = zhVoice;
+    if(btn){ btn.classList.add('speaking'); utter.onend = () => btn.classList.remove('speaking'); }
+    window.speechSynthesis.speak(utter);
+  }
+  // Voices may not be loaded yet (especially on first call in Chrome/iOS)
   const voices = window.speechSynthesis.getVoices();
-  const zhVoice = voices.find(v=>v.lang.startsWith('zh'));
-  if(zhVoice) utter.voice = zhVoice;
-  if(btn){ btn.classList.add('speaking'); utter.onend = ()=>btn.classList.remove('speaking'); }
-  window.speechSynthesis.speak(utter);
+  if(voices.length > 0){
+    doSpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; doSpeak(); };
+    // Fallback: try anyway after 200ms in case onvoiceschanged never fires
+    setTimeout(doSpeak, 200);
+  }
 }
-// Ensure voices are loaded (needed for some browsers)
-window.speechSynthesis.getVoices();
-window.speechSynthesis.onvoiceschanged = ()=>window.speechSynthesis.getVoices();
 
 /* ══════════════════════
    FLASHCARD ENGINE
@@ -661,14 +668,12 @@ function makeCard(card,isStack){
     }
   });
 
-  // Speak buttons
-  el.querySelector('.speak-main').addEventListener('click', e=>{
-    e.stopPropagation();
-    speakHanzi(card.char, e.currentTarget);
-  });
-  el.querySelector('.speak-info').addEventListener('click', e=>{
-    e.stopPropagation();
-    speakHanzi(card.char, e.currentTarget);
+  // Speak buttons — intercept at pointer level before card capture grabs them
+  ['.speak-main', '.speak-info'].forEach(sel => {
+    const btn = el.querySelector(sel);
+    btn.addEventListener('pointerdown', e => e.stopPropagation());
+    btn.addEventListener('pointerup',   e => { e.stopPropagation(); speakHanzi(card.char, btn); });
+    btn.addEventListener('click',       e => e.stopPropagation());
   });
 
   if(!isStack) attachDrag(el);
@@ -752,7 +757,11 @@ function attachDrag(cardEl){
     cardEl.style.transform=''; cardEl.style.opacity='';
     tl.style.opacity=tr.style.opacity='0'; cl.style.opacity=cr.style.opacity='0';
   }
-  cardEl.addEventListener('pointerdown',e=>{start(e.clientX,e.clientY);cardEl.setPointerCapture(e.pointerId);});
+  cardEl.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.speak-btn')) return;
+    start(e.clientX,e.clientY);
+    cardEl.setPointerCapture(e.pointerId);
+  });
   cardEl.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
   cardEl.addEventListener('pointerup',()=>end());
   cardEl.addEventListener('pointercancel',()=>{active=false;snap();});
