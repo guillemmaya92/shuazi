@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
@@ -393,6 +393,23 @@
     .modal-words .word-item:last-child { border-bottom:none; }
     .modal-words .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
 
+    /* ── SPEAK BUTTON ── */
+    .speak-btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+      width:30px; height:30px; padding:0; border-radius:50%;
+      background:var(--blue-bg); border:1px solid rgba(100,160,230,.25);
+      color:var(--blue);
+      cursor:pointer; transition:opacity 140ms ease, transform 120ms ease;
+      flex-shrink:0;
+    }
+    .speak-btn:active { opacity:.65; transform:scale(.94); }
+    .speak-btn svg { width:13px; height:13px; flex-shrink:0; }
+    .speak-btn.speaking { animation:speakPulse 600ms ease infinite alternate; }
+    @keyframes speakPulse { from{opacity:1} to{opacity:.5} }
+
+    /* Modal speak */
+    .modal-char-row { display:flex; align-items:center; justify-content:center; gap:12px; }
+
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
     }
@@ -415,17 +432,17 @@
           </div>
         </div>
         <div class="hdr-stats">
-          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l">Quedan</div></div>
-          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l">Conoce</div></div>
-          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l">Repasar</div></div>
-          <button class="icon-btn" id="themeBtn" aria-label="Tema">
+          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l">Left</div></div>
+          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l">Known</div></div>
+          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l">Review</div></div>
+          <button class="icon-btn" id="themeBtn" aria-label="Theme">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
         </div>
       </header>
       <div class="deck-wrap"><div class="deck" id="deck"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span>← No lo conozco</span><span>Toca · desliza</span><span>Lo conozco →</span>
+        <span>← Don't know</span><span>Tap · swipe</span><span>I know it →</span>
       </div>
     </div>
 
@@ -433,10 +450,10 @@
     <div class="screen" id="screen-groups">
       <div class="groups-header">
         <div>
-          <div class="groups-title">Grupos HSK</div>
-          <div class="groups-sub">Toca un carácter para ver detalles</div>
+          <div class="groups-title">HSK Groups</div>
+          <div class="groups-sub">Tap a character to see details</div>
         </div>
-        <button class="icon-btn" id="themeBtnG" aria-label="Tema">
+        <button class="icon-btn" id="themeBtnG" aria-label="Theme">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
       </div>
@@ -452,16 +469,16 @@
         <rect x="2" y="4" width="20" height="16" rx="3"/>
         <path d="M8 10h8M8 14h5"/>
       </svg>
-      <span>Tarjetas</span>
+      <span>Cards</span>
     </button>
-    <button class="tab" id="tab-groups" aria-label="Grupos HSK">
+    <button class="tab" id="tab-groups" aria-label="HSK Groups">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
         <rect x="14" y="3" width="7" height="7" rx="1.5"/>
         <rect x="3" y="14" width="7" height="7" rx="1.5"/>
         <rect x="14" y="14" width="7" height="7" rx="1.5"/>
       </svg>
-      <span>Grupos</span>
+      <span>Groups</span>
     </button>
   </nav>
 </div>
@@ -470,15 +487,20 @@
 <div class="modal-backdrop" id="modal-backdrop">
   <div class="modal" id="modal">
     <div class="modal-handle"></div>
-    <div class="modal-char" id="modal-char"></div>
+    <div class="modal-char-row">
+      <div class="modal-char" id="modal-char"></div>
+      <button class="speak-btn" id="modal-speak-btn" aria-label="Pronounce">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+    </div>
     <div class="modal-meta" id="modal-meta"></div>
-    <div class="modal-words-title">Palabras compuestas</div>
+    <div class="modal-words-title">Compound words</div>
     <div class="modal-words" id="modal-words"></div>
   </div>
 </div>
 
 <script>
-const CARDS = [{"char": "你", "pinyin": "nǐ", "meaning": "tú / usted", "hsk": 1, "example": "你好 nǐhǎo", "words": ["你好 nǐhǎo · hola", "你们 nǐmen · vosotros", "你的 nǐ de · tuyo"]}, {"char": "好", "pinyin": "hǎo", "meaning": "bueno, bien", "hsk": 1, "example": "很好 hěn hǎo", "words": ["你好 nǐhǎo · hola", "好看 hǎokàn · bonito", "爱好 àihào · afición"]}, {"char": "我", "pinyin": "wǒ", "meaning": "yo", "hsk": 1, "example": "我是 wǒ shì", "words": ["我们 wǒmen · nosotros", "我的 wǒ de · mío", "自我 zìwǒ · uno mismo"]}, {"char": "是", "pinyin": "shì", "meaning": "ser / estar", "hsk": 1, "example": "我是 wǒ shì", "words": ["是不是 shìbushì · ¿es o no?", "就是 jiùshì · precisamente", "可是 kěshì · pero"]}, {"char": "不", "pinyin": "bù", "meaning": "no (negación)", "hsk": 1, "example": "不好 bù hǎo", "words": ["不是 búshì · no es", "不要 búyào · no querer", "不客气 búkèqi · de nada"]}, {"char": "他", "pinyin": "tā", "meaning": "él", "hsk": 1, "example": "他们 tāmen", "words": ["他们 tāmen · ellos", "他的 tā de · suyo", "他人 tārén · otra persona"]}, {"char": "她", "pinyin": "tā", "meaning": "ella", "hsk": 1, "example": "她好 tā hǎo", "words": ["她们 tāmen · ellas", "她的 tā de · suya", "她家 tā jiā · su casa"]}, {"char": "们", "pinyin": "men", "meaning": "sufijo plural", "hsk": 1, "example": "我们 wǒmen", "words": ["我们 wǒmen · nosotros", "你们 nǐmen · vosotros", "他们 tāmen · ellos"]}, {"char": "的", "pinyin": "de", "meaning": "partícula posesiva", "hsk": 1, "example": "我的 wǒ de", "words": ["你的 nǐ de · tuyo", "我的 wǒ de · mío", "好的 hǎo de · vale"]}, {"char": "了", "pinyin": "le", "meaning": "partícula aspectual", "hsk": 1, "example": "来了 lái le", "words": ["好了 hǎo le · ya está", "下雨了 xiàyǔ le · ha llovido", "到了 dào le · llegó"]}, {"char": "人", "pinyin": "rén", "meaning": "persona, gente", "hsk": 1, "example": "中国人 Zhōngguórén", "words": ["男人 nánrén · hombre", "女人 nǚrén · mujer", "别人 biérén · otra persona"]}, {"char": "中", "pinyin": "zhōng", "meaning": "centro, China", "hsk": 1, "example": "中国 Zhōngguó", "words": ["中国 Zhōngguó · China", "中间 zhōngjiān · medio", "中文 Zhōngwén · chino"]}, {"char": "国", "pinyin": "guó", "meaning": "país, nación", "hsk": 1, "example": "中国 Zhōngguó", "words": ["国家 guójiā · país", "中国 Zhōngguó · China", "外国 wàiguó · extranjero"]}, {"char": "来", "pinyin": "lái", "meaning": "venir", "hsk": 1, "example": "过来 guòlai", "words": ["回来 huílai · volver", "过来 guòlai · ven aquí", "原来 yuánlái · resulta que"]}, {"char": "大", "pinyin": "dà", "meaning": "grande", "hsk": 1, "example": "大学 dàxué", "words": ["大学 dàxué · universidad", "大家 dàjiā · todos", "大人 dàrén · adulto"]}, {"char": "因", "pinyin": "yīn", "meaning": "causa, porque", "hsk": 2, "example": "因为 yīnwèi", "words": ["因为 yīnwèi · porque", "原因 yuányīn · razón", "因此 yīncǐ · por eso"]}, {"char": "为", "pinyin": "wèi", "meaning": "por, para", "hsk": 2, "example": "因为 yīnwèi", "words": ["为了 wèile · para", "因为 yīnwèi · porque", "认为 rènwéi · considerar"]}, {"char": "所", "pinyin": "suǒ", "meaning": "lugar, lo que", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · por eso", "所有 suǒyǒu · todo", "厕所 cèsuǒ · baño"]}, {"char": "以", "pinyin": "yǐ", "meaning": "usar, con", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · por eso", "可以 kěyǐ · poder", "以后 yǐhòu · después"]}, {"char": "但", "pinyin": "dàn", "meaning": "pero, sin embargo", "hsk": 2, "example": "但是 dànshì", "words": ["但是 dànshì · pero", "不但 bùdàn · no solo", "但愿 dànyuàn · ojalá"]}, {"char": "还", "pinyin": "hái", "meaning": "todavía, también", "hsk": 2, "example": "还有 hái yǒu", "words": ["还是 háishì · todavía / o", "还有 hái yǒu · además", "还好 háihǎo · menos mal"]}, {"char": "都", "pinyin": "dōu", "meaning": "todo, todos", "hsk": 2, "example": "都是 dōu shì", "words": ["都好 dōu hǎo · todo bien", "首都 shǒudū · capital", "都市 dūshì · ciudad"]}, {"char": "很", "pinyin": "hěn", "meaning": "muy, bastante", "hsk": 2, "example": "很好 hěn hǎo", "words": ["很好 hěn hǎo · muy bien", "很多 hěn duō · mucho", "很快 hěn kuài · muy rápido"]}, {"char": "时", "pinyin": "shí", "meaning": "tiempo, hora", "hsk": 2, "example": "时候 shíhou", "words": ["时间 shíjiān · tiempo", "时候 shíhou · momento", "小时 xiǎoshí · hora"]}, {"char": "候", "pinyin": "hòu", "meaning": "momento, esperar", "hsk": 2, "example": "时候 shíhou", "words": ["时候 shíhou · momento", "气候 qìhòu · clima", "问候 wènhòu · saludar"]}, {"char": "知", "pinyin": "zhī", "meaning": "saber, conocer", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · saber", "知识 zhīshi · conocimiento", "通知 tōngzhī · notificar"]}, {"char": "道", "pinyin": "dào", "meaning": "camino, decir", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · saber", "道路 dàolù · camino", "道理 dàoli · lógica"]}, {"char": "想", "pinyin": "xiǎng", "meaning": "querer, pensar", "hsk": 2, "example": "想要 xiǎng yào", "words": ["想要 xiǎngyào · querer", "想法 xiǎngfǎ · idea", "理想 lǐxiǎng · ideal"]}, {"char": "说", "pinyin": "shuō", "meaning": "hablar, decir", "hsk": 2, "example": "说话 shuōhuà", "words": ["说话 shuōhuà · hablar", "小说 xiǎoshuō · novela", "说明 shuōmíng · explicar"]}, {"char": "看", "pinyin": "kàn", "meaning": "mirar, ver", "hsk": 2, "example": "看书 kàn shū", "words": ["看见 kànjiàn · ver", "好看 hǎokàn · bonito", "看法 kànfǎ · opinión"]}, {"char": "虽", "pinyin": "suī", "meaning": "aunque", "hsk": 3, "example": "虽然 suīrán", "words": ["虽然 suīrán · aunque", "虽说 suīshuō · aunque se diga"]}, {"char": "然", "pinyin": "rán", "meaning": "así, natural", "hsk": 3, "example": "虽然 suīrán", "words": ["然后 ránhòu · después", "当然 dāngrán · por supuesto", "自然 zìrán · naturaleza"]}, {"char": "除", "pinyin": "chú", "meaning": "excepto, además", "hsk": 3, "example": "除了 chúle", "words": ["除了 chúle · excepto", "除非 chúfēi · a menos que", "消除 xiāochú · eliminar"]}, {"char": "才", "pinyin": "cái", "meaning": "recién, solo", "hsk": 3, "example": "才能 cáinéng", "words": ["才好 cái hǎo · solo entonces", "刚才 gāngcái · hace un momento", "人才 réncái · talento"]}, {"char": "就", "pinyin": "jiù", "meaning": "entonces, enseguida", "hsk": 3, "example": "就是 jiùshì", "words": ["就是 jiùshì · precisamente", "就要 jiùyào · estar a punto", "成就 chéngjiù · logro"]}, {"char": "已", "pinyin": "yǐ", "meaning": "ya, cesar", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · ya", "已婚 yǐhūn · casado", "而已 éryǐ · nada más"]}, {"char": "经", "pinyin": "jīng", "meaning": "pasar, clásico", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · ya", "经过 jīngguò · pasar por", "经常 jīngcháng · a menudo"]}, {"char": "对", "pinyin": "duì", "meaning": "correcto, hacia", "hsk": 3, "example": "对不起 duìbuqǐ", "words": ["对不起 duìbuqǐ · perdón", "对话 duìhuà · diálogo", "面对 miànduì · afrontar"]}, {"char": "让", "pinyin": "ràng", "meaning": "dejar, hacer que", "hsk": 3, "example": "让我 ràng wǒ", "words": ["让开 ràngkāi · apartarse", "让给 rànggěi · ceder", "转让 zhuǎnràng · transferir"]}, {"char": "把", "pinyin": "bǎ", "meaning": "partícula BA (objeto)", "hsk": 3, "example": "把书 bǎ shū", "words": ["把手 bǎshou · asa", "把门 bǎ mén · vigilar puerta", "火把 huǒbǎ · antorcha"]}, {"char": "被", "pinyin": "bèi", "meaning": "partícula pasiva", "hsk": 3, "example": "被打 bèi dǎ", "words": ["被子 bèizi · manta", "被动 bèidòng · pasivo", "被告 bèigào · acusado"]}, {"char": "着", "pinyin": "zhe", "meaning": "partícula de estado", "hsk": 3, "example": "看着 kàn zhe", "words": ["看着 kànzhe · mirando", "穿着 chuānzhuó · vestimenta", "接着 jiēzhe · a continuación"]}, {"char": "过", "pinyin": "guò", "meaning": "pasar, experiencia", "hsk": 3, "example": "过去 guòqù", "words": ["过去 guòqù · pasado", "过来 guòlai · venir", "超过 chāoguò · superar"]}, {"char": "起", "pinyin": "qǐ", "meaning": "levantarse, juntos", "hsk": 3, "example": "起来 qǐlái", "words": ["起来 qǐlái · levantarse", "一起 yìqǐ · juntos", "引起 yǐnqǐ · causar"]}, {"char": "离", "pinyin": "lí", "meaning": "separarse, lejos de", "hsk": 3, "example": "离开 líkāi", "words": ["离开 líkāi · irse", "距离 jùlí · distancia", "分离 fēnlí · separarse"]}, {"char": "向", "pinyin": "xiàng", "meaning": "hacia, dirección", "hsk": 3, "example": "向前 xiàng qián", "words": ["向前 xiàngqián · hacia delante", "方向 fāngxiàng · dirección", "一向 yíxiàng · siempre"]}, {"char": "比", "pinyin": "bǐ", "meaning": "comparar, que (comp.)", "hsk": 3, "example": "比较 bǐjiào", "words": ["比较 bǐjiào · comparar", "比赛 bǐsài · competición", "比如 bǐrú · por ejemplo"]}, {"char": "像", "pinyin": "xiàng", "meaning": "parecerse, imagen", "hsk": 3, "example": "像你 xiàng nǐ", "words": ["画像 huàxiàng · retrato", "好像 hǎoxiàng · parecer", "像样 xiàngyàng · decente"]}, {"char": "再", "pinyin": "zài", "meaning": "de nuevo, otra vez", "hsk": 3, "example": "再见 zàijiàn", "words": ["再见 zàijiàn · adiós", "再次 zàicì · otra vez", "再说 zàishuō · ya veremos"]}, {"char": "又", "pinyin": "yòu", "meaning": "otra vez, y también", "hsk": 3, "example": "又来 yòu lái", "words": ["又要 yòuyào · otra vez querer", "又是 yòushì · otra vez es", "又好又快 yòu hǎo yòu kuài · bueno y rápido"]}];
+const CARDS = [{"char": "你", "pinyin": "nǐ", "meaning": "you / you (formal)", "hsk": 1, "example": "你好 nǐhǎo", "words": ["你好 nǐhǎo · hello", "你们 nǐmen · you (plural)", "你的 nǐ de · yours"]}, {"char": "好", "pinyin": "hǎo", "meaning": "good, well", "hsk": 1, "example": "很好 hěn hǎo", "words": ["你好 nǐhǎo · hello", "好看 hǎokàn · pretty", "爱好 àihào · hobby"]}, {"char": "我", "pinyin": "wǒ", "meaning": "I, me", "hsk": 1, "example": "我是 wǒ shì", "words": ["我们 wǒmen · we, us", "我的 wǒ de · mine", "自我 zìwǒ · oneself"]}, {"char": "是", "pinyin": "shì", "meaning": "to be", "hsk": 1, "example": "我是 wǒ shì", "words": ["是不是 shìbushì · is it or not?", "就是 jiùshì · precisely", "可是 kěshì · but"]}, {"char": "不", "pinyin": "bù", "meaning": "no (negation)", "hsk": 1, "example": "不好 bù hǎo", "words": ["不是 búshì · is not", "不要 búyào · to not want", "不客气 búkèqi · you're welcome"]}, {"char": "他", "pinyin": "tā", "meaning": "he, him", "hsk": 1, "example": "他们 tāmen", "words": ["他们 tāmen · them (m)", "他的 tā de · his", "他人 tārén · another person"]}, {"char": "她", "pinyin": "tā", "meaning": "she, her", "hsk": 1, "example": "她好 tā hǎo", "words": ["她们 tāmen · them (f)", "她的 tā de · hers", "她家 tā jiā · her home"]}, {"char": "们", "pinyin": "men", "meaning": "plural suffix", "hsk": 1, "example": "我们 wǒmen", "words": ["我们 wǒmen · we, us", "你们 nǐmen · you (plural)", "他们 tāmen · them (m)"]}, {"char": "的", "pinyin": "de", "meaning": "possessive particle", "hsk": 1, "example": "我的 wǒ de", "words": ["你的 nǐ de · yours", "我的 wǒ de · mine", "好的 hǎo de · okay"]}, {"char": "了", "pinyin": "le", "meaning": "aspect particle", "hsk": 1, "example": "来了 lái le", "words": ["好了 hǎo le · that's it", "下雨了 xiàyǔ le · it has rained", "到了 dào le · arrived"]}, {"char": "人", "pinyin": "rén", "meaning": "person, people", "hsk": 1, "example": "中国人 Zhōngguórén", "words": ["男人 nánrén · man", "女人 nǚrén · woman", "别人 biérén · another person"]}, {"char": "中", "pinyin": "zhōng", "meaning": "center, China", "hsk": 1, "example": "中国 Zhōngguó", "words": ["中国 Zhōngguó · China", "中间 zhōngjiān · middle", "中文 Zhōngwén · Chinese"]}, {"char": "国", "pinyin": "guó", "meaning": "country, nation", "hsk": 1, "example": "中国 Zhōngguó", "words": ["国家 guójiā · país", "中国 Zhōngguó · China", "外国 wàiguó · foreign"]}, {"char": "来", "pinyin": "lái", "meaning": "to come", "hsk": 1, "example": "过来 guòlai", "words": ["回来 huílai · to return", "过来 guòlai · come here", "原来 yuánlái · it turns out"]}, {"char": "大", "pinyin": "dà", "meaning": "big, large", "hsk": 1, "example": "大学 dàxué", "words": ["大学 dàxué · university", "大家 dàjiā · everyone", "大人 dàrén · adult"]}, {"char": "因", "pinyin": "yīn", "meaning": "cause, because", "hsk": 2, "example": "因为 yīnwèi", "words": ["因为 yīnwèi · because", "原因 yuányīn · reason", "因此 yīncǐ · therefore"]}, {"char": "为", "pinyin": "wèi", "meaning": "for, because of", "hsk": 2, "example": "因为 yīnwèi", "words": ["为了 wèile · for", "因为 yīnwèi · because", "认为 rènwéi · to consider"]}, {"char": "所", "pinyin": "suǒ", "meaning": "place, that which", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · therefore", "所有 suǒyǒu · everything", "厕所 cèsuǒ · bathroom"]}, {"char": "以", "pinyin": "yǐ", "meaning": "to use, with", "hsk": 2, "example": "所以 suǒyǐ", "words": ["所以 suǒyǐ · therefore", "可以 kěyǐ · to be able", "以后 yǐhòu · after, later"]}, {"char": "但", "pinyin": "dàn", "meaning": "but, however", "hsk": 2, "example": "但是 dànshì", "words": ["但是 dànshì · but", "不但 bùdàn · not only", "但愿 dànyuàn · hopefully"]}, {"char": "还", "pinyin": "hái", "meaning": "still, also", "hsk": 2, "example": "还有 hái yǒu", "words": ["还是 háishì · still / or", "还有 hái yǒu · furthermore", "还好 háihǎo · thank goodness"]}, {"char": "都", "pinyin": "dōu", "meaning": "all, everyone", "hsk": 2, "example": "都是 dōu shì", "words": ["都好 dōu hǎo · all good", "首都 shǒudū · capital city", "都市 dūshì · city"]}, {"char": "很", "pinyin": "hěn", "meaning": "very, quite", "hsk": 2, "example": "很好 hěn hǎo", "words": ["很好 hěn hǎo · very good", "很多 hěn duō · a lot", "很快 hěn kuài · very fast"]}, {"char": "时", "pinyin": "shí", "meaning": "time, hour", "hsk": 2, "example": "时候 shíhou", "words": ["时间 shíjiān · time", "时候 shíhou · moment", "小时 xiǎoshí · hour"]}, {"char": "候", "pinyin": "hòu", "meaning": "moment, to wait", "hsk": 2, "example": "时候 shíhou", "words": ["时候 shíhou · moment", "气候 qìhòu · climate", "问候 wènhòu · to greet"]}, {"char": "知", "pinyin": "zhī", "meaning": "to know", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · to know", "知识 zhīshi · knowledge", "通知 tōngzhī · to notify"]}, {"char": "道", "pinyin": "dào", "meaning": "road, to say", "hsk": 2, "example": "知道 zhīdào", "words": ["知道 zhīdào · to know", "道路 dàolù · road, path", "道理 dàoli · logic"]}, {"char": "想", "pinyin": "xiǎng", "meaning": "to want, to think", "hsk": 2, "example": "想要 xiǎng yào", "words": ["想要 xiǎngyào · to want", "想法 xiǎngfǎ · idea", "理想 lǐxiǎng · ideal"]}, {"char": "说", "pinyin": "shuō", "meaning": "to speak, to say", "hsk": 2, "example": "说话 shuōhuà", "words": ["说话 shuōhuà · to talk", "小说 xiǎoshuō · novel", "说明 shuōmíng · to explain"]}, {"char": "看", "pinyin": "kàn", "meaning": "to look, to see", "hsk": 2, "example": "看书 kàn shū", "words": ["看见 kànjiàn · to see", "好看 hǎokàn · pretty", "看法 kànfǎ · opinion"]}, {"char": "虽", "pinyin": "suī", "meaning": "although", "hsk": 3, "example": "虽然 suīrán", "words": ["虽然 suīrán · although", "虽说 suīshuō · even if said"]}, {"char": "然", "pinyin": "rán", "meaning": "so, natural", "hsk": 3, "example": "虽然 suīrán", "words": ["然后 ránhòu · after, later", "当然 dāngrán · of course", "自然 zìrán · nature"]}, {"char": "除", "pinyin": "chú", "meaning": "except, besides", "hsk": 3, "example": "除了 chúle", "words": ["除了 chúle · except", "除非 chúfēi · unless", "消除 xiāochú · to eliminate"]}, {"char": "才", "pinyin": "cái", "meaning": "just, only then", "hsk": 3, "example": "才能 cáinéng", "words": ["才好 cái hǎo · only then", "刚才 gāngcái · a moment ago", "人才 réncái · talent"]}, {"char": "就", "pinyin": "jiù", "meaning": "then, right away", "hsk": 3, "example": "就是 jiùshì", "words": ["就是 jiùshì · precisely", "就要 jiùyào · to be about to", "成就 chéngjiù · achievement"]}, {"char": "已", "pinyin": "yǐ", "meaning": "already, to stop", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · already", "已婚 yǐhūn · married", "而已 éryǐ · nothing more"]}, {"char": "经", "pinyin": "jīng", "meaning": "to pass, classic", "hsk": 3, "example": "已经 yǐjīng", "words": ["已经 yǐjīng · already", "经过 jīngguò · to pass through", "经常 jīngcháng · often"]}, {"char": "对", "pinyin": "duì", "meaning": "correct, toward", "hsk": 3, "example": "对不起 duìbuqǐ", "words": ["对不起 duìbuqǐ · sorry", "对话 duìhuà · dialogue", "面对 miànduì · to face"]}, {"char": "让", "pinyin": "ràng", "meaning": "to let, to make", "hsk": 3, "example": "让我 ràng wǒ", "words": ["让开 ràngkāi · to step aside", "让给 rànggěi · to yield", "转让 zhuǎnràng · to transfer"]}, {"char": "把", "pinyin": "bǎ", "meaning": "BA particle (object marker)", "hsk": 3, "example": "把书 bǎ shū", "words": ["把手 bǎshou · handle", "把门 bǎ mén · to guard door", "火把 huǒbǎ · torch"]}, {"char": "被", "pinyin": "bèi", "meaning": "passive particle", "hsk": 3, "example": "被打 bèi dǎ", "words": ["被子 bèizi · blanket", "被动 bèidòng · passive", "被告 bèigào · accused"]}, {"char": "着", "pinyin": "zhe", "meaning": "state particle", "hsk": 3, "example": "看着 kàn zhe", "words": ["看着 kànzhe · watching", "穿着 chuānzhuó · clothing", "接着 jiēzhe · next, then"]}, {"char": "过", "pinyin": "guò", "meaning": "to pass, experience", "hsk": 3, "example": "过去 guòqù", "words": ["过去 guòqù · past", "过来 guòlai · to come", "超过 chāoguò · to surpass"]}, {"char": "起", "pinyin": "qǐ", "meaning": "to rise, together", "hsk": 3, "example": "起来 qǐlái", "words": ["起来 qǐlái · to stand up", "一起 yìqǐ · together", "引起 yǐnqǐ · to cause"]}, {"char": "离", "pinyin": "lí", "meaning": "to separate, away from", "hsk": 3, "example": "离开 líkāi", "words": ["离开 líkāi · to leave", "距离 jùlí · distance", "分离 fēnlí · to separate"]}, {"char": "向", "pinyin": "xiàng", "meaning": "toward, direction", "hsk": 3, "example": "向前 xiàng qián", "words": ["向前 xiàngqián · forward", "方向 fāngxiàng · direction", "一向 yíxiàng · always"]}, {"char": "比", "pinyin": "bǐ", "meaning": "to compare, than", "hsk": 3, "example": "比较 bǐjiào", "words": ["比较 bǐjiào · to compare", "比赛 bǐsài · competition", "比如 bǐrú · for example"]}, {"char": "像", "pinyin": "xiàng", "meaning": "to resemble, image", "hsk": 3, "example": "像你 xiàng nǐ", "words": ["画像 huàxiàng · portrait", "好像 hǎoxiàng · to seem", "像样 xiàngyàng · decent"]}, {"char": "再", "pinyin": "zài", "meaning": "again, once more", "hsk": 3, "example": "再见 zàijiàn", "words": ["再见 zàijiàn · goodbye", "再次 zàicì · again", "再说 zàishuō · we'll see"]}, {"char": "又", "pinyin": "yòu", "meaning": "again, and also", "hsk": 3, "example": "又来 yòu lái", "words": ["又要 yòuyào · to want again", "又是 yòushì · it is again", "又好又快 yòu hǎo yòu kuài · good and fast"]}];
 
 /* ── PERSISTENCE ── */
 const STORE_KEY = 'shuazi-v1';
@@ -525,6 +547,26 @@ function parseWord(w){
 }
 
 /* ══════════════════════
+   SPEAK HANZI
+══════════════════════ */
+function speakHanzi(text, btn){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = 0.85;
+  // Prefer a zh-CN voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const zhVoice = voices.find(v=>v.lang.startsWith('zh'));
+  if(zhVoice) utter.voice = zhVoice;
+  if(btn){ btn.classList.add('speaking'); utter.onend = ()=>btn.classList.remove('speaking'); }
+  window.speechSynthesis.speak(utter);
+}
+// Ensure voices are loaded (needed for some browsers)
+window.speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged = ()=>window.speechSynthesis.getVoices();
+
+/* ══════════════════════
    FLASHCARD ENGINE
 ══════════════════════ */
 const PAGES=2;
@@ -542,8 +584,8 @@ function makeCard(card,isStack){
   el.innerHTML=`
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
-    <div class="chip chip-l">Repasar</div>
-    <div class="chip chip-r">Conocido</div>
+    <div class="chip chip-l">Review</div>
+    <div class="chip chip-r">Known</div>
     <div class="story-bar">
       <div class="seg active" data-i="0"></div>
       <div class="seg"        data-i="1"></div>
@@ -561,18 +603,28 @@ function makeCard(card,isStack){
         <div class="hanzi-wrap"><div class="hanzi">${card.char}</div></div>
         <div class="answer-area" id="aa"></div>
         <div class="card-bottom">
-          <span class="tap-hint">Toca centro para respuesta</span>
-          <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+          <span class="tap-hint">Tap center to reveal</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="speak-btn speak-main" aria-label="Pronounce">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            </button>
+            <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+          </div>
         </div>
       </div>
       <div class="page info-page">
-        <div class="hanzi-wrap" style="flex:0;padding:10px 0 4px"><div class="hanzi" style="font-size:80px">${card.char}</div></div>
+        <div class="hanzi-wrap" style="flex:0;padding:10px 0 4px;gap:12px">
+          <div class="hanzi" style="font-size:80px">${card.char}</div>
+          <button class="speak-btn speak-info" aria-label="Pronounce">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+        </div>
         <div class="info-row">
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
-          <div class="info-cell"><div class="lbl">Nivel</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
-          <div class="info-cell full"><div class="lbl">Significado</div><div class="val">${card.meaning}</div></div>
+          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+          <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
         </div>
-        <div class="words-title">Palabras compuestas</div>
+        <div class="words-title">Compound words</div>
         <div class="words-list">${wordsHTML}</div>
       </div>
     </div>
@@ -603,10 +655,20 @@ function makeCard(card,isStack){
       aa.innerHTML=`<div class="answer-block">
         <div class="ans-pinyin">${card.pinyin}</div>
         <div class="ans-meaning">${card.meaning}</div>
-        <div class="ans-example"><span>Ejemplo</span>${card.example}</div>
-        <div class="ans-hint">Toca lateral → para más info</div>
+        <div class="ans-example"><span>Example</span>${card.example}</div>
+        <div class="ans-hint">Tap right → for more info</div>
       </div>`;
     }
+  });
+
+  // Speak buttons
+  el.querySelector('.speak-main').addEventListener('click', e=>{
+    e.stopPropagation();
+    speakHanzi(card.char, e.currentTarget);
+  });
+  el.querySelector('.speak-info').addEventListener('click', e=>{
+    e.stopPropagation();
+    speakHanzi(card.char, e.currentTarget);
   });
 
   if(!isStack) attachDrag(el);
@@ -657,11 +719,11 @@ function showDone(){
   const el=document.createElement('div'); el.className='done';
   el.innerHTML=`
     <div class="done-emoji">🎉</div>
-    <h2>¡Sesión terminada!</h2>
-    <p>Conocidos: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Repasar: <strong style="color:var(--red)">${unknown.size}</strong></p>
+    <h2>Session complete!</h2>
+    <p>Known: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Review: <strong style="color:var(--red)">${unknown.size}</strong></p>
     <div class="done-pills">
-      <button class="pill" id="pW">Repasar difíciles</button>
-      <button class="pill" id="pA">Reiniciar todo</button>
+      <button class="pill" id="pW">Review hard ones</button>
+      <button class="pill" id="pA">Reset all</button>
     </div>`;
   deckEl.appendChild(el);
   el.querySelector('#pW').onclick=()=>{ deck=buildDeck(CARDS); render(); };
@@ -720,7 +782,7 @@ function renderGroups(){
       <div class="hsk-group-header">
         <div class="hsk-group-label">
           <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
-          <span class="count">${knownCount}/${group.length} conocidos</span>
+          <span class="count">${knownCount}/${group.length} known</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="hsk-prog-bar"><div class="hsk-prog-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
@@ -772,7 +834,7 @@ function renderGroups(){
           saveState();
           const newKnownCount=group.filter(c=>known.has(c.char)).length;
           const newPct=group.length?Math.round(newKnownCount/group.length*100):0;
-          div.querySelector('.count').textContent=`${newKnownCount}/${group.length} conocidos`;
+          div.querySelector('.count').textContent=`${newKnownCount}/${group.length} known`;
           div.querySelector('.hsk-prog-fill').style.width=newPct+'%';
           vKnown.textContent=known.size;
           vRepaso.textContent=unknown.size;
@@ -799,14 +861,20 @@ const backdrop=document.getElementById('modal-backdrop');
 const modalChar=document.getElementById('modal-char');
 const modalMeta=document.getElementById('modal-meta');
 const modalWords=document.getElementById('modal-words');
+const modalSpeakBtn=document.getElementById('modal-speak-btn');
+
+modalSpeakBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  speakHanzi(modalChar.textContent, modalSpeakBtn);
+});
 
 function openModal(card){
   modalChar.textContent=card.char;
   modalMeta.innerHTML=`
     <div class="modal-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
-    <div class="modal-cell"><div class="lbl">Nivel</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
-    <div class="modal-cell full"><div class="lbl">Significado</div><div class="val">${card.meaning}</div></div>
-    <div class="modal-cell full"><div class="lbl">Ejemplo</div><div class="val">${card.example}</div></div>
+    <div class="modal-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+    <div class="modal-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
+    <div class="modal-cell full"><div class="lbl">Example</div><div class="val">${card.example}</div></div>
   `;
   modalWords.innerHTML=card.words.map(w=>{
     const p=parseWord(w);
