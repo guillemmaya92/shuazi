@@ -138,7 +138,7 @@
     .st .v { font-size:.92rem; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
     .st .l { font-size:.56rem; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); }
     #sKnown .v  { color:var(--green); }
-    #sRepaso .v { color:var(--red); }
+    #sRepaso .v { color:var(--blue); }
     .icon-btn {
       width:28px; height:28px; display:grid; place-items:center;
       border-radius:50%; background:var(--surf); border:1px solid var(--bdr); color:var(--muted);
@@ -169,11 +169,13 @@
     .card.snap  { transition:transform 260ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease; }
 
     .tint { position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; opacity:0; }
-    .tint-l { background:var(--red-bg); }
+    .tint-l { background:rgba(74,92,104,.25); }
     .tint-r { background:var(--green-bg); }
+    .tint-u { background:var(--blue-bg); }
     .chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.62rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
-    .chip-l { left:16px;  background:var(--red-bg);   color:var(--red);   }
+    .chip-l { left:16px;  background:rgba(74,92,104,.3);  color:var(--muted); }
     .chip-r { right:16px; background:var(--green-bg); color:var(--green); }
+    .chip-u { left:50%; transform:translateX(-50%); top:18px; background:var(--blue-bg); color:var(--blue); }
 
     /* story bar */
     .story-bar { position:relative; z-index:4; display:flex; gap:5px; padding:10px 14px 0; }
@@ -349,10 +351,10 @@
     .char-tile.known .tc { color:var(--green); -webkit-text-fill-color:var(--green); }
     .char-tile.known .tp { color:var(--green); opacity:.6; }
     .char-tile.repaso {
-      background:var(--red-bg); border-color:rgba(217,112,90,.3);
+      background:var(--blue-bg); border-color:rgba(100,160,230,.3);
     }
-    .char-tile.repaso .tc { color:var(--red); -webkit-text-fill-color:var(--red); }
-    .char-tile.repaso .tp { color:var(--red); opacity:.6; }
+    .char-tile.repaso .tc { color:var(--blue); -webkit-text-fill-color:var(--blue); }
+    .char-tile.repaso .tp { color:var(--blue); opacity:.6; }
     .char-tile .toggle-btn { display:none; }
 
     /* char detail modal */
@@ -445,7 +447,7 @@
       </header>
       <div class="deck-wrap"><div class="deck" id="deck"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span>← Don't know</span><span>Tap · swipe</span><span>I know it →</span>
+        <span>← Skip</span><span>↑ Review · Tap/swipe</span><span>Known →</span>
       </div>
     </div>
 
@@ -594,8 +596,10 @@ function makeCard(card,isStack){
   el.innerHTML=`
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
-    <div class="chip chip-l">Review</div>
+    <div class="tint tint-u"></div>
+    <div class="chip chip-l">Skip</div>
     <div class="chip chip-r">Known</div>
+    <div class="chip chip-u">Review</div>
     <div class="story-bar">
       <div class="seg active" data-i="0"></div>
       <div class="seg"        data-i="1"></div>
@@ -723,6 +727,22 @@ function classify(isKnown){
   setTimeout(render, 210);
 }
 
+function classifyUp(){
+  // Mark as repaso (pending review) — same as left swipe was before
+  if(deck.length===0) return;
+  const top=deckEl.querySelector('.card.top'); if(!top) return;
+  top.classList.add('fly');
+  top.style.transform=`translateY(-140%) rotate(${(Math.random()-.5)*10}deg)`;
+  top.style.opacity='0';
+  const card=deck[0];
+  deck.shift();
+  unknown.add(card.char);
+  known.delete(card.char);
+  const pos = deck.length>1 ? 1+Math.floor(Math.random()*deck.length) : deck.length;
+  deck.splice(pos, 0, card);
+  setTimeout(render, 210);
+}
+
 function showDone(){
   const el=document.createElement('div'); el.className='done';
   el.innerHTML=`
@@ -739,27 +759,77 @@ function showDone(){
 }
 
 function attachDrag(cardEl){
-  const tl=cardEl.querySelector('.tint-l'),tr=cardEl.querySelector('.tint-r');
-  const cl=cardEl.querySelector('.chip-l'),cr=cardEl.querySelector('.chip-r');
-  let sx=0,sy=0,dx=0,active=false,locked=false;
-  function start(x,y){ sx=x;sy=y;dx=0;active=true;locked=false;cardEl.classList.remove('fly','snap'); }
-  function move(x,y){
-    if(!active||locked)return;
-    dx=x-sx; const dy=y-sy;
-    if(Math.abs(dy)>Math.abs(dx)+10&&Math.abs(dx)<15){locked=true;active=false;snap();return;}
-    if(Math.abs(dx)<5)return;
-    cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.05}deg)`;
-    cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dx)/360));
-    const a=Math.min(1,Math.abs(dx)/120);
-    tl.style.opacity=dx<0?String(a*.85):'0'; tr.style.opacity=dx>0?String(a*.85):'0';
-    cl.style.opacity=dx<-50?'1':'0'; cr.style.opacity=dx>50?'1':'0';
+  const tl=cardEl.querySelector('.tint-l'),tr=cardEl.querySelector('.tint-r'),tu=cardEl.querySelector('.tint-u');
+  const cl=cardEl.querySelector('.chip-l'),cr=cardEl.querySelector('.chip-r'),cu=cardEl.querySelector('.chip-u');
+  let sx=0,sy=0,dx=0,dy=0,active=false,axisLocked=null;
+
+  function resetVisuals(){
+    tl.style.opacity=tr.style.opacity=tu.style.opacity='0';
+    cl.style.opacity=cr.style.opacity=cu.style.opacity='0';
   }
-  function end(){ if(!active)return; active=false; if(dx>100)classify(true); else if(dx<-100)classify(false); else snap(); }
+
+  function start(x,y){
+    sx=x; sy=y; dx=0; dy=0; active=true; axisLocked=null;
+    cardEl.classList.remove('fly','snap');
+  }
+
+  function move(x,y){
+    if(!active) return;
+    dx=x-sx; dy=y-sy;
+
+    // Lock axis after 10px of movement
+    if(!axisLocked){
+      if(Math.abs(dx)>10||Math.abs(dy)>10){
+        axisLocked = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+      } else {
+        return;
+      }
+    }
+
+    if(axisLocked==='y'){
+      // Only respond to upward swipe
+      if(dy>=0){ snap(); return; }
+      const dist=Math.min(1,Math.abs(dy)/100);
+      cardEl.style.transform=`translateY(${dy}px) rotate(${dx*0.02}deg)`;
+      cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dy)/360));
+      tu.style.opacity=String(dist*.85);
+      cu.style.opacity=Math.abs(dy)>50?'1':'0';
+      tl.style.opacity=tr.style.opacity='0';
+      cl.style.opacity=cr.style.opacity='0';
+    } else {
+      // Horizontal axis
+      cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.05}deg)`;
+      cardEl.style.opacity=String(Math.max(.7,1-Math.abs(dx)/360));
+      const a=Math.min(1,Math.abs(dx)/120);
+      tl.style.opacity=dx<0?String(a*.85):'0';
+      tr.style.opacity=dx>0?String(a*.85):'0';
+      tu.style.opacity='0';
+      cl.style.opacity=dx<-50?'1':'0';
+      cr.style.opacity=dx>50?'1':'0';
+      cu.style.opacity='0';
+    }
+  }
+
+  function end(){
+    if(!active) return;
+    active=false;
+    if(axisLocked==='y'){
+      if(dy<-90){ classifyUp(); } else { snap(); }
+    } else if(axisLocked==='x'){
+      if(dx>100){ classify(true); }
+      // left swipe: skip — just snap back, do nothing
+      else { snap(); }
+    } else {
+      snap();
+    }
+  }
+
   function snap(){
     cardEl.classList.add('snap');
     cardEl.style.transform=''; cardEl.style.opacity='';
-    tl.style.opacity=tr.style.opacity='0'; cl.style.opacity=cr.style.opacity='0';
+    resetVisuals();
   }
+
   cardEl.addEventListener('pointerdown',e=>{
     if(e.target.closest('.speak-btn')) return;
     start(e.clientX,e.clientY);
@@ -767,7 +837,7 @@ function attachDrag(cardEl){
   });
   cardEl.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
   cardEl.addEventListener('pointerup',()=>end());
-  cardEl.addEventListener('pointercancel',()=>{active=false;snap();});
+  cardEl.addEventListener('pointercancel',()=>{ active=false; snap(); });
 }
 
 /* ══════════════════════
@@ -932,7 +1002,8 @@ document.getElementById('themeBtnG').onclick=()=>setTheme(document.documentEleme
 document.addEventListener('keydown',e=>{
   const top=deckEl.querySelector('.card.top'); if(!top) return;
   if(e.key==='ArrowRight'||e.key.toLowerCase()==='d') classify(true);
-  else if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a') classify(false);
+  else if(e.key==='ArrowUp'||e.key.toLowerCase()==='w') classifyUp();
+  else if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a') { /* skip — do nothing */ }
   else if(e.key===' '){ e.preventDefault(); top.querySelector('.tz-center')?.click(); }
   else if(e.key==='i') top.querySelector('.tz-right')?.click();
 });
