@@ -129,7 +129,7 @@
       width:34px; height:34px; flex-shrink:0;
       border-radius:10px; background:var(--red-bg); border:1px solid var(--bdr);
       display:grid; place-items:center; font-size:14px; line-height:1;
-      color:var(--red); padding-right:2px;
+      color:var(--red);
     }
     .title   { font-size:.95rem; font-weight:700; line-height:1.1; }
     .sub     { font-size:.62rem; color:var(--faint); margin-top:0px; }
@@ -143,6 +143,7 @@
       width:28px; height:28px; display:grid; place-items:center;
       border-radius:50%; background:var(--surf); border:1px solid var(--bdr); color:var(--muted);
     }
+    .sort-btn { width:auto; border-radius:999px; padding:0 10px; gap:4px; display:flex; flex-direction:row; }
     .icon-btn:active { opacity:.6; }
 
     /* deck */
@@ -197,9 +198,12 @@
 
     /* HSK pills */
     .hsk-pill { padding:4px 11px; border-radius:999px; font-size:.6rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
-    .hsk-1 { background:rgba(104,191,138,.18); color:#68bf8a; border:1px solid rgba(104,191,138,.25); }
-    .hsk-2 { background:rgba(100,160,230,.18); color:#64a0e6; border:1px solid rgba(100,160,230,.25); }
-    .hsk-3 { background:rgba(217,112,90,.18);  color:#d9705a; border:1px solid rgba(217,112,90,.25); }
+    .hsk-1 { background:rgba(220,158,40,.14);  color:#d89e32; border:1px solid rgba(220,158,40,.28); }
+    .hsk-2 { background:rgba(42,118,136,.16);  color:#3a9aaf; border:1px solid rgba(42,118,136,.30); }
+    .hsk-3 { background:rgba(210,95,30,.14);   color:#c8612a; border:1px solid rgba(210,95,30,.28); }
+    .hsk-4 { background:rgba(168,28,38,.16);   color:#c04050; border:1px solid rgba(168,28,38,.30); }
+    .hsk-5 { background:rgba(55,90,148,.20);   color:#6890c8; border:1px solid rgba(55,90,148,.38); }
+    .hsk-6 { background:rgba(118,60,115,.16);  color:#9e6e9c; border:1px solid rgba(118,60,115,.30); }
 
     /* hanzi — fills remaining space, always centred */
     .hanzi-wrap {
@@ -223,9 +227,11 @@
     .ans-example {
       margin-top:2px; background:var(--surf); border:1px solid var(--bdr);
       border-radius:14px; padding:9px 14px;
-      font-size:.76rem; color:var(--muted); text-align:center; line-height:1.5; width:100%;
+      font-size:.78rem; text-align:center; line-height:1.4; width:100%;
     }
-    .ans-example span { display:block; font-size:.56rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); margin-bottom:2px; }
+    .ans-example span { display:block; font-size:.56rem; font-weight:700; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+    .ans-example strong { color:var(--txt); }
+    .ans-example em { color:var(--faint); font-style:italic; }
     .ans-hint { font-size:.56rem; color:var(--faint); margin-top:2px; }
     .tap-hint { font-size:.56rem; color:var(--faint); text-align:center; }
 
@@ -249,6 +255,24 @@
     .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
     .word-item:last-child { border-bottom:none; }
     .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+
+    /* collapsible word groups in modal */
+    .word-group { border-bottom:1px solid var(--bdr); }
+    .word-group:last-child { border-bottom:none; }
+    .word-group-header {
+      width:100%; display:flex; align-items:center; gap:6px;
+      padding:9px 13px; font-size:.72rem; font-weight:700;
+      color:var(--muted); text-align:left; cursor:pointer;
+    }
+    .word-group-header span:first-child { flex:1; }
+    .word-group-count {
+      font-size:.6rem; background:var(--bdr); color:var(--faint);
+      border-radius:999px; padding:1px 7px; font-weight:600;
+    }
+    .word-group-chev { transition:transform 200ms ease; flex-shrink:0; }
+    .word-group-chev.open { transform:rotate(180deg); }
+    .word-group-body { overflow:hidden; transition:max-height 250ms ease, opacity 200ms ease; max-height:2000px; opacity:1; }
+    .word-group-body.collapsed { max-height:0; opacity:0; }
     .word-pinyin  { font-size:.7rem; color:var(--muted); }
     .word-meaning { font-size:.7rem; color:var(--faint); }
 
@@ -281,6 +305,21 @@
     }
     .groups-scroll::-webkit-scrollbar { display:none; }
 
+    /* search bar */
+    .search-bar-wrap {
+      display:none; align-items:center; gap:8px;
+      background:var(--surf); border:1px solid var(--bdr); border-radius:12px;
+      padding:0 10px; height:36px; flex-shrink:0;
+    }
+    .search-bar-wrap.open { display:flex; }
+    .search-bar-wrap input {
+      flex:1; background:none; border:none; outline:none;
+      font:inherit; font-size:.82rem; color:var(--txt);
+      -webkit-text-fill-color:var(--txt);
+    }
+    .search-bar-wrap input::placeholder { color:var(--faint); }
+    #searchClear { display:grid; place-items:center; color:var(--faint); padding:0; }
+
     .hsk-group { display:flex; flex-direction:column; gap:8px; }
     .hsk-group-header {
       display:flex; align-items:center; justify-content:space-between;
@@ -297,28 +336,34 @@
       height:4px; background:var(--bdr); border-radius:2px; overflow:hidden; flex:1; max-width:80px;
     }
     .hsk-prog-fill { height:100%; border-radius:2px; transition:width 400ms ease; }
-    .hsk-1-fill { background:#68bf8a; }
-    .hsk-2-fill { background:#64a0e6; }
-    .hsk-3-fill { background:#d9705a; }
+    .hsk-1-fill { background:#d89e32; }
+    .hsk-2-fill { background:#3a9aaf; }
+    .hsk-3-fill { background:#c8612a; }
+    .hsk-4-fill { background:#c04050; }
+    .hsk-5-fill { background:#6890c8; }
+    .hsk-6-fill { background:#9e6e9c; }
     .hsk-full-bar {
       height:5px; background:var(--bdr); border-radius:3px; overflow:hidden; width:100%;
     }
     .hsk-full-bar-fill { height:100%; border-radius:3px; transition:width 400ms ease; }
 
-    .char-grid {
-      display:grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap:8px;
+    .char-grid-wrap {
       overflow:hidden;
       transition: max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 240ms ease, margin-top 320ms ease;
-      max-height: 2000px;
+      max-height: 20000px;
       opacity: 1;
       margin-top: 0;
     }
-    .char-grid.collapsed {
+    .char-grid-wrap.collapsed {
       max-height: 0 !important;
       opacity: 0;
       margin-top: -4px;
+    }
+    .char-grid {
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:8px;
+      padding-bottom:8px;
     }
     .hsk-group-header {
       cursor: pointer;
@@ -337,6 +382,7 @@
       background:var(--surf); border:1px solid var(--bdr);
       position:relative; cursor:pointer;
       transition: transform 120ms ease, background 120ms ease;
+      user-select:none; -webkit-user-select:none;
     }
     .char-tile:active { transform:scale(.93); }
     .char-tile .tc {
@@ -378,22 +424,22 @@
     }
     .modal::-webkit-scrollbar { display:none; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-    .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 4px; }
-    .modal-char {
-      font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
-      font-size:72px; line-height:1; text-align:center;
-      color:var(--txt); -webkit-text-fill-color:var(--txt);
+    .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
+    .modal #modal-content .info-row { margin-top:-14px; }
+    .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }
+    .modal #modal-content .words-list { margin-top:6px; }
+
+    /* HSK filter pills */
+    .hsk-filter-row { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+    .hsk-filter-pill {
+      padding:6px 4px; border-radius:999px; font-size:.6rem; font-weight:700;
+      letter-spacing:.06em; text-transform:uppercase; cursor:pointer; text-align:center;
+      opacity:.35; transition: opacity 150ms ease, transform 120ms ease;
+      border: 1px solid transparent; width:100%;
     }
-    .modal-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .modal-cell { background:var(--surf); border:1px solid var(--bdr); border-radius:12px; padding:9px 12px; }
-    .modal-cell .lbl { font-size:.57rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
-    .modal-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
-    .modal-cell.full { grid-column:1/-1; }
-    .modal-words-title { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); }
-    .modal-words { background:var(--surf); border:1px solid var(--bdr); border-radius:14px; overflow:hidden; }
-    .modal-words .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
-    .modal-words .word-item:last-child { border-bottom:none; }
-    .modal-words .word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+    .hsk-filter-pill.active { opacity:1; }
+    .hsk-filter-pill:active { transform:scale(.94); }
+    .filter-hint { font-size:.6rem; color:var(--faint); margin-top:2px; }
 
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
@@ -410,10 +456,10 @@
     <div class="screen active" id="screen-cards">
       <header class="header">
         <div class="brand">
-          <div class="logo" aria-hidden="true">刷子</div>
+          <div class="logo" aria-hidden="true">刷字</div>
           <div>
             <div class="title">shuazi</div>
-            <div class="sub">HSK 1–3 · 刷子</div>
+            <div class="sub">HSK1-6</div>
           </div>
         </div>
         <div class="hdr-stats">
@@ -438,11 +484,41 @@
           <div class="groups-title">HSK Groups</div>
           <div class="groups-sub">Tap a character to see details</div>
         </div>
-        <button class="icon-btn" id="themeBtnG" aria-label="Theme">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="icon-btn sort-btn" id="sortBtn" aria-label="Sort">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M19 12l-3-3 3 3 3-3"/></svg>
+            <span id="sortLabel" style="font-size:.52rem;font-weight:700;letter-spacing:.04em;margin-left:2px">Pinyin</span>
+          </button>
+          <button class="icon-btn" id="searchToggleBtn" aria-label="Search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+          <button class="icon-btn" id="themeBtnG" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="search-bar-wrap" id="searchBarWrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="searchInput" type="text" placeholder="Search character…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <button id="searchClear" aria-label="Clear">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="groups-scroll" id="groups-scroll"></div>
+    </div>
+
+    <!-- ── SCREEN 3: PROFILE ── -->
+    <div class="screen" id="screen-profile">
+      <div class="groups-header">
+        <div>
+          <div class="groups-title">Profile</div>
+          <div class="groups-sub">Your progress overview</div>
+        </div>
+        <button class="icon-btn" id="themeBtnP" aria-label="Theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+      <div class="groups-scroll" id="profile-scroll"></div>
     </div>
 
   </div>
@@ -465,6 +541,13 @@
       </svg>
       <span>Groups</span>
     </button>
+    <button class="tab" id="tab-profile" aria-label="Profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      <span>Profile</span>
+    </button>
   </nav>
 </div>
 
@@ -472,18 +555,13 @@
 <div class="modal-backdrop" id="modal-backdrop">
   <div class="modal" id="modal">
     <div class="modal-handle"></div>
-    <div class="modal-char-row">
-      <div class="modal-char" id="modal-char"></div>
-    </div>
-    <div class="modal-meta" id="modal-meta"></div>
-    <div class="modal-words-title">Compound words</div>
-    <div class="modal-words" id="modal-words"></div>
+    <div id="modal-content"></div>
   </div>
 </div>
 
 <script>
 /* ── DATA ── */
-let CHARACTERS = [];   // [{ id, char, pinyin, meaning, hsk, example }]
+let CHARACTERS = [];   // [{ id, char, pinyin, meaning, hsk }]
 let WORDS = [];        // [{ id, pinyin, meaning, chars:[id,...] }]
 let charById = {};     // id → character
 let wordsByChar = {};  // char → [word, ...]
@@ -536,9 +614,12 @@ const vRepaso = document.getElementById('vRepaso');
 
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]]; } }
 function stats(){
-  vRest.textContent   = deck.length;
-  vKnown.textContent  = known.size;
-  vRepaso.textContent = unknown.size;
+  const filtered = CHARACTERS.filter(c=>activeHskLevels.has(c.hsk));
+  const knownN  = filtered.filter(c=>known.has(c.char)).length;
+  const reviewN = filtered.filter(c=>unknown.has(c.char)).length;
+  vRest.textContent   = filtered.length - knownN - reviewN;
+  vKnown.textContent  = knownN;
+  vRepaso.textContent = reviewN;
   saveState();
   renderGroups();
 }
@@ -582,13 +663,13 @@ function makeCard(card,isStack){
         <div class="hanzi-wrap"><div class="hanzi">${card.char}</div></div>
         <div class="answer-area" id="aa"></div>
         <div class="card-bottom">
-          <span class="tap-hint">Tap center to reveal</span>
+          <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
           </div>
         </div>
       </div>
-      <div class="page info-page" style="padding-top:24px">
+      <div class="page info-page" style="padding-top:44px">
         <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
           <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
@@ -619,14 +700,21 @@ function makeCard(card,isStack){
   tzC.addEventListener('click',e=>{
     e.stopPropagation();
     if(+el.dataset.page!==0) return;
+    const tapHint = el.querySelector('#tap-hint');
     if(el.dataset.answer==='1'){
       el.dataset.answer='0'; aa.innerHTML='';
+      tapHint.style.visibility='visible';
     } else {
       el.dataset.answer='1';
+      tapHint.style.visibility='hidden';
+      const w=(wordsByChar[card.char]||[])[0];
+      const exHTML = w
+        ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`
+        : '—';
       aa.innerHTML=`<div class="answer-block">
         <div class="ans-pinyin">${card.pinyin}</div>
         <div class="ans-meaning">${card.meaning}</div>
-        <div class="ans-example"><span>Example</span>${card.example}</div>
+        <div class="ans-example"><span>Example</span>${exHTML}</div>
         <div class="ans-hint">Tap right → for more info</div>
       </div>`;
     }
@@ -640,8 +728,11 @@ function makeCard(card,isStack){
    Al marcar como conocida se elimina; al marcar repasar se mueve al final
    en posición aleatoria para que no salga siempre la misma. */
 
+let activeHskLevels = new Set([1,2,3,4,5,6]);
+
 function buildDeck(src){
-  const cards = src.filter(c=>!known.has(c.char));
+  const filtered = src.filter(c=>activeHskLevels.has(c.hsk));
+  const cards = filtered.filter(c=>!known.has(c.char));
   shuffle(cards);
   return cards;
 }
@@ -694,8 +785,8 @@ function classifyReview(dirUp){
 function showDone(){
   const el=document.createElement('div'); el.className='done';
   el.innerHTML=`
-    <div class="done-emoji">🎉</div>
-    <h2>Session complete!</h2>
+    <div class="done-emoji">🇨🇳</div>
+    <h2>你这中文太顶了吧！</h2>
     <p>Known: <strong style="color:var(--green)">${known.size}</strong> &nbsp;·&nbsp; Review: <strong style="color:var(--blue)">${unknown.size}</strong></p>
     <div class="done-pills">
       <button class="pill" id="pW">Review hard ones</button>
@@ -767,20 +858,34 @@ function attachDrag(cardEl){
 /* ══════════════════════
    GROUPS SCREEN
 ══════════════════════ */
-const collapsedGroups = new Set();
+const collapsedGroups = new Set([1,2,3,4,5,6]);
+let gridSort = 'pinyin';
+let gridSearch = '';
 
 function renderGroups(){
   const container=document.getElementById('groups-scroll');
-  const levels=[1,2,3];
+  const levels=[1,2,3,4,5,6];
+  const q = gridSearch.trim();
   container.innerHTML='';
   levels.forEach(hsk=>{
-    const group=CHARACTERS.filter(c=>c.hsk===hsk);
+    let group=CHARACTERS.filter(c=>c.hsk===hsk);
+    if(!group.length) return;
+    if(!activeHskLevels.has(hsk)) return;
+    // filter by search
+    if(q) group=group.filter(c=>c.char.includes(q)||c.pinyin.toLowerCase().includes(q.toLowerCase()));
+    if(!group.length) return;
+    // sort
+    if(gridSort==='pinyin')     group=[...group].sort((a,b)=>a.pinyin.localeCompare(b.pinyin));
+    else if(gridSort==='productive') group=[...group].sort((a,b)=>(b.productive??0)-(a.productive??0));
+    else if(gridSort==='coverage')   group=[...group].sort((a,b)=>(b.coverage??0)-(a.coverage??0));
+    else if(gridSort==='stroke')     group=[...group].sort((a,b)=>(a.stroke??0)-(b.stroke??0));
+    else group=[...group].sort((a,b)=>a.id-b.id);
     const knownCount=group.filter(c=>known.has(c.char)).length;
     const pct=group.length?Math.round(knownCount/group.length*100):0;
 
-    const colors={1:'hsk-1',2:'hsk-2',3:'hsk-3'};
-    const fillClass={1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill'};
-    const isCollapsed = collapsedGroups.has(hsk);
+    const colors={1:'hsk-1',2:'hsk-2',3:'hsk-3',4:'hsk-4',5:'hsk-5',6:'hsk-6'};
+    const fillClass={1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill',4:'hsk-4-fill',5:'hsk-5-fill',6:'hsk-6-fill'};
+    const isCollapsed = q ? false : collapsedGroups.has(hsk);
 
     const div=document.createElement('div');
     div.className='hsk-group';
@@ -796,17 +901,18 @@ function renderGroups(){
         </div>
       </div>
       <div class="hsk-full-bar"><div class="hsk-full-bar-fill ${fillClass[hsk]}" style="width:${pct}%"></div></div>
-      <div class="char-grid ${isCollapsed?'collapsed':''}" id="grid-${hsk}"></div>
+      <div class="char-grid-wrap ${isCollapsed?'collapsed':''}"><div class="char-grid" id="grid-${hsk}"></div></div>
     `;
     container.appendChild(div);
 
     const header = div.querySelector('.hsk-group-header');
+    const wrap   = div.querySelector('.char-grid-wrap');
     const grid   = div.querySelector(`#grid-${hsk}`);
     const chev   = div.querySelector('.chevron');
 
     header.addEventListener('click', ()=>{
-      if(collapsedGroups.has(hsk)){ collapsedGroups.delete(hsk); grid.classList.remove('collapsed'); chev.classList.add('open'); }
-      else { collapsedGroups.add(hsk); grid.classList.add('collapsed'); chev.classList.remove('open'); }
+      if(collapsedGroups.has(hsk)){ collapsedGroups.delete(hsk); wrap.classList.remove('collapsed'); chev.classList.add('open'); }
+      else { collapsedGroups.add(hsk); wrap.classList.add('collapsed'); chev.classList.remove('open'); }
     });
 
     group.forEach(card=>{
@@ -823,28 +929,41 @@ function renderGroups(){
           </svg>
         </div>`;
 
-      // long-press logic
+      // long-press logic — cycles: left (default) → review → known → left
       let pressTimer=null;
       function startPress(){
         pressTimer=setTimeout(()=>{
           pressTimer=null;
           if(known.has(card.char)){
-            known.delete(card.char); unknown.delete(card.char);
-            tile.classList.remove('known');
-          } else {
-            known.add(card.char); unknown.delete(card.char);
+            // known → left
+            known.delete(card.char);
+            unknown.delete(card.char);
+            tile.classList.remove('known','repaso');
+            deck.push(card);
+          } else if(unknown.has(card.char)){
+            // review → known
+            unknown.delete(card.char);
+            known.add(card.char);
             tile.classList.remove('repaso');
             tile.classList.add('known');
             deck=deck.filter(c=>c.char!==card.char);
+          } else {
+            // left → review
+            unknown.add(card.char);
+            tile.classList.add('repaso');
+            if(!deck.find(c=>c.char===card.char)) deck.push(card);
           }
           saveState();
           const newKnownCount=group.filter(c=>known.has(c.char)).length;
           const newPct=group.length?Math.round(newKnownCount/group.length*100):0;
           div.querySelector('.count').textContent=`${newKnownCount}/${group.length} known`;
           div.querySelector('.hsk-prog-fill').style.width=newPct+'%';
-          vKnown.textContent=known.size;
-          vRepaso.textContent=unknown.size;
-          vRest.textContent=deck.length;
+          const _f=CHARACTERS.filter(c=>activeHskLevels.has(c.hsk));
+          const _k=_f.filter(c=>known.has(c.char)).length;
+          const _r=_f.filter(c=>unknown.has(c.char)).length;
+          vKnown.textContent=_k;
+          vRepaso.textContent=_r;
+          vRest.textContent=_f.length - _k - _r;
           if(navigator.vibrate) navigator.vibrate(30);
         }, 450);
       }
@@ -864,21 +983,63 @@ function renderGroups(){
    MODAL
 ══════════════════════ */
 const backdrop=document.getElementById('modal-backdrop');
-const modalChar=document.getElementById('modal-char');
-const modalMeta=document.getElementById('modal-meta');
-const modalWords=document.getElementById('modal-words');
+const modalContent=document.getElementById('modal-content');
 
 function openModal(card){
-  modalChar.textContent=card.char;
-  modalMeta.innerHTML=`
-    <div class="modal-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
-    <div class="modal-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
-    <div class="modal-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
-    <div class="modal-cell full"><div class="lbl">Example</div><div class="val">${card.example}</div></div>
+  const cardWords=(wordsByChar[card.char]||[]);
+
+  // group words by their group field (numeric: 1=Common, 2=Uncommon, 3=Rare)
+  const GROUP_LABELS = {1:'Common', 2:'Uncommon', 3:'Rare'};
+  const groupMap={};
+  cardWords.forEach(w=>{
+    const g = w.group ?? 'Other';
+    if(!groupMap[g]) groupMap[g]=[];
+    groupMap[g].push(w);
+  });
+  const groupOrder = Object.keys(groupMap).sort((a,b)=>a-b);
+
+  const groupsHTML = groupOrder.length===0
+    ? '<div class="word-item" style="color:var(--faint)">No words found</div>'
+    : groupOrder.map((g,i)=>{
+        const label = GROUP_LABELS[g] ?? g;
+        const items=groupMap[g].map(w=>
+          `<div class="word-item"><strong>${w.id}</strong><span class="word-pinyin">${w.pinyin}</span><span class="word-meaning">${w.meaning}</span></div>`
+        ).join('');
+        const open = i===0;
+        return `
+          <div class="word-group">
+            <button class="word-group-header" data-open="${open}">
+              <span>${label}</span>
+              <span class="word-group-count">${groupMap[g].length}</span>
+              <svg class="word-group-chev ${open?'open':''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="word-group-body ${open?'':'collapsed'}">${items}</div>
+          </div>`;
+      }).join('');
+
+  modalContent.innerHTML=`
+    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
+    </div>
+    <div class="words-title">Compound words</div>
+    <div class="words-list">${groupsHTML}</div>
   `;
-  modalWords.innerHTML=(wordsByChar[card.char]||[]).map(w=>
-    `<div class="word-item"><strong>${w.id}</strong><span class="word-pinyin">${w.pinyin}</span><span class="word-meaning">${w.meaning}</span></div>`
-  ).join('');
+
+  // wire up collapsible groups
+  modalContent.querySelectorAll('.word-group-header').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const open = btn.dataset.open==='true';
+      const body = btn.nextElementSibling;
+      const chev = btn.querySelector('.word-group-chev');
+      btn.dataset.open = !open;
+      body.classList.toggle('collapsed', open);
+      chev.classList.toggle('open', !open);
+    });
+  });
+
   backdrop.classList.add('open');
 }
 backdrop.addEventListener('click',e=>{ if(e.target===backdrop) backdrop.classList.remove('open'); });
@@ -886,19 +1047,127 @@ backdrop.addEventListener('click',e=>{ if(e.target===backdrop) backdrop.classLis
 /* ══════════════════════
    TABS
 ══════════════════════ */
-const tabCards  = document.getElementById('tab-cards');
-const tabGroups = document.getElementById('tab-groups');
-const scrCards  = document.getElementById('screen-cards');
-const scrGroups = document.getElementById('screen-groups');
+const tabCards   = document.getElementById('tab-cards');
+const tabGroups  = document.getElementById('tab-groups');
+const tabProfile = document.getElementById('tab-profile');
+const scrCards   = document.getElementById('screen-cards');
+const scrGroups  = document.getElementById('screen-groups');
+const scrProfile = document.getElementById('screen-profile');
 
 function showTab(tab){
-  [scrCards,scrGroups].forEach(s=>s.classList.remove('active'));
-  [tabCards,tabGroups].forEach(t=>t.classList.remove('active'));
-  if(tab==='cards'){ scrCards.classList.add('active'); tabCards.classList.add('active'); }
-  else { scrGroups.classList.add('active'); tabGroups.classList.add('active'); renderGroups(); }
+  [scrCards,scrGroups,scrProfile].forEach(s=>s.classList.remove('active'));
+  [tabCards,tabGroups,tabProfile].forEach(t=>t.classList.remove('active'));
+  if(tab==='cards'){   scrCards.classList.add('active');   tabCards.classList.add('active'); }
+  else if(tab==='groups'){ scrGroups.classList.add('active'); tabGroups.classList.add('active'); renderGroups(); }
+  else { scrProfile.classList.add('active'); tabProfile.classList.add('active'); renderProfile(); }
 }
-tabCards.onclick=()=>showTab('cards');
-tabGroups.onclick=()=>showTab('groups');
+tabCards.onclick  = ()=>showTab('cards');
+tabGroups.onclick = ()=>showTab('groups');
+tabProfile.onclick= ()=>showTab('profile');
+
+function renderProfile(){
+  const container = document.getElementById('profile-scroll');
+  const levels = [1,2,3,4,5,6];
+  const fillClass = {1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill',4:'hsk-4-fill',5:'hsk-5-fill',6:'hsk-6-fill'};
+
+  function computeStats(){
+    const filtered = CHARACTERS.filter(c=>activeHskLevels.has(c.hsk));
+    const total  = filtered.length;
+    const knownN = filtered.filter(c=>known.has(c.char)).length;
+    const reviewN= filtered.filter(c=>unknown.has(c.char)).length;
+    const leftN  = total - knownN - reviewN;
+    const totalCov = filtered.reduce((s,c)=>s+(c.coverage??0),0);
+    const knownCov = filtered.filter(c=>known.has(c.char)).reduce((s,c)=>s+(c.coverage??0),0);
+    const pct = totalCov ? Math.round(knownCov/totalCov*100) : 0;
+    return {total,knownN,reviewN,leftN,pct};
+  }
+
+  function updateStats(){
+    const {knownN,reviewN,leftN,pct} = computeStats();
+    container.querySelector('#p-known').textContent  = knownN;
+    container.querySelector('#p-review').textContent = reviewN;
+    container.querySelector('#p-left').textContent   = leftN;
+    container.querySelector('#p-pct').textContent    = pct+'%';
+    container.querySelector('#p-bar').style.width    = pct+'%';
+  }
+
+  const {knownN,reviewN,leftN,pct} = computeStats();
+
+  const filterPills = levels.map(hsk=>{
+    const group = CHARACTERS.filter(c=>c.hsk===hsk);
+    if(!group.length) return '';
+    const active = activeHskLevels.has(hsk);
+    return `<button class="hsk-filter-pill hsk-${hsk} ${active?'active':''}" data-hsk="${hsk}">HSK ${hsk}</button>`;
+  }).join('');
+
+  container.innerHTML=`
+    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:4px">
+      <div class="info-cell" style="text-align:center">
+        <div class="lbl">Known</div>
+        <div class="val" style="color:var(--green);font-size:1.5rem" id="p-known">${knownN}</div>
+      </div>
+      <div class="info-cell" style="text-align:center">
+        <div class="lbl">Review</div>
+        <div class="val" style="color:var(--blue);font-size:1.5rem" id="p-review">${reviewN}</div>
+      </div>
+      <div class="info-cell" style="text-align:center">
+        <div class="lbl">Left</div>
+        <div class="val" style="font-size:1.5rem" id="p-left">${leftN}</div>
+      </div>
+    </div>
+    <div class="info-cell full" style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="lbl">Overall progress</div>
+        <div class="lbl" id="p-pct">${pct}%</div>
+      </div>
+      <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
+      <p style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.</p>
+    </div>
+    <div class="words-title" style="margin-top:8px">Filters</div>
+    <div class="hsk-filter-row">${filterPills}</div>
+    <p class="filter-hint">Select the HSK levels to include in your card deck.</p>
+  `;
+
+  container.querySelectorAll('.hsk-filter-pill').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const hsk = +btn.dataset.hsk;
+      if(activeHskLevels.has(hsk)){
+        if(activeHskLevels.size > 1){ activeHskLevels.delete(hsk); btn.classList.remove('active'); }
+      } else {
+        activeHskLevels.add(hsk); btn.classList.add('active');
+      }
+      deck = buildDeck(CHARACTERS);
+      render();
+      updateStats();
+    });
+  });
+}
+
+document.getElementById('sortBtn').onclick=()=>{
+  const cycle = ['pinyin','productive','coverage','stroke'];
+  const labels = {pinyin:'Pinyin', productive:'Productive', coverage:'Coverage', stroke:'Stroke'};
+  gridSort = cycle[(cycle.indexOf(gridSort)+1) % cycle.length];
+  document.getElementById('sortLabel').textContent = labels[gridSort];
+  renderGroups();
+};
+
+const searchBarWrap  = document.getElementById('searchBarWrap');
+const searchInput    = document.getElementById('searchInput');
+const searchClear    = document.getElementById('searchClear');
+const searchToggleBtn= document.getElementById('searchToggleBtn');
+
+searchToggleBtn.addEventListener('click',()=>{
+  const open = searchBarWrap.classList.toggle('open');
+  if(open) searchInput.focus();
+  else { searchInput.value=''; gridSearch=''; renderGroups(); }
+});
+searchInput.addEventListener('input',()=>{
+  gridSearch = searchInput.value;
+  renderGroups();
+});
+searchClear.addEventListener('click',()=>{
+  searchInput.value=''; gridSearch=''; renderGroups(); searchInput.focus();
+});
 
 /* ══════════════════════
    THEME
@@ -911,9 +1180,11 @@ function setTheme(t){
     : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   document.getElementById('themeBtn').innerHTML=icon;
   document.getElementById('themeBtnG').innerHTML=icon;
+  document.getElementById('themeBtnP').innerHTML=icon;
 }
 document.getElementById('themeBtn').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 document.getElementById('themeBtnG').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+document.getElementById('themeBtnP').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 
 /* keyboard */
 document.addEventListener('keydown',e=>{
