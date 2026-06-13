@@ -460,6 +460,7 @@
     .hsk-filter-pill.active { opacity:1; }
     .hsk-filter-pill:active { transform:scale(.94); }
     .filter-hint { font-size:.6rem; color:var(--faint); margin-top:2px; }
+    .profile-section { display:flex; flex-direction:column; gap:8px; }
 
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
@@ -583,6 +584,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
 /* ── DATA ── */
 let CHARACTERS = [];   // [{ id, char, pinyin, meaning, hsk }]
@@ -609,7 +612,52 @@ async function loadData(){
   });
 }
 
-/* ── PERSISTENCE ── */
+/* ── SUPABASE ── */
+const SUPA_URL = 'https://coysmojauucqgdhhxyrz.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveXNtb2phdXVjcWdkaGh4eXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODAxOTMsImV4cCI6MjA5Njk1NjE5M30.JO6U0TyW5gcnmJMJAvvzSh_ZiMdCKCEtRSz_N8h8adM';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+let supaUser = null;
+
+async function syncProgressToSupabase(){
+  if(!supaUser) return;
+
+  const knownRows=[], reviewRows=[], leftIds=[];
+  CHARACTERS.forEach(c=>{
+    if(known.has(c.char))        knownRows.push({ user_id:supaUser.id, char_id:c.id, state:'known',  updated_at:new Date().toISOString() });
+    else if(unknown.has(c.char)) reviewRows.push({ user_id:supaUser.id, char_id:c.id, state:'review', updated_at:new Date().toISOString() });
+    else                         leftIds.push(c.id);
+  });
+
+  const upsertRows = [...knownRows, ...reviewRows];
+  if(upsertRows.length > 0)
+    await supa.from('progress').upsert(upsertRows, { onConflict: 'user_id,char_id' });
+
+  if(leftIds.length > 0)
+    await supa.from('progress').delete().eq('user_id', supaUser.id).in('char_id', leftIds);
+}
+
+async function loadProgressFromSupabase(){
+  if(!supaUser) return;
+  const { data } = await supa.from('progress').select('char_id, state').eq('user_id', supaUser.id);
+  if(!data) return;
+  known.clear(); unknown.clear();
+  data.forEach(row => {
+    const c = charById[row.char_id];
+    if(!c) return;
+    if(row.state === 'known')  known.add(c.char);
+    if(row.state === 'review') unknown.add(c.char);
+  });
+}
+
+// debounced sync — waits 1.5s after last change
+let syncTimer = null;
+function scheduleSyncToSupabase(){
+  if(!supaUser) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncProgressToSupabase, 1500);
+}
+
+
 const STORE_KEY = 'shuazi-v1';
 function saveState(){
   try {
@@ -619,6 +667,7 @@ function saveState(){
       deckChars: deck.map(c=>c.char)
     }));
   } catch(e){}
+  scheduleSyncToSupabase();
 }
 function loadState(){
   try {
@@ -907,7 +956,7 @@ function renderGroups(){
     if(!group.length) return;
     // sort
     if(gridSort==='pinyin')     group=[...group].sort((a,b)=>a.pinyin.localeCompare(b.pinyin));
-    else if(gridSort==='productive') group=[...group].sort((a,b)=>(b.productive??0)-(a.productive??0));
+    else if(gridSort==='productive') group=[...group].sort((a,b)=>(a.productive??0)-(b.productive??0));
     else if(gridSort==='coverage')   group=[...group].sort((a,b)=>(b.coverage??0)-(a.coverage??0));
     else if(gridSort==='stroke')     group=[...group].sort((a,b)=>(a.stroke??0)-(b.stroke??0));
     else group=[...group].sort((a,b)=>a.id-b.id);
@@ -1098,14 +1147,13 @@ tabProfile.onclick= ()=>showTab('profile');
 function renderProfile(){
   const container = document.getElementById('profile-scroll');
   const levels = [1,2,3,4,5,6];
-  const fillClass = {1:'hsk-1-fill',2:'hsk-2-fill',3:'hsk-3-fill',4:'hsk-4-fill',5:'hsk-5-fill',6:'hsk-6-fill'};
 
   function computeStats(){
     const filtered = CHARACTERS.filter(c=>activeHskLevels.has(c.hsk));
-    const total  = filtered.length;
-    const knownN = filtered.filter(c=>known.has(c.char)).length;
-    const reviewN= filtered.filter(c=>unknown.has(c.char)).length;
-    const leftN  = total - knownN - reviewN;
+    const total    = filtered.length;
+    const knownN   = filtered.filter(c=>known.has(c.char)).length;
+    const reviewN  = filtered.filter(c=>unknown.has(c.char)).length;
+    const leftN    = total - knownN - reviewN;
     const totalCov = filtered.reduce((s,c)=>s+(c.coverage??0),0);
     const knownCov = filtered.filter(c=>known.has(c.char)).reduce((s,c)=>s+(c.coverage??0),0);
     const pct = totalCov ? Math.round(knownCov/totalCov*100) : 0;
@@ -1130,37 +1178,103 @@ function renderProfile(){
     return `<button class="hsk-filter-pill hsk-${hsk} ${active?'active':''}" data-hsk="${hsk}">HSK ${hsk}</button>`;
   }).join('');
 
+  const accountHTML = supaUser
+    ? `<div class="profile-section">
+        <div class="words-title">Account</div>
+        <div class="info-cell full" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div class="lbl">Signed in as</div>
+            <div class="val" style="font-size:.8rem;margin-top:2px">${supaUser.email}</div>
+          </div>
+          <button id="signOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Sign out</button>
+        </div>
+      </div>`
+    : `<div class="profile-section">
+        <div class="words-title">Account</div>
+        <div class="info-cell full" style="display:flex;flex-direction:column;gap:10px">
+          <button id="signInGoogleBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.8rem;font-weight:600;cursor:pointer;width:100%;box-sizing:border-box">
+            <svg width="15" height="15" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.1-9.9 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.5 42.5 14.6 48 24 48z"/></svg>
+            Continue with Google
+          </button>
+          <div style="display:flex;align-items:center;gap:8px;color:var(--faint);font-size:.62rem">
+            <div style="flex:1;height:1px;background:var(--bdr)"></div>or<div style="flex:1;height:1px;background:var(--bdr)"></div>
+          </div>
+          <input id="authEmail" type="email" placeholder="Email" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+          <input id="authPass" type="password" placeholder="Password" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+          <div id="authError" style="font-size:.62rem;color:#c04050;min-height:.8rem;margin-top:-4px"></div>
+          <div style="display:flex;gap:8px">
+            <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">Sign in</button>
+            <button id="signUpBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer">Register</button>
+          </div>
+        </div>
+      </div>`;
+
   container.innerHTML=`
-    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:4px">
-      <div class="info-cell" style="text-align:center">
-        <div class="lbl">Known</div>
-        <div class="val" style="color:var(--green);font-size:1.5rem" id="p-known">${knownN}</div>
+    <div class="profile-section">
+      <div class="words-title">Progress</div>
+      <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="info-cell" style="text-align:center">
+          <div class="lbl">Known</div>
+          <div class="val" style="color:var(--green);font-size:1.5rem" id="p-known">${knownN}</div>
+        </div>
+        <div class="info-cell" style="text-align:center">
+          <div class="lbl">Review</div>
+          <div class="val" style="color:var(--blue);font-size:1.5rem" id="p-review">${reviewN}</div>
+        </div>
+        <div class="info-cell" style="text-align:center">
+          <div class="lbl">Left</div>
+          <div class="val" style="font-size:1.5rem" id="p-left">${leftN}</div>
+        </div>
       </div>
-      <div class="info-cell" style="text-align:center">
-        <div class="lbl">Review</div>
-        <div class="val" style="color:var(--blue);font-size:1.5rem" id="p-review">${reviewN}</div>
-      </div>
-      <div class="info-cell" style="text-align:center">
-        <div class="lbl">Left</div>
-        <div class="val" style="font-size:1.5rem" id="p-left">${leftN}</div>
+      <div class="info-cell full" style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="lbl">Overall progress</div>
+          <div class="lbl" id="p-pct">${pct}%</div>
+        </div>
+        <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
+        <p style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.</p>
       </div>
     </div>
-    <div class="info-cell full" style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="lbl">Overall progress</div>
-        <div class="lbl" id="p-pct">${pct}%</div>
-      </div>
-      <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
-      <p style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.</p>
+
+    <div class="profile-section">
+      <div class="words-title">Filters</div>
+      <div class="hsk-filter-row">${filterPills}</div>
+      <p class="filter-hint">Select the HSK levels to include in your card deck.</p>
     </div>
-    <div class="words-title" style="margin-top:8px">Filters</div>
-    <div class="hsk-filter-row">${filterPills}</div>
-    <p class="filter-hint">Select the HSK levels to include in your card deck.</p>
-    <div style="margin-top:auto;padding-top:24px">
+
+    ${accountHTML}
+
+    <div class="profile-section">
       <button id="resetBtn" style="width:100%;padding:11px;border-radius:12px;background:rgba(186,13,31,.06);border:1px solid rgba(186,13,31,.12);color:var(--muted);font-size:.78rem;font-weight:600;cursor:pointer">Reset progress</button>
     </div>
   `;
 
+  // auth handlers
+  if(supaUser){
+    container.querySelector('#signOutBtn').addEventListener('click', async ()=>{
+      await supa.auth.signOut();
+    });
+  } else {
+    container.querySelector('#signInGoogleBtn').addEventListener('click', async ()=>{
+      await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
+    });
+    const emailEl = container.querySelector('#authEmail');
+    const passEl  = container.querySelector('#authPass');
+    const errEl   = container.querySelector('#authError');
+    container.querySelector('#signInBtn').addEventListener('click', async ()=>{
+      errEl.textContent=''; errEl.style.color='#c04050';
+      const { error } = await supa.auth.signInWithPassword({ email: emailEl.value.trim(), password: passEl.value });
+      if(error) errEl.textContent = error.message;
+    });
+    container.querySelector('#signUpBtn').addEventListener('click', async ()=>{
+      errEl.textContent=''; errEl.style.color='#c04050';
+      const { error } = await supa.auth.signUp({ email: emailEl.value.trim(), password: passEl.value });
+      if(error) errEl.textContent = error.message;
+      else { errEl.style.color='var(--green)'; errEl.textContent='Check your email to confirm!'; }
+    });
+  }
+
+  // filter pill handlers
   container.querySelectorAll('.hsk-filter-pill').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const hsk = +btn.dataset.hsk;
@@ -1179,9 +1293,7 @@ function renderProfile(){
     if(!confirm('Reset all progress? Known and review marks will be cleared.')) return;
     known.clear(); unknown.clear();
     deck = buildDeck(CHARACTERS);
-    render();
-    saveState();
-    renderProfile();
+    render(); saveState(); renderProfile();
   });
 }
 
@@ -1263,9 +1375,39 @@ function init(src, forceNew){
   } catch(e){}
 })();
 
-loadData().then(()=>{
-  init(CHARACTERS);
+loadData().then(async ()=>{
+  // check existing session
+  const { data: { session } } = await supa.auth.getSession();
+  if(session){
+    supaUser = session.user;
+    await loadProgressFromSupabase();
+    deck = buildDeck(CHARACTERS);
+    render();
+  } else {
+    init(CHARACTERS);
+  }
   renderGroups();
+
+  // listen for auth changes
+  supa.auth.onAuthStateChange(async (event, session) => {
+    supaUser = session?.user ?? null;
+    if(event === 'SIGNED_IN'){
+      await loadProgressFromSupabase();
+      deck = buildDeck(CHARACTERS);
+      render();
+      stats();
+      renderGroups();
+      renderProfile();
+    }
+    if(event === 'SIGNED_OUT'){
+      known.clear(); unknown.clear();
+      deck = buildDeck(CHARACTERS);
+      render();
+      stats();
+      renderGroups();
+      renderProfile();
+    }
+  });
 }).catch(err=>{
   console.error('Failed to load data:', err);
   document.getElementById('deck').innerHTML='<div class="done"><div class="done-emoji">⚠️</div><h2>Error loading data</h2><p>Make sure characters.json and words.json are in the same folder.</p></div>';
