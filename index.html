@@ -286,6 +286,30 @@
       background:var(--surf2); border:1px solid var(--bdr); border-radius:24px; box-shadow:var(--sh);
     }
     .done-emoji { font-size:2.8rem; }
+
+    /* ── PHRASE CARDS ── */
+    .phrase-card {
+      position:absolute; inset:0;
+      background:var(--surf); border:1px solid var(--bdr); border-radius:24px;
+      display:flex; align-items:stretch; justify-content:center;
+      cursor:grab; user-select:none; -webkit-user-select:none;
+      will-change:transform; overflow:hidden;
+    }
+    .phrase-inner {
+      padding:24px 24px; display:flex; flex-direction:column; gap:8px; width:100%;
+      overflow:hidden;
+    }
+    .phrase-hanzi {
+      font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+      font-size:2.8rem; font-weight:400; line-height:1; color:var(--txt); flex-shrink:0;
+    }
+    .phrase-pinyin { font-size:.9rem; color:var(--muted); font-weight:300; flex-shrink:0; }
+    .phrase-literal { font-size:.75rem; color:var(--faint); font-style:italic; flex-shrink:0; }
+    .phrase-divider { height:1px; background:var(--bdr); margin:2px 0; flex-shrink:0; }
+    .phrase-meaning { font-size:.8rem; color:var(--txt); line-height:1.6; font-weight:300; flex-shrink:0; }
+    .phrase-origin { font-size:.72rem; color:var(--faint); line-height:1.5; flex-shrink:0; }
+    .phrase-img { width:100%; border-radius:12px; object-fit:contain; flex:1; min-height:0; max-height:200px; margin-top:4px; mix-blend-mode:multiply; }
+    [data-theme="dark"] .phrase-img { mix-blend-mode:screen; }
     .done h2 { font-size:1.2rem; font-weight:700; }
     .done p  { font-size:.84rem; color:var(--muted); }
     .done-pills { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:4px; }
@@ -533,7 +557,29 @@
       <div class="groups-scroll" id="groups-scroll"></div>
     </div>
 
-    <!-- ── SCREEN 3: PROFILE ── -->
+    <!-- ── SCREEN 3: PHRASES ── -->
+    <div class="screen" id="screen-slang">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">刷字</div>
+          <div>
+            <div class="title">Slang</div>
+            <div class="sub">Chinese culture & slang</div>
+          </div>
+        </div>
+        <div class="hdr-stats">
+          <button class="icon-btn" id="themeBtnPh" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="deck-wrap"><div class="deck" id="deck-slang"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
+        <span>← swipe left</span><span>swipe right →</span>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 4: PROFILE ── -->
     <div class="screen" id="screen-profile">
       <div class="groups-header">
         <div>
@@ -566,6 +612,12 @@
         <rect x="14" y="14" width="7" height="7" rx="1.5"/>
       </svg>
       <span>Groups</span>
+    </button>
+    <button class="tab" id="tab-slang" aria-label="Slang">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Slang</span>
     </button>
     <button class="tab" id="tab-profile" aria-label="Profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -609,16 +661,19 @@
 /* ── DATA ── */
 let CHARACTERS = [];   // [{ id, char, pinyin, meaning, hsk }]
 let WORDS = [];        // [{ id, pinyin, meaning, chars:[id,...] }]
+let PHRASES = [];      // [{ id, pinyin, literal, meaning, origin }]
 let charById = {};     // id → character
 let wordsByChar = {};  // char → [word, ...]
 
 async function loadData(){
-  const [chars, words] = await Promise.all([
+  const [chars, words, phrases] = await Promise.all([
     fetch('./characters.json').then(r=>r.json()),
-    fetch('./words.json').then(r=>r.json())
+    fetch('./words.json').then(r=>r.json()),
+    fetch('./phrases.json').then(r=>r.json()).catch(()=>[])
   ]);
   CHARACTERS = chars;
   WORDS = words;
+  PHRASES = phrases;
   charById = Object.fromEntries(chars.map(c=>[c.id, c]));
   // Index words by each char they contain (deduplicate by word id)
   words.forEach(w=>{
@@ -1244,20 +1299,24 @@ backdrop.addEventListener('click',e=>{ if(e.target===backdrop) backdrop.classLis
 ══════════════════════ */
 const tabCards   = document.getElementById('tab-cards');
 const tabGroups  = document.getElementById('tab-groups');
+const tabPhrases = document.getElementById('tab-slang');
 const tabProfile = document.getElementById('tab-profile');
 const scrCards   = document.getElementById('screen-cards');
 const scrGroups  = document.getElementById('screen-groups');
+const scrPhrases = document.getElementById('screen-slang');
 const scrProfile = document.getElementById('screen-profile');
 
 function showTab(tab){
-  [scrCards,scrGroups,scrProfile].forEach(s=>s.classList.remove('active'));
-  [tabCards,tabGroups,tabProfile].forEach(t=>t.classList.remove('active'));
+  [scrCards,scrGroups,scrPhrases,scrProfile].forEach(s=>s.classList.remove('active'));
+  [tabCards,tabGroups,tabPhrases,tabProfile].forEach(t=>t.classList.remove('active'));
   if(tab==='cards'){   scrCards.classList.add('active');   tabCards.classList.add('active'); }
   else if(tab==='groups'){ scrGroups.classList.add('active'); tabGroups.classList.add('active'); renderGroups(); }
+  else if(tab==='slang'){ scrPhrases.classList.add('active'); tabPhrases.classList.add('active'); renderSlang(); }
   else { scrProfile.classList.add('active'); tabProfile.classList.add('active'); renderProfile(); }
 }
 tabCards.onclick  = ()=>showTab('cards');
 tabGroups.onclick = ()=>showTab('groups');
+tabPhrases.onclick= ()=>showTab('slang');
 tabProfile.onclick= ()=>showTab('profile');
 
 function renderProfile(){
@@ -1524,10 +1583,12 @@ function setTheme(t){
   document.getElementById('themeBtn').innerHTML=icon;
   document.getElementById('themeBtnG').innerHTML=icon;
   document.getElementById('themeBtnP').innerHTML=icon;
+  document.getElementById('themeBtnPh').innerHTML=icon;
 }
 document.getElementById('themeBtn').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 document.getElementById('themeBtnG').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 document.getElementById('themeBtnP').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+document.getElementById('themeBtnPh').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 
 /* keyboard */
 document.addEventListener('keydown',e=>{
@@ -1556,7 +1617,75 @@ function init(src, forceNew){
   render();
 }
 
-/* restore theme */
+/* ══════════════════════
+   PHRASES ENGINE
+══════════════════════ */
+let slangDeck = [];
+const deckPhrEl = document.getElementById('deck-slang');
+
+function shuffleArr(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){ const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]; } return b; }
+
+function renderSlang(){
+  if(!slangDeck.length) slangDeck = shuffleArr(PHRASES);
+  deckPhrEl.innerHTML='';
+  const stack = slangDeck.slice(0, 3);
+  [...stack].reverse().forEach((phrase, ri)=>{
+    const i = stack.length - 1 - ri;
+    const card = document.createElement('div');
+    card.className = 'card phrase-card';
+    card.style.zIndex = i + 1;
+    card.style.transform = i===stack.length-1 ? '' : `scale(${0.97 - (stack.length-1-i)*0.01}) translateY(${(stack.length-1-i)*6}px)`;
+    card.innerHTML = `
+      <div class="phrase-inner">
+        <div class="phrase-hanzi">${phrase.id}</div>
+        <div class="phrase-pinyin">${phrase.pinyin}</div>
+        <div class="phrase-literal">${phrase.literal}</div>
+        <div class="phrase-divider"></div>
+        <div class="phrase-meaning">${phrase.meaning}</div>
+        ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
+        ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" onerror="this.style.display='none'"/>` : ''}
+      </div>
+    `;
+    deckPhrEl.appendChild(card);
+    if(i === stack.length-1) attachPhraseSwipe(card, phrase);
+  });
+}
+
+function attachPhraseSwipe(cardEl, phrase){
+  let startX=0, dx=0, active=false;
+  cardEl.addEventListener('pointerdown', e=>{
+    startX=e.clientX; dx=0; active=true;
+    cardEl.style.transition='none';
+    cardEl.setPointerCapture(e.pointerId);
+  });
+  cardEl.addEventListener('pointermove', e=>{
+    if(!active) return;
+    dx=e.clientX-startX;
+    cardEl.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`;
+    cardEl.style.opacity=String(Math.max(.7, 1-Math.abs(dx)/300));
+  });
+  cardEl.addEventListener('pointerup', ()=>{
+    if(!active) return; active=false;
+    if(Math.abs(dx)>80){
+      // dismiss card
+      const dir = dx>0 ? 1 : -1;
+      cardEl.style.transition='transform 300ms ease, opacity 300ms ease';
+      cardEl.style.transform=`translateX(${dir*120}%) rotate(${dir*20}deg)`;
+      cardEl.style.opacity='0';
+      // remove from deck and re-render
+      slangDeck.splice(slangDeck.indexOf(phrase), 1);
+      if(!slangDeck.length) slangDeck = shuffleArr(PHRASES);
+      setTimeout(renderSlang, 280);
+    } else {
+      cardEl.style.transition='transform 300ms ease, opacity 300ms ease';
+      cardEl.style.transform='';
+      cardEl.style.opacity='1';
+    }
+  });
+  cardEl.addEventListener('pointercancel', ()=>{ active=false; cardEl.style.transform=''; cardEl.style.opacity='1'; });
+}
+
+
 (()=>{
   try {
     const t = localStorage.getItem('shuazi-theme');
@@ -1605,7 +1734,7 @@ loadData().then(async ()=>{
 </script>
 
   <script>
-    if ('serviceWorker' in navigator) {
+    if('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then(reg => console.log('SW registered', reg))
