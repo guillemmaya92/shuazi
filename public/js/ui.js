@@ -257,6 +257,16 @@ export function renderProfile() {
 
   const { knownN, reviewN, leftN, pct } = computeStats();
 
+  const STATUS_CONFIG = [
+    { key: 'left',   label: 'Left',   cls: 'status-left'   },
+    { key: 'know',   label: 'Know',   cls: 'status-know'   },
+    { key: 'review', label: 'Review', cls: 'status-review' },
+  ];
+  const statusPills = STATUS_CONFIG.map(({ key, label, cls }) => {
+    const active = state.activeStatuses.has(key);
+    return `<button class="status-filter-pill ${cls} ${active ? 'active' : ''}" data-status="${key}">${label}</button>`;
+  }).join('');
+
   const filterPills = levels.map(hsk => {
     const group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return '';
@@ -334,6 +344,8 @@ export function renderProfile() {
       <div class="words-title">Filters</div>
       <div class="hsk-filter-row">${filterPills}</div>
       <p class="filter-hint">Select the HSK levels to include in your card deck.</p>
+      <div class="status-filter-row">${statusPills}</div>
+      <p class="filter-hint">Select which card statuses to include in your deck.</p>
     </div>
 
     ${state.supaUser && state.userPlan !== 'pro' ? `
@@ -398,6 +410,20 @@ export function renderProfile() {
         if (state.activeHskLevels.size > 1) { state.activeHskLevels.delete(hsk); btn.classList.remove('active'); }
       } else {
         state.activeHskLevels.add(hsk); btn.classList.add('active');
+      }
+      state.deck = buildDeck(state.CHARACTERS);
+      render();
+      updateStats();
+    });
+  });
+
+  container.querySelectorAll('.status-filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.status;
+      if (state.activeStatuses.has(key)) {
+        if (state.activeStatuses.size > 1) { state.activeStatuses.delete(key); btn.classList.remove('active'); }
+      } else {
+        state.activeStatuses.add(key); btn.classList.add('active');
       }
       state.deck = buildDeck(state.CHARACTERS);
       render();

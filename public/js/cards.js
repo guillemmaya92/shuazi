@@ -20,7 +20,11 @@ export function isAvailable(hsk) {
 
 export function buildDeck(src) {
   const filtered = src.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
-  const cards = filtered.filter(c => !state.known.has(c.char));
+  const cards = filtered.filter(c => {
+    if (state.known.has(c.char))   return state.activeStatuses.has('know');
+    if (state.unknown.has(c.char)) return state.activeStatuses.has('review');
+    return state.activeStatuses.has('left');
+  });
   shuffle(cards);
   return cards;
 }

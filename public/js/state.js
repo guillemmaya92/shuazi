@@ -10,6 +10,7 @@ export const state = {
   supaUser:      null,
   userPlan:      'free',
   activeHskLevels: new Set([1, 2, 3, 4, 5, 6]),
+  activeStatuses:  new Set(['left', 'know', 'review']),
   gridSort:      'pinyin',
   gridSearch:    '',
   slangDeck:     [],
