@@ -2,39 +2,39 @@
   "name": "shuazi",
   "short_name": "shuazi",
   "description": "juego de escribir caracteres chinos",
-  "start_url": "/shuazi/index.html",
-  "scope": "/shuazi/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0e1215",
   "theme_color": "#0e1215",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/shuazi/icons/icon-96.png",
+      "src": "/icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/shuazi/icons/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/shuazi/icons/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/shuazi/icons/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/shuazi/icons/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
