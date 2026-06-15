@@ -1,10 +1,9 @@
 import http.server
 import socketserver
 import socket
+import os
 
-# Ruta de tu proyecto
-DIRECTORY = r"C:\Users\guill\Desktop\Guillem\Github\shuazi"
-
+DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 PORT = 8000
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -14,7 +13,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # no hace falta conectarse realmente
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
     except Exception:

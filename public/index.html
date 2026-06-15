@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"/>
+  <meta name="apple-mobile-web-app-title" content="刷子"/>
+  <meta name="theme-color" content="#0e1215"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="stylesheet" href="./styles.css"/>
+  <title>刷子</title>
+</head>
+<body>
+<div class="root">
+
+  <!-- SCREENS -->
+  <div class="screens">
+
+    <!-- ── SCREEN 1: FLASHCARDS ── -->
+    <div class="screen active" id="screen-cards">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">刷字</div>
+          <div>
+            <div class="title">shuazi</div>
+            <div class="sub">HSK1-6</div>
+          </div>
+        </div>
+        <div class="hdr-stats">
+          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l">Left</div></div>
+          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l">Known</div></div>
+          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l">Review</div></div>
+          <button class="icon-btn" id="themeBtn" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="deck-wrap"><div class="deck" id="deck"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
+        <span>← Left</span><span>↑ Review · Tap</span><span>Known →</span>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 2: GRUPOS HSK ── -->
+    <div class="screen" id="screen-groups">
+      <div class="groups-header">
+        <div>
+          <div class="groups-title">HSK Groups</div>
+          <div class="groups-sub">Tap a character to see details</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="icon-btn sort-btn" id="sortBtn" aria-label="Sort">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M19 12l-3-3 3 3 3-3"/></svg>
+            <span id="sortLabel" style="font-size:.52rem;font-weight:700;letter-spacing:.04em;margin-left:2px">Pinyin</span>
+          </button>
+          <button class="icon-btn" id="searchToggleBtn" aria-label="Search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+          <button class="icon-btn" id="themeBtnG" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="groups-legend">
+        <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
+        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
+      </div>
+      <div class="search-bar-wrap" id="searchBarWrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <button id="searchClear" aria-label="Clear">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p id="searchHint" style="font-size:.58rem;color:var(--faint);opacity:.6;margin:0;display:none">Use quotes (" ") to search for an exact character</p>
+      <div class="groups-scroll" id="groups-scroll"></div>
+    </div>
+
+    <!-- ── SCREEN 3: PHRASES ── -->
+    <div class="screen" id="screen-slang">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">刷字</div>
+          <div>
+            <div class="title">Slang</div>
+            <div class="sub">Chinese culture & slang</div>
+          </div>
+        </div>
+        <div class="hdr-stats">
+          <button class="icon-btn" id="themeBtnPh" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="deck-wrap"><div class="deck" id="deck-slang"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
+        <span>← swipe left</span><span>swipe right →</span>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 4: PROFILE ── -->
+    <div class="screen" id="screen-profile">
+      <div class="groups-header">
+        <div>
+          <div class="groups-title">Profile</div>
+          <div class="groups-sub">Your progress overview</div>
+        </div>
+        <button class="icon-btn" id="themeBtnP" aria-label="Theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+      <div class="groups-scroll" id="profile-scroll"></div>
+    </div>
+
+  </div>
+
+  <!-- TAB BAR -->
+  <nav class="tabbar" style="min-height:52px">
+    <button class="tab active" id="tab-cards" aria-label="Flashcards">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="4" width="20" height="16" rx="3"/>
+        <path d="M8 10h8M8 14h5"/>
+      </svg>
+      <span>Cards</span>
+    </button>
+    <button class="tab" id="tab-groups" aria-label="HSK Groups">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      <span>Groups</span>
+    </button>
+    <button class="tab" id="tab-slang" aria-label="Slang">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Slang</span>
+    </button>
+    <button class="tab" id="tab-profile" aria-label="Profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      <span>Profile</span>
+    </button>
+  </nav>
+</div>
+
+<!-- CHAR DETAIL MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-backdrop" id="reset-backdrop" style="display:none">
+  <div class="modal" id="reset-modal" style="gap:16px">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;font-size:2rem">⚠️</div>
+    <div style="text-align:center">
+      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px">Reset all progress?</div>
+      <div style="font-size:.75rem;color:var(--faint);line-height:1.6">This will permanently delete all your Known and Review marks. This action cannot be undone.</div>
+    </div>
+    <div id="reset-stats" style="background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-around;text-align:center"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="resetConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer">Yes, reset everything</button>
+      <button id="resetCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

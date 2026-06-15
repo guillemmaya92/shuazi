@@ -1,0 +1,17 @@
+export const state = {
+  CHARACTERS:    [],
+  WORDS:         [],
+  PHRASES:       [],
+  charById:      {},
+  wordsByChar:   {},
+  deck:          [],
+  known:         new Set(),
+  unknown:       new Set(),
+  supaUser:      null,
+  userPlan:      'free',
+  activeHskLevels: new Set([1, 2, 3, 4, 5, 6]),
+  gridSort:      'pinyin',
+  gridSearch:    '',
+  slangDeck:     [],
+  syncTimer:     null,
+};
