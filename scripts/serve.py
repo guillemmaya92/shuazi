@@ -7,6 +7,14 @@ DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'publ
 PORT = 8000
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        '.js':   'application/javascript',
+        '.mjs':  'application/javascript',
+        '.json': 'application/json',
+        '.css':  'text/css',
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
