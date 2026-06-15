@@ -446,6 +446,23 @@ export function renderProfile() {
 /* ── SLANG ── */
 function shuffleArr(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = 0 | Math.random() * (i + 1); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 
+function makeSlangCardEl(phrase) {
+  const card = document.createElement('div');
+  card.className = 'card phrase-card';
+  card.innerHTML = `
+    <div class="phrase-inner">
+      <div class="phrase-hanzi">${phrase.id}</div>
+      <div class="phrase-pinyin">${phrase.pinyin}</div>
+      <div class="phrase-literal">${phrase.literal}</div>
+      <div class="phrase-divider"></div>
+      <div class="phrase-meaning">${phrase.meaning}</div>
+      ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
+      ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" onerror="this.style.display='none'"/>` : ''}
+    </div>
+  `;
+  return card;
+}
+
 export function renderSlang() {
   const deckPhrEl = document.getElementById('deck-slang');
   if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
@@ -453,21 +470,9 @@ export function renderSlang() {
   const stack = state.slangDeck.slice(0, 3);
   [...stack].reverse().forEach((phrase, ri) => {
     const i = stack.length - 1 - ri;
-    const card = document.createElement('div');
-    card.className = 'card phrase-card';
+    const card = makeSlangCardEl(phrase);
     card.style.zIndex = i + 1;
     card.style.transform = i === stack.length - 1 ? '' : `scale(${0.97 - (stack.length - 1 - i) * 0.01}) translateY(${(stack.length - 1 - i) * 6}px)`;
-    card.innerHTML = `
-      <div class="phrase-inner">
-        <div class="phrase-hanzi">${phrase.id}</div>
-        <div class="phrase-pinyin">${phrase.pinyin}</div>
-        <div class="phrase-literal">${phrase.literal}</div>
-        <div class="phrase-divider"></div>
-        <div class="phrase-meaning">${phrase.meaning}</div>
-        ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
-        ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" onerror="this.style.display='none'"/>` : ''}
-      </div>
-    `;
     deckPhrEl.appendChild(card);
     if (i === stack.length - 1) attachPhraseSwipe(card, phrase);
   });
@@ -495,7 +500,32 @@ function attachPhraseSwipe(cardEl, phrase) {
       cardEl.style.opacity = '0';
       state.slangDeck.splice(state.slangDeck.indexOf(phrase), 1);
       if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
-      setTimeout(renderSlang, 280);
+
+      const deckPhrEl = document.getElementById('deck-slang');
+      const bgCards = [...deckPhrEl.querySelectorAll('.phrase-card')].filter(c => c !== cardEl);
+
+      if (bgCards.length === 0) { setTimeout(renderSlang, 310); return; }
+
+      const newStack = state.slangDeck.slice(0, 3);
+      const N = newStack.length;
+      bgCards.forEach((bgCard, i) => {
+        const newI = N - bgCards.length + i;
+        bgCard.style.transition = 'transform 200ms ease';
+        bgCard.style.zIndex = newI + 1;
+        bgCard.style.transform = newI === N - 1 ? '' : `scale(${0.97 - (N - 1 - newI) * 0.01}) translateY(${(N - 1 - newI) * 6}px)`;
+      });
+
+      const newTopCard = bgCards[bgCards.length - 1];
+      setTimeout(() => {
+        cardEl.remove();
+        if (state.slangDeck.length >= 3) {
+          const newCard = makeSlangCardEl(state.slangDeck[2]);
+          newCard.style.zIndex = 1;
+          newCard.style.transform = `scale(${0.97 - (N - 1) * 0.01}) translateY(${(N - 1) * 6}px)`;
+          deckPhrEl.insertBefore(newCard, deckPhrEl.firstChild);
+        }
+        if (newTopCard.isConnected) attachPhraseSwipe(newTopCard, state.slangDeck[0]);
+      }, 310);
     } else {
       cardEl.style.transition = 'transform 300ms ease, opacity 300ms ease';
       cardEl.style.transform = '';
