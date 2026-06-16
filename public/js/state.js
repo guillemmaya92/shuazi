@@ -2,6 +2,7 @@ export const state = {
   CHARACTERS:    [],
   WORDS:         [],
   PHRASES:       [],
+  RADICALS:      [],
   charById:      {},
   wordsByChar:   {},
   deck:          [],

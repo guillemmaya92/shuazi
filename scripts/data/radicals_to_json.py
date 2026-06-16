@@ -18,7 +18,8 @@ for _, row in df.iterrows():
         "meaning":     str(row["meaning"])     if pd.notna(row["meaning"])     else "",
         "pinyin":      str(row["pinyin"])      if pd.notna(row["pinyin"])      else "",
         "stroke":      str(int(row["stroke"])) if pd.notna(row["stroke"])      else "",
-        "frequency":   str(int(row["frequency"])) if pd.notna(row["frequency"]) else "",
+        "productive":   str(int(row["productive"])) if pd.notna(row["productive"]) else "",
+        "coverage":   str(int(row["coverage"])) if pd.notna(row["coverage"]) else "",
     }
     data.append(item)
  

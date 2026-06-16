@@ -6,12 +6,88 @@ import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, 
 
 /* ── GROUPS ── */
 const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
+let radicalsCollapsed = true;
+let activeRadical = null;
 
 export function renderGroups() {
   const container = document.getElementById('groups-scroll');
   const levels = [1, 2, 3, 4, 5, 6];
   const q = state.gridSearch.trim();
   container.innerHTML = '';
+
+  if (state.RADICALS?.length) {
+    let sortedRadicals = [...state.RADICALS];
+    if (q) {
+      const exact = q.startsWith('"') && q.endsWith('"') && q.length > 2;
+      const term = exact ? q.slice(1, -1) : q;
+      sortedRadicals = sortedRadicals.filter(r =>
+        r.radical.includes(term) ||
+        (exact
+          ? normalizePinyin(r.pinyin) === normalizePinyin(term)
+          : normalizePinyin(r.pinyin).includes(normalizePinyin(term)) || r.meaning.toLowerCase().includes(term.toLowerCase())
+        )
+      );
+    }
+
+    const radDiv = document.createElement('div');
+    radDiv.className = 'hsk-group';
+    radDiv.innerHTML = `
+      <div class="hsk-group-header">
+        <div class="hsk-group-label">
+          <span class="badge radical">Radicals</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--faint);flex-shrink:0"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          <span class="count">${q ? `${sortedRadicals.length} / ${state.RADICALS.length}` : `${state.RADICALS.length}`} radicals</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg class="chevron ${(q ? false : radicalsCollapsed) ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="char-grid-wrap ${(q ? false : radicalsCollapsed) ? 'collapsed' : ''}"><div class="char-grid"></div></div>
+    `;
+    container.appendChild(radDiv);
+
+    const radHeader = radDiv.querySelector('.hsk-group-header');
+    const radWrap   = radDiv.querySelector('.char-grid-wrap');
+    const radGrid   = radDiv.querySelector('.char-grid');
+    const radChev   = radDiv.querySelector('.chevron');
+    if (activeRadical) radGrid.classList.add('radical-filtered');
+
+    radHeader.addEventListener('click', () => {
+      if (radicalsCollapsed) { radicalsCollapsed = false; radWrap.classList.remove('collapsed'); radChev.classList.add('open'); }
+      else { radicalsCollapsed = true; radWrap.classList.add('collapsed'); radChev.classList.remove('open'); }
+    });
+
+    if (state.gridSort === 'pinyin')          sortedRadicals.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
+    else if (state.gridSort === 'productive') sortedRadicals.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
+    else if (state.gridSort === 'coverage')   sortedRadicals.sort((a, b) => (Number(b.coverage)   || 0) - (Number(a.coverage)   || 0));
+    else if (state.gridSort === 'stroke')     sortedRadicals.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
+    else                                      sortedRadicals.sort((a, b) => Number(a.id) - Number(b.id));
+
+    sortedRadicals.forEach(rad => {
+      const tile = document.createElement('button');
+      tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '');
+      tile.title = `${rad.meaning} · ${rad.stroke} stroke${rad.stroke === '1' ? '' : 's'}`;
+      tile.innerHTML = `<div class="tc">${rad.radical}</div><div class="tp">${rad.pinyin}</div>`;
+      let radPressTimer = null;
+      tile.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        radPressTimer = setTimeout(() => {
+          radPressTimer = null;
+          activeRadical = activeRadical === rad.radical ? null : rad.radical;
+          renderGroups();
+          if (navigator.vibrate) navigator.vibrate(30);
+        }, 450);
+      });
+      tile.addEventListener('pointerup', () => {
+        if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; openRadicalModal(rad); }
+      });
+      tile.addEventListener('pointercancel', () => { if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; } });
+      tile.addEventListener('pointermove', e => { if (radPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(radPressTimer); radPressTimer = null; } });
+      tile.addEventListener('contextmenu', e => e.preventDefault());
+      radGrid.appendChild(tile);
+    });
+  }
+
   levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
@@ -28,6 +104,8 @@ export function renderGroups() {
       );
     }
     if (!group.length) return;
+    if (activeRadical) group = group.filter(c => c.radical === activeRadical);
+    if (!group.length) return;
     if (state.gridSort === 'pinyin')      group = [...group].sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') group = [...group].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
     else if (state.gridSort === 'coverage')   group = [...group].sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0));
@@ -38,7 +116,7 @@ export function renderGroups() {
     const pct = group.length ? Math.round(knownCount / group.length * 100) : 0;
     const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
     const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill' };
-    const isCollapsed = q ? false : collapsedGroups.has(hsk);
+    const isCollapsed = (q || activeRadical) ? false : collapsedGroups.has(hsk);
     const isLocked = state.userPlan === 'free' && !isAvailable(hsk);
 
     const div = document.createElement('div');
@@ -204,6 +282,28 @@ export function openModal(card) {
 
   backdrop.classList.add('open');
 }
+
+function openRadicalModal(rad) {
+  const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
+  const charsHTML = chars.length === 0
+    ? '<div class="word-item" style="color:var(--faint)">No characters found</div>'
+    : chars.map(c =>
+        `<div class="word-item"><strong style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.1rem">${c.char}</strong><span class="word-pinyin">${c.pinyin}</span><span class="word-meaning">${c.meaning}</span></div>`
+      ).join('');
+
+  modalContent.innerHTML = `
+    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
+      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div>
+      <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
+      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
+    </div>
+    <div class="words-title">Compound characters <span style="font-size:.65rem;color:var(--faint);font-weight:400">(${chars.length})</span></div>
+    <div class="words-list">${charsHTML}</div>
+  `;
+  backdrop.classList.add('open');
+}
+
 backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
 
 /* ── TABS ── */

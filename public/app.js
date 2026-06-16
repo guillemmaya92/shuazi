@@ -6,14 +6,16 @@ import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 
 async function loadData() {
-  const [chars, words, phrases] = await Promise.all([
+  const [chars, words, phrases, radicals] = await Promise.all([
     fetch('./data/characters.json').then(r => r.json()),
     fetch('./data/words.json').then(r => r.json()),
-    fetch('./data/phrases.json').then(r => r.json()).catch(() => [])
+    fetch('./data/slang.json').then(r => r.json()).catch(() => []),
+    fetch('./data/radicals.json').then(r => r.json()).catch(() => [])
   ]);
   state.CHARACTERS = chars;
   state.WORDS      = words;
   state.PHRASES    = phrases;
+  state.RADICALS   = radicals;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
   words.forEach(w => {
     const seen = new Set();

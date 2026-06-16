@@ -6,7 +6,8 @@
     "meaning": "one",
     "pinyin": "yī",
     "stroke": "1",
-    "frequency": "42"
+    "productive": "42",
+    "coverage": "0"
   },
   {
     "id": "2",
@@ -15,7 +16,8 @@
     "meaning": "line",
     "pinyin": "shù",
     "stroke": "1",
-    "frequency": "21"
+    "productive": "21",
+    "coverage": "0"
   },
   {
     "id": "3",
@@ -24,7 +26,8 @@
     "meaning": "dot",
     "pinyin": "diǎn",
     "stroke": "1",
-    "frequency": "10"
+    "productive": "10",
+    "coverage": "0"
   },
   {
     "id": "4",
@@ -33,7 +36,8 @@
     "meaning": "slash",
     "pinyin": "piě",
     "stroke": "1",
-    "frequency": "33"
+    "productive": "33",
+    "coverage": "0"
   },
   {
     "id": "5",
@@ -42,7 +46,8 @@
     "meaning": "second",
     "pinyin": "yǐ",
     "stroke": "1",
-    "frequency": "42"
+    "productive": "42",
+    "coverage": "0"
   },
   {
     "id": "6",
@@ -51,7 +56,8 @@
     "meaning": "hook",
     "pinyin": "gōu",
     "stroke": "1",
-    "frequency": "19"
+    "productive": "19",
+    "coverage": "0"
   },
   {
     "id": "7",
@@ -60,7 +66,8 @@
     "meaning": "two",
     "pinyin": "èr",
     "stroke": "2",
-    "frequency": "29"
+    "productive": "29",
+    "coverage": "0"
   },
   {
     "id": "8",
@@ -69,7 +76,8 @@
     "meaning": "lid",
     "pinyin": "tóu",
     "stroke": "2",
-    "frequency": "38"
+    "productive": "38",
+    "coverage": "0"
   },
   {
     "id": "9",
@@ -78,7 +86,8 @@
     "meaning": "person",
     "pinyin": "rén",
     "stroke": "2",
-    "frequency": "794"
+    "productive": "794",
+    "coverage": "0"
   },
   {
     "id": "10",
@@ -87,7 +96,8 @@
     "meaning": "legs",
     "pinyin": "ér",
     "stroke": "2",
-    "frequency": "52"
+    "productive": "52",
+    "coverage": "0"
   },
   {
     "id": "11",
@@ -96,7 +106,8 @@
     "meaning": "enter",
     "pinyin": "rù",
     "stroke": "2",
-    "frequency": "28"
+    "productive": "28",
+    "coverage": "0"
   },
   {
     "id": "12",
@@ -105,7 +116,8 @@
     "meaning": "eight",
     "pinyin": "bā",
     "stroke": "2",
-    "frequency": "44"
+    "productive": "44",
+    "coverage": "0"
   },
   {
     "id": "13",
@@ -114,7 +126,8 @@
     "meaning": "down box",
     "pinyin": "jiǒng",
     "stroke": "2",
-    "frequency": "50"
+    "productive": "50",
+    "coverage": "0"
   },
   {
     "id": "14",
@@ -123,7 +136,8 @@
     "meaning": "cover",
     "pinyin": "mì",
     "stroke": "2",
-    "frequency": "30"
+    "productive": "30",
+    "coverage": "0"
   },
   {
     "id": "15",
@@ -132,7 +146,8 @@
     "meaning": "ice",
     "pinyin": "bīng",
     "stroke": "2",
-    "frequency": "115"
+    "productive": "115",
+    "coverage": "0"
   },
   {
     "id": "16",
@@ -141,7 +156,8 @@
     "meaning": "table",
     "pinyin": "jī, jǐ",
     "stroke": "2",
-    "frequency": "38"
+    "productive": "38",
+    "coverage": "0"
   },
   {
     "id": "17",
@@ -150,7 +166,8 @@
     "meaning": "open box",
     "pinyin": "qǔ",
     "stroke": "2",
-    "frequency": "23"
+    "productive": "23",
+    "coverage": "0"
   },
   {
     "id": "18",
@@ -159,7 +176,8 @@
     "meaning": "knife",
     "pinyin": "dāo",
     "stroke": "2",
-    "frequency": "377"
+    "productive": "377",
+    "coverage": "0"
   },
   {
     "id": "19",
@@ -168,7 +186,8 @@
     "meaning": "power",
     "pinyin": "lì",
     "stroke": "2",
-    "frequency": "163"
+    "productive": "163",
+    "coverage": "0"
   },
   {
     "id": "20",
@@ -177,7 +196,8 @@
     "meaning": "wrap",
     "pinyin": "bāo",
     "stroke": "2",
-    "frequency": "64"
+    "productive": "64",
+    "coverage": "0"
   },
   {
     "id": "21",
@@ -186,7 +206,8 @@
     "meaning": "spoon",
     "pinyin": "bǐ",
     "stroke": "2",
-    "frequency": "19"
+    "productive": "19",
+    "coverage": "0"
   },
   {
     "id": "22",
@@ -195,7 +216,8 @@
     "meaning": "right open box",
     "pinyin": "fāng",
     "stroke": "2",
-    "frequency": "64"
+    "productive": "64",
+    "coverage": "0"
   },
   {
     "id": "23",
@@ -204,7 +226,8 @@
     "meaning": "hiding enclosure",
     "pinyin": "xǐ",
     "stroke": "2",
-    "frequency": "17"
+    "productive": "17",
+    "coverage": "0"
   },
   {
     "id": "24",
@@ -213,7 +236,8 @@
     "meaning": "ten",
     "pinyin": "shí",
     "stroke": "2",
-    "frequency": "55"
+    "productive": "55",
+    "coverage": "0"
   },
   {
     "id": "25",
@@ -222,7 +246,8 @@
     "meaning": "divination",
     "pinyin": "bǔ",
     "stroke": "2",
-    "frequency": "45"
+    "productive": "45",
+    "coverage": "0"
   },
   {
     "id": "26",
@@ -231,7 +256,8 @@
     "meaning": "seal",
     "pinyin": "jié",
     "stroke": "2",
-    "frequency": "40"
+    "productive": "40",
+    "coverage": "0"
   },
   {
     "id": "27",
@@ -240,7 +266,8 @@
     "meaning": "cliff",
     "pinyin": "hàn",
     "stroke": "2",
-    "frequency": "129"
+    "productive": "129",
+    "coverage": "0"
   },
   {
     "id": "28",
@@ -249,7 +276,8 @@
     "meaning": "private",
     "pinyin": "sī",
     "stroke": "2",
-    "frequency": "40"
+    "productive": "40",
+    "coverage": "0"
   },
   {
     "id": "29",
@@ -258,7 +286,8 @@
     "meaning": "again",
     "pinyin": "yòu",
     "stroke": "2",
-    "frequency": "91"
+    "productive": "91",
+    "coverage": "0"
   },
   {
     "id": "30",
@@ -267,7 +296,8 @@
     "meaning": "mouth",
     "pinyin": "kǒu",
     "stroke": "3",
-    "frequency": "1146"
+    "productive": "1146",
+    "coverage": "0"
   },
   {
     "id": "31",
@@ -276,7 +306,8 @@
     "meaning": "enclosure",
     "pinyin": "wéi",
     "stroke": "3",
-    "frequency": "118"
+    "productive": "118",
+    "coverage": "0"
   },
   {
     "id": "32",
@@ -285,7 +316,8 @@
     "meaning": "earth",
     "pinyin": "tǔ",
     "stroke": "3",
-    "frequency": "580"
+    "productive": "580",
+    "coverage": "0"
   },
   {
     "id": "33",
@@ -294,7 +326,8 @@
     "meaning": "scholar",
     "pinyin": "shì",
     "stroke": "3",
-    "frequency": "24"
+    "productive": "24",
+    "coverage": "0"
   },
   {
     "id": "34",
@@ -303,7 +336,8 @@
     "meaning": "go",
     "pinyin": "zhī",
     "stroke": "3",
-    "frequency": "11"
+    "productive": "11",
+    "coverage": "0"
   },
   {
     "id": "35",
@@ -312,7 +346,8 @@
     "meaning": "go slowly",
     "pinyin": "suī",
     "stroke": "3",
-    "frequency": "23"
+    "productive": "23",
+    "coverage": "0"
   },
   {
     "id": "36",
@@ -321,7 +356,8 @@
     "meaning": "night",
     "pinyin": "xī",
     "stroke": "3",
-    "frequency": "34"
+    "productive": "34",
+    "coverage": "0"
   },
   {
     "id": "37",
@@ -330,7 +366,8 @@
     "meaning": "big",
     "pinyin": "dà",
     "stroke": "3",
-    "frequency": "132"
+    "productive": "132",
+    "coverage": "0"
   },
   {
     "id": "38",
@@ -339,7 +376,8 @@
     "meaning": "woman",
     "pinyin": "nǚ",
     "stroke": "3",
-    "frequency": "681"
+    "productive": "681",
+    "coverage": "0"
   },
   {
     "id": "39",
@@ -348,7 +386,8 @@
     "meaning": "child",
     "pinyin": "zǐ",
     "stroke": "3",
-    "frequency": "83"
+    "productive": "83",
+    "coverage": "0"
   },
   {
     "id": "40",
@@ -357,7 +396,8 @@
     "meaning": "roof",
     "pinyin": "mián",
     "stroke": "3",
-    "frequency": "246"
+    "productive": "246",
+    "coverage": "0"
   },
   {
     "id": "41",
@@ -366,7 +406,8 @@
     "meaning": "inch",
     "pinyin": "cùn",
     "stroke": "3",
-    "frequency": "40"
+    "productive": "40",
+    "coverage": "0"
   },
   {
     "id": "42",
@@ -375,7 +416,8 @@
     "meaning": "small",
     "pinyin": "xiǎo",
     "stroke": "3",
-    "frequency": "41"
+    "productive": "41",
+    "coverage": "0"
   },
   {
     "id": "43",
@@ -384,7 +426,8 @@
     "meaning": "lame",
     "pinyin": "yóu",
     "stroke": "3",
-    "frequency": "66"
+    "productive": "66",
+    "coverage": "0"
   },
   {
     "id": "44",
@@ -393,7 +436,8 @@
     "meaning": "corpse",
     "pinyin": "shī",
     "stroke": "3",
-    "frequency": "148"
+    "productive": "148",
+    "coverage": "0"
   },
   {
     "id": "45",
@@ -402,7 +446,8 @@
     "meaning": "sprout",
     "pinyin": "chè",
     "stroke": "3",
-    "frequency": "38"
+    "productive": "38",
+    "coverage": "0"
   },
   {
     "id": "46",
@@ -411,7 +456,8 @@
     "meaning": "mountain",
     "pinyin": "shān",
     "stroke": "3",
-    "frequency": "636"
+    "productive": "636",
+    "coverage": "0"
   },
   {
     "id": "47",
@@ -420,7 +466,8 @@
     "meaning": "river",
     "pinyin": "chuān",
     "stroke": "3",
-    "frequency": "26"
+    "productive": "26",
+    "coverage": "0"
   },
   {
     "id": "48",
@@ -429,7 +476,8 @@
     "meaning": "work",
     "pinyin": "gōng",
     "stroke": "3",
-    "frequency": "17"
+    "productive": "17",
+    "coverage": "0"
   },
   {
     "id": "49",
@@ -438,7 +486,8 @@
     "meaning": "oneself",
     "pinyin": "jǐ",
     "stroke": "3",
-    "frequency": "20"
+    "productive": "20",
+    "coverage": "0"
   },
   {
     "id": "50",
@@ -447,7 +496,8 @@
     "meaning": "towel",
     "pinyin": "jīn",
     "stroke": "3",
-    "frequency": "295"
+    "productive": "295",
+    "coverage": "0"
   },
   {
     "id": "51",
@@ -456,7 +506,8 @@
     "meaning": "dry",
     "pinyin": "gān",
     "stroke": "3",
-    "frequency": "9"
+    "productive": "9",
+    "coverage": "0"
   },
   {
     "id": "52",
@@ -465,7 +516,8 @@
     "meaning": "thread",
     "pinyin": "yāo",
     "stroke": "3",
-    "frequency": "50"
+    "productive": "50",
+    "coverage": "0"
   },
   {
     "id": "53",
@@ -474,7 +526,8 @@
     "meaning": "shelter",
     "pinyin": "guǎng",
     "stroke": "3",
-    "frequency": "15"
+    "productive": "15",
+    "coverage": "0"
   },
   {
     "id": "54",
@@ -483,7 +536,8 @@
     "meaning": "stride",
     "pinyin": "yǐn",
     "stroke": "2",
-    "frequency": "9"
+    "productive": "9",
+    "coverage": "0"
   },
   {
     "id": "55",
@@ -492,7 +546,8 @@
     "meaning": "hands joined",
     "pinyin": "gǒng",
     "stroke": "3",
-    "frequency": "50"
+    "productive": "50",
+    "coverage": "0"
   },
   {
     "id": "56",
@@ -501,7 +556,8 @@
     "meaning": "shoot with a bow",
     "pinyin": "yì",
     "stroke": "3",
-    "frequency": "15"
+    "productive": "15",
+    "coverage": "0"
   },
   {
     "id": "57",
@@ -510,7 +566,8 @@
     "meaning": "bow",
     "pinyin": "gōng",
     "stroke": "3",
-    "frequency": "165"
+    "productive": "165",
+    "coverage": "0"
   },
   {
     "id": "58",
@@ -519,7 +576,8 @@
     "meaning": "snout",
     "pinyin": "jì",
     "stroke": "3",
-    "frequency": "25"
+    "productive": "25",
+    "coverage": "0"
   },
   {
     "id": "59",
@@ -528,7 +586,8 @@
     "meaning": "hair",
     "pinyin": "shān",
     "stroke": "3",
-    "frequency": "62"
+    "productive": "62",
+    "coverage": "0"
   },
   {
     "id": "60",
@@ -537,7 +596,8 @@
     "meaning": "step",
     "pinyin": "chì",
     "stroke": "3",
-    "frequency": "215"
+    "productive": "215",
+    "coverage": "0"
   },
   {
     "id": "61",
@@ -546,7 +606,8 @@
     "meaning": "heart",
     "pinyin": "xīn",
     "stroke": "4",
-    "frequency": "1115"
+    "productive": "1115",
+    "coverage": "0"
   },
   {
     "id": "62",
@@ -555,7 +616,8 @@
     "meaning": "spear",
     "pinyin": "gē",
     "stroke": "4",
-    "frequency": "116"
+    "productive": "116",
+    "coverage": "0"
   },
   {
     "id": "63",
@@ -564,7 +626,8 @@
     "meaning": "door",
     "pinyin": "hù",
     "stroke": "4",
-    "frequency": "44"
+    "productive": "44",
+    "coverage": "0"
   },
   {
     "id": "64",
@@ -573,7 +636,8 @@
     "meaning": "hand",
     "pinyin": "shǒu",
     "stroke": "4",
-    "frequency": "1203"
+    "productive": "1203",
+    "coverage": "0"
   },
   {
     "id": "65",
@@ -582,7 +646,8 @@
     "meaning": "branch",
     "pinyin": "zhī",
     "stroke": "4",
-    "frequency": "26"
+    "productive": "26",
+    "coverage": "0"
   },
   {
     "id": "66",
@@ -591,7 +656,8 @@
     "meaning": "rap",
     "pinyin": "pū",
     "stroke": "4",
-    "frequency": "296"
+    "productive": "296",
+    "coverage": "0"
   },
   {
     "id": "67",
@@ -600,7 +666,8 @@
     "meaning": "script",
     "pinyin": "wén",
     "stroke": "4",
-    "frequency": "26"
+    "productive": "26",
+    "coverage": "0"
   },
   {
     "id": "68",
@@ -609,7 +676,8 @@
     "meaning": "dipper",
     "pinyin": "dǒu",
     "stroke": "4",
-    "frequency": "32"
+    "productive": "32",
+    "coverage": "0"
   },
   {
     "id": "69",
@@ -618,7 +686,8 @@
     "meaning": "axe",
     "pinyin": "jīn",
     "stroke": "4",
-    "frequency": "55"
+    "productive": "55",
+    "coverage": "0"
   },
   {
     "id": "70",
@@ -627,7 +696,8 @@
     "meaning": "square",
     "pinyin": "fāng",
     "stroke": "4",
-    "frequency": "92"
+    "productive": "92",
+    "coverage": "0"
   },
   {
     "id": "71",
@@ -636,7 +706,8 @@
     "meaning": "not",
     "pinyin": "wú",
     "stroke": "4",
-    "frequency": "12"
+    "productive": "12",
+    "coverage": "0"
   },
   {
     "id": "72",
@@ -645,7 +716,8 @@
     "meaning": "sun",
     "pinyin": "rì",
     "stroke": "4",
-    "frequency": "453"
+    "productive": "453",
+    "coverage": "0"
   },
   {
     "id": "73",
@@ -654,7 +726,8 @@
     "meaning": "say",
     "pinyin": "yuē",
     "stroke": "4",
-    "frequency": "37"
+    "productive": "37",
+    "coverage": "0"
   },
   {
     "id": "74",
@@ -663,7 +736,8 @@
     "meaning": "moon",
     "pinyin": "yuè",
     "stroke": "4",
-    "frequency": "69"
+    "productive": "69",
+    "coverage": "0"
   },
   {
     "id": "75",
@@ -672,7 +746,8 @@
     "meaning": "tree",
     "pinyin": "mù",
     "stroke": "4",
-    "frequency": "1369"
+    "productive": "1369",
+    "coverage": "0"
   },
   {
     "id": "76",
@@ -681,7 +756,8 @@
     "meaning": "lack",
     "pinyin": "qiàn",
     "stroke": "4",
-    "frequency": "235"
+    "productive": "235",
+    "coverage": "0"
   },
   {
     "id": "77",
@@ -690,7 +766,8 @@
     "meaning": "stop",
     "pinyin": "zhǐ",
     "stroke": "4",
-    "frequency": "99"
+    "productive": "99",
+    "coverage": "0"
   },
   {
     "id": "78",
@@ -699,7 +776,8 @@
     "meaning": "death",
     "pinyin": "dǎi",
     "stroke": "4",
-    "frequency": "231"
+    "productive": "231",
+    "coverage": "0"
   },
   {
     "id": "79",
@@ -708,7 +786,8 @@
     "meaning": "weapon",
     "pinyin": "shū",
     "stroke": "4",
-    "frequency": "93"
+    "productive": "93",
+    "coverage": "0"
   },
   {
     "id": "80",
@@ -717,7 +796,8 @@
     "meaning": "do not",
     "pinyin": "mǔ",
     "stroke": "4",
-    "frequency": "16"
+    "productive": "16",
+    "coverage": "0"
   },
   {
     "id": "81",
@@ -726,7 +806,8 @@
     "meaning": "compare",
     "pinyin": "bǐ",
     "stroke": "4",
-    "frequency": "21"
+    "productive": "21",
+    "coverage": "0"
   },
   {
     "id": "82",
@@ -735,7 +816,8 @@
     "meaning": "fur",
     "pinyin": "máo",
     "stroke": "4",
-    "frequency": "211"
+    "productive": "211",
+    "coverage": "0"
   },
   {
     "id": "83",
@@ -744,7 +826,8 @@
     "meaning": "clan",
     "pinyin": "shì",
     "stroke": "4",
-    "frequency": "10"
+    "productive": "10",
+    "coverage": "0"
   },
   {
     "id": "84",
@@ -753,7 +836,8 @@
     "meaning": "steam",
     "pinyin": "qì",
     "stroke": "4",
-    "frequency": "17"
+    "productive": "17",
+    "coverage": "0"
   },
   {
     "id": "85",
@@ -762,7 +846,8 @@
     "meaning": "water",
     "pinyin": "shuǐ",
     "stroke": "4",
-    "frequency": "1595"
+    "productive": "1595",
+    "coverage": "0"
   },
   {
     "id": "86",
@@ -771,7 +856,8 @@
     "meaning": "fire",
     "pinyin": "huǒ",
     "stroke": "4",
-    "frequency": "639"
+    "productive": "639",
+    "coverage": "0"
   },
   {
     "id": "87",
@@ -780,7 +866,8 @@
     "meaning": "claw",
     "pinyin": "zhǎo",
     "stroke": "4",
-    "frequency": "36"
+    "productive": "36",
+    "coverage": "0"
   },
   {
     "id": "88",
@@ -789,7 +876,8 @@
     "meaning": "father",
     "pinyin": "fù",
     "stroke": "4",
-    "frequency": "10"
+    "productive": "10",
+    "coverage": "0"
   },
   {
     "id": "89",
@@ -798,7 +886,8 @@
     "meaning": "lines on a trigram",
     "pinyin": "yáo",
     "stroke": "4",
-    "frequency": "16"
+    "productive": "16",
+    "coverage": "0"
   },
   {
     "id": "90",
@@ -807,7 +896,8 @@
     "meaning": "half of a tree trunk",
     "pinyin": "qiáng",
     "stroke": "4",
-    "frequency": "48"
+    "productive": "48",
+    "coverage": "0"
   },
   {
     "id": "91",
@@ -816,7 +906,8 @@
     "meaning": "slice",
     "pinyin": "piàn",
     "stroke": "4",
-    "frequency": "77"
+    "productive": "77",
+    "coverage": "0"
   },
   {
     "id": "92",
@@ -825,7 +916,8 @@
     "meaning": "tooth",
     "pinyin": "yá",
     "stroke": "4",
-    "frequency": "9"
+    "productive": "9",
+    "coverage": "0"
   },
   {
     "id": "93",
@@ -834,7 +926,8 @@
     "meaning": "cow",
     "pinyin": "niú",
     "stroke": "4",
-    "frequency": "233"
+    "productive": "233",
+    "coverage": "0"
   },
   {
     "id": "94",
@@ -843,7 +936,8 @@
     "meaning": "dog",
     "pinyin": "quǎn",
     "stroke": "3",
-    "frequency": "444"
+    "productive": "444",
+    "coverage": "0"
   },
   {
     "id": "95",
@@ -852,7 +946,8 @@
     "meaning": "profound",
     "pinyin": "xuán",
     "stroke": "5",
-    "frequency": "6"
+    "productive": "6",
+    "coverage": "0"
   },
   {
     "id": "96",
@@ -861,7 +956,8 @@
     "meaning": "jade",
     "pinyin": "yù",
     "stroke": "5",
-    "frequency": "473"
+    "productive": "473",
+    "coverage": "0"
   },
   {
     "id": "97",
@@ -870,7 +966,8 @@
     "meaning": "melon",
     "pinyin": "guā",
     "stroke": "5",
-    "frequency": "55"
+    "productive": "55",
+    "coverage": "0"
   },
   {
     "id": "98",
@@ -879,7 +976,8 @@
     "meaning": "tile",
     "pinyin": "wǎ",
     "stroke": "5",
-    "frequency": "174"
+    "productive": "174",
+    "coverage": "0"
   },
   {
     "id": "99",
@@ -888,7 +986,8 @@
     "meaning": "sweet",
     "pinyin": "gān",
     "stroke": "5",
-    "frequency": "22"
+    "productive": "22",
+    "coverage": "0"
   },
   {
     "id": "100",
@@ -897,7 +996,8 @@
     "meaning": "life",
     "pinyin": "shēng",
     "stroke": "5",
-    "frequency": "22"
+    "productive": "22",
+    "coverage": "0"
   },
   {
     "id": "101",
@@ -906,7 +1006,8 @@
     "meaning": "use",
     "pinyin": "yòng",
     "stroke": "5",
-    "frequency": "10"
+    "productive": "10",
+    "coverage": "0"
   },
   {
     "id": "102",
@@ -915,7 +1016,8 @@
     "meaning": "field",
     "pinyin": "tián",
     "stroke": "5",
-    "frequency": "192"
+    "productive": "192",
+    "coverage": "0"
   },
   {
     "id": "103",
@@ -924,7 +1026,8 @@
     "meaning": "cloth",
     "pinyin": "pǐ",
     "stroke": "5",
-    "frequency": "15"
+    "productive": "15",
+    "coverage": "0"
   },
   {
     "id": "104",
@@ -933,7 +1036,8 @@
     "meaning": "ill",
     "pinyin": "bìng",
     "stroke": "5",
-    "frequency": "526"
+    "productive": "526",
+    "coverage": "0"
   },
   {
     "id": "105",
@@ -942,7 +1046,8 @@
     "meaning": "foot steps",
     "pinyin": "bō",
     "stroke": "5",
-    "frequency": "15"
+    "productive": "15",
+    "coverage": "0"
   },
   {
     "id": "106",
@@ -951,7 +1056,8 @@
     "meaning": "white",
     "pinyin": "bái",
     "stroke": "5",
-    "frequency": "109"
+    "productive": "109",
+    "coverage": "0"
   },
   {
     "id": "107",
@@ -960,7 +1066,8 @@
     "meaning": "skin",
     "pinyin": "pí",
     "stroke": "5",
-    "frequency": "94"
+    "productive": "94",
+    "coverage": "0"
   },
   {
     "id": "108",
@@ -969,7 +1076,8 @@
     "meaning": "dish",
     "pinyin": "mǐn",
     "stroke": "5",
-    "frequency": "129"
+    "productive": "129",
+    "coverage": "0"
   },
   {
     "id": "109",
@@ -978,7 +1086,8 @@
     "meaning": "eye",
     "pinyin": "mù",
     "stroke": "5",
-    "frequency": "647"
+    "productive": "647",
+    "coverage": "0"
   },
   {
     "id": "110",
@@ -987,7 +1096,8 @@
     "meaning": "spear",
     "pinyin": "máo",
     "stroke": "5",
-    "frequency": "65"
+    "productive": "65",
+    "coverage": "0"
   },
   {
     "id": "111",
@@ -996,7 +1106,8 @@
     "meaning": "arrow",
     "pinyin": "shǐ",
     "stroke": "5",
-    "frequency": "64"
+    "productive": "64",
+    "coverage": "0"
   },
   {
     "id": "112",
@@ -1005,7 +1116,8 @@
     "meaning": "stone",
     "pinyin": "shí",
     "stroke": "5",
-    "frequency": "499"
+    "productive": "499",
+    "coverage": "0"
   },
   {
     "id": "113",
@@ -1014,7 +1126,8 @@
     "meaning": "spirit",
     "pinyin": "shì",
     "stroke": "5",
-    "frequency": "213"
+    "productive": "213",
+    "coverage": "0"
   },
   {
     "id": "114",
@@ -1023,7 +1136,8 @@
     "meaning": "track",
     "pinyin": "róu",
     "stroke": "4",
-    "frequency": "12"
+    "productive": "12",
+    "coverage": "0"
   },
   {
     "id": "115",
@@ -1032,7 +1146,8 @@
     "meaning": "grain",
     "pinyin": "hé",
     "stroke": "5",
-    "frequency": "431"
+    "productive": "431",
+    "coverage": "0"
   },
   {
     "id": "116",
@@ -1041,7 +1156,8 @@
     "meaning": "cave",
     "pinyin": "xuè",
     "stroke": "5",
-    "frequency": "298"
+    "productive": "298",
+    "coverage": "0"
   },
   {
     "id": "117",
@@ -1050,7 +1166,8 @@
     "meaning": "stand",
     "pinyin": "lì",
     "stroke": "5",
-    "frequency": "101"
+    "productive": "101",
+    "coverage": "0"
   },
   {
     "id": "118",
@@ -1059,7 +1176,8 @@
     "meaning": "bamboo",
     "pinyin": "zhú",
     "stroke": "6",
-    "frequency": "953"
+    "productive": "953",
+    "coverage": "0"
   },
   {
     "id": "119",
@@ -1068,7 +1186,8 @@
     "meaning": "rice",
     "pinyin": "mǐ",
     "stroke": "6",
-    "frequency": "318"
+    "productive": "318",
+    "coverage": "0"
   },
   {
     "id": "120",
@@ -1077,7 +1196,8 @@
     "meaning": "silk",
     "pinyin": "sī",
     "stroke": "3",
-    "frequency": "823"
+    "productive": "823",
+    "coverage": "0"
   },
   {
     "id": "121",
@@ -1086,7 +1206,8 @@
     "meaning": "jar",
     "pinyin": "fǒu",
     "stroke": "6",
-    "frequency": "77"
+    "productive": "77",
+    "coverage": "0"
   },
   {
     "id": "122",
@@ -1095,7 +1216,8 @@
     "meaning": "net",
     "pinyin": "wǎng",
     "stroke": "6",
-    "frequency": "163"
+    "productive": "163",
+    "coverage": "0"
   },
   {
     "id": "123",
@@ -1104,7 +1226,8 @@
     "meaning": "sheep",
     "pinyin": "yáng",
     "stroke": "6",
-    "frequency": "156"
+    "productive": "156",
+    "coverage": "0"
   },
   {
     "id": "124",
@@ -1113,7 +1236,8 @@
     "meaning": "feather",
     "pinyin": "yǔ",
     "stroke": "6",
-    "frequency": "220"
+    "productive": "220",
+    "coverage": "0"
   },
   {
     "id": "125",
@@ -1122,7 +1246,8 @@
     "meaning": "old",
     "pinyin": "lǎo",
     "stroke": "6",
-    "frequency": "22"
+    "productive": "22",
+    "coverage": "0"
   },
   {
     "id": "126",
@@ -1131,7 +1256,8 @@
     "meaning": "and",
     "pinyin": "ér",
     "stroke": "6",
-    "frequency": "22"
+    "productive": "22",
+    "coverage": "0"
   },
   {
     "id": "127",
@@ -1140,7 +1266,8 @@
     "meaning": "plow",
     "pinyin": "lěi",
     "stroke": "6",
-    "frequency": "84"
+    "productive": "84",
+    "coverage": "0"
   },
   {
     "id": "128",
@@ -1149,7 +1276,8 @@
     "meaning": "ear",
     "pinyin": "ěr",
     "stroke": "6",
-    "frequency": "172"
+    "productive": "172",
+    "coverage": "0"
   },
   {
     "id": "129",
@@ -1158,7 +1286,8 @@
     "meaning": "brush",
     "pinyin": "yù",
     "stroke": "6",
-    "frequency": "19"
+    "productive": "19",
+    "coverage": "0"
   },
   {
     "id": "130",
@@ -1167,7 +1296,8 @@
     "meaning": "meat",
     "pinyin": "ròu",
     "stroke": "6",
-    "frequency": "674"
+    "productive": "674",
+    "coverage": "0"
   },
   {
     "id": "131",
@@ -1176,7 +1306,8 @@
     "meaning": "minister",
     "pinyin": "chén",
     "stroke": "6",
-    "frequency": "16"
+    "productive": "16",
+    "coverage": "0"
   },
   {
     "id": "132",
@@ -1185,7 +1316,8 @@
     "meaning": "oneself",
     "pinyin": "zì",
     "stroke": "6",
-    "frequency": "34"
+    "productive": "34",
+    "coverage": "0"
   },
   {
     "id": "133",
@@ -1194,7 +1326,8 @@
     "meaning": "arrive",
     "pinyin": "zhì",
     "stroke": "6",
-    "frequency": "24"
+    "productive": "24",
+    "coverage": "0"
   },
   {
     "id": "134",
@@ -1203,7 +1336,8 @@
     "meaning": "mortar",
     "pinyin": "jiù",
     "stroke": "6",
-    "frequency": "71"
+    "productive": "71",
+    "coverage": "0"
   },
   {
     "id": "135",
@@ -1212,7 +1346,8 @@
     "meaning": "tongue",
     "pinyin": "shé",
     "stroke": "6",
-    "frequency": "31"
+    "productive": "31",
+    "coverage": "0"
   },
   {
     "id": "136",
@@ -1221,7 +1356,8 @@
     "meaning": "contrary",
     "pinyin": "chuǎn",
     "stroke": "6",
-    "frequency": "10"
+    "productive": "10",
+    "coverage": "0"
   },
   {
     "id": "137",
@@ -1230,7 +1366,8 @@
     "meaning": "boat",
     "pinyin": "zhōu",
     "stroke": "6",
-    "frequency": "197"
+    "productive": "197",
+    "coverage": "0"
   },
   {
     "id": "138",
@@ -1239,7 +1376,8 @@
     "meaning": "mountain",
     "pinyin": "gèn",
     "stroke": "6",
-    "frequency": "5"
+    "productive": "5",
+    "coverage": "0"
   },
   {
     "id": "139",
@@ -1248,7 +1386,8 @@
     "meaning": "color",
     "pinyin": "sè",
     "stroke": "6",
-    "frequency": "21"
+    "productive": "21",
+    "coverage": "0"
   },
   {
     "id": "140",
@@ -1257,7 +1396,8 @@
     "meaning": "grass",
     "pinyin": "cǎo",
     "stroke": "3",
-    "frequency": "1902"
+    "productive": "1902",
+    "coverage": "0"
   },
   {
     "id": "141",
@@ -1266,7 +1406,8 @@
     "meaning": "tiger",
     "pinyin": "hǔ",
     "stroke": "6",
-    "frequency": "114"
+    "productive": "114",
+    "coverage": "0"
   },
   {
     "id": "142",
@@ -1275,7 +1416,8 @@
     "meaning": "insect",
     "pinyin": "chóng",
     "stroke": "6",
-    "frequency": "1067"
+    "productive": "1067",
+    "coverage": "0"
   },
   {
     "id": "143",
@@ -1284,7 +1426,8 @@
     "meaning": "blood",
     "pinyin": "xuè",
     "stroke": "6",
-    "frequency": "60"
+    "productive": "60",
+    "coverage": "0"
   },
   {
     "id": "144",
@@ -1293,7 +1436,8 @@
     "meaning": "walk enclosure",
     "pinyin": "xíng",
     "stroke": "6",
-    "frequency": "53"
+    "productive": "53",
+    "coverage": "0"
   },
   {
     "id": "145",
@@ -1302,7 +1446,8 @@
     "meaning": "clothes",
     "pinyin": "yī",
     "stroke": "6",
-    "frequency": "607"
+    "productive": "607",
+    "coverage": "0"
   },
   {
     "id": "146",
@@ -1311,7 +1456,8 @@
     "meaning": "west",
     "pinyin": "xī",
     "stroke": "6",
-    "frequency": "29"
+    "productive": "29",
+    "coverage": "0"
   },
   {
     "id": "147",
@@ -1320,7 +1466,8 @@
     "meaning": "see",
     "pinyin": "jiàn",
     "stroke": "4",
-    "frequency": "161"
+    "productive": "161",
+    "coverage": "0"
   },
   {
     "id": "148",
@@ -1329,7 +1476,8 @@
     "meaning": "horn",
     "pinyin": "jiǎo",
     "stroke": "7",
-    "frequency": "158"
+    "productive": "158",
+    "coverage": "0"
   },
   {
     "id": "149",
@@ -1338,7 +1486,8 @@
     "meaning": "speech",
     "pinyin": "yán",
     "stroke": "2",
-    "frequency": "861"
+    "productive": "861",
+    "coverage": "0"
   },
   {
     "id": "150",
@@ -1347,7 +1496,8 @@
     "meaning": "valley",
     "pinyin": "gǔ",
     "stroke": "7",
-    "frequency": "54"
+    "productive": "54",
+    "coverage": "0"
   },
   {
     "id": "151",
@@ -1356,7 +1506,8 @@
     "meaning": "bean",
     "pinyin": "dòu",
     "stroke": "7",
-    "frequency": "68"
+    "productive": "68",
+    "coverage": "0"
   },
   {
     "id": "152",
@@ -1365,7 +1516,8 @@
     "meaning": "pig",
     "pinyin": "shǐ",
     "stroke": "7",
-    "frequency": "148"
+    "productive": "148",
+    "coverage": "0"
   },
   {
     "id": "153",
@@ -1374,7 +1526,8 @@
     "meaning": "badger",
     "pinyin": "zhì",
     "stroke": "7",
-    "frequency": "140"
+    "productive": "140",
+    "coverage": "0"
   },
   {
     "id": "154",
@@ -1383,7 +1536,8 @@
     "meaning": "shell",
     "pinyin": "bèi",
     "stroke": "4",
-    "frequency": "277"
+    "productive": "277",
+    "coverage": "0"
   },
   {
     "id": "155",
@@ -1392,7 +1546,8 @@
     "meaning": "red",
     "pinyin": "chì",
     "stroke": "7",
-    "frequency": "31"
+    "productive": "31",
+    "coverage": "0"
   },
   {
     "id": "156",
@@ -1401,7 +1556,8 @@
     "meaning": "walk",
     "pinyin": "zǒu",
     "stroke": "7",
-    "frequency": "285"
+    "productive": "285",
+    "coverage": "0"
   },
   {
     "id": "157",
@@ -1410,7 +1566,8 @@
     "meaning": "foot",
     "pinyin": "zú",
     "stroke": "7",
-    "frequency": "580"
+    "productive": "580",
+    "coverage": "0"
   },
   {
     "id": "158",
@@ -1419,7 +1576,8 @@
     "meaning": "body",
     "pinyin": "shēn",
     "stroke": "7",
-    "frequency": "97"
+    "productive": "97",
+    "coverage": "0"
   },
   {
     "id": "159",
@@ -1428,7 +1586,8 @@
     "meaning": "cart",
     "pinyin": "chē",
     "stroke": "4",
-    "frequency": "361"
+    "productive": "361",
+    "coverage": "0"
   },
   {
     "id": "160",
@@ -1437,7 +1596,8 @@
     "meaning": "bitter",
     "pinyin": "xīn",
     "stroke": "7",
-    "frequency": "36"
+    "productive": "36",
+    "coverage": "0"
   },
   {
     "id": "161",
@@ -1446,7 +1606,8 @@
     "meaning": "morning",
     "pinyin": "chén",
     "stroke": "7",
-    "frequency": "15"
+    "productive": "15",
+    "coverage": "0"
   },
   {
     "id": "162",
@@ -1455,7 +1616,8 @@
     "meaning": "walk",
     "pinyin": "chuò",
     "stroke": "3",
-    "frequency": "381"
+    "productive": "381",
+    "coverage": "0"
   },
   {
     "id": "163",
@@ -1464,7 +1626,8 @@
     "meaning": "city",
     "pinyin": "yì",
     "stroke": "7",
-    "frequency": "350"
+    "productive": "350",
+    "coverage": "0"
   },
   {
     "id": "164",
@@ -1473,7 +1636,8 @@
     "meaning": "wine",
     "pinyin": "yǒu",
     "stroke": "7",
-    "frequency": "290"
+    "productive": "290",
+    "coverage": "0"
   },
   {
     "id": "165",
@@ -1482,7 +1646,8 @@
     "meaning": "distinguish",
     "pinyin": "biàn",
     "stroke": "7",
-    "frequency": "14"
+    "productive": "14",
+    "coverage": "0"
   },
   {
     "id": "166",
@@ -1491,7 +1656,8 @@
     "meaning": "village",
     "pinyin": "lǐ",
     "stroke": "7",
-    "frequency": "14"
+    "productive": "14",
+    "coverage": "0"
   },
   {
     "id": "167",
@@ -1500,7 +1666,8 @@
     "meaning": "metal",
     "pinyin": "jīn",
     "stroke": "5",
-    "frequency": "806"
+    "productive": "806",
+    "coverage": "0"
   },
   {
     "id": "168",
@@ -1509,7 +1676,8 @@
     "meaning": "long",
     "pinyin": "cháng",
     "stroke": "4",
-    "frequency": "55"
+    "productive": "55",
+    "coverage": "0"
   },
   {
     "id": "169",
@@ -1518,7 +1686,8 @@
     "meaning": "gate",
     "pinyin": "mén",
     "stroke": "3",
-    "frequency": "246"
+    "productive": "246",
+    "coverage": "0"
   },
   {
     "id": "170",
@@ -1527,7 +1696,8 @@
     "meaning": "mound",
     "pinyin": "fù",
     "stroke": "8",
-    "frequency": "348"
+    "productive": "348",
+    "coverage": "0"
   },
   {
     "id": "171",
@@ -1536,7 +1706,8 @@
     "meaning": "slave",
     "pinyin": "lì",
     "stroke": "8",
-    "frequency": "12"
+    "productive": "12",
+    "coverage": "0"
   },
   {
     "id": "172",
@@ -1545,7 +1716,8 @@
     "meaning": "short-tailed bird",
     "pinyin": "zhuī",
     "stroke": "8",
-    "frequency": "233"
+    "productive": "233",
+    "coverage": "0"
   },
   {
     "id": "173",
@@ -1554,7 +1726,8 @@
     "meaning": "rain",
     "pinyin": "yǔ",
     "stroke": "8",
-    "frequency": "298"
+    "productive": "298",
+    "coverage": "0"
   },
   {
     "id": "174",
@@ -1563,7 +1736,8 @@
     "meaning": "blue",
     "pinyin": "qīng",
     "stroke": "8",
-    "frequency": "17"
+    "productive": "17",
+    "coverage": "0"
   },
   {
     "id": "175",
@@ -1572,7 +1746,8 @@
     "meaning": "wrong",
     "pinyin": "fēi",
     "stroke": "8",
-    "frequency": "25"
+    "productive": "25",
+    "coverage": "0"
   },
   {
     "id": "176",
@@ -1581,7 +1756,8 @@
     "meaning": "face",
     "pinyin": "miàn",
     "stroke": "9",
-    "frequency": "66"
+    "productive": "66",
+    "coverage": "0"
   },
   {
     "id": "177",
@@ -1590,7 +1766,8 @@
     "meaning": "leather",
     "pinyin": "gé",
     "stroke": "9",
-    "frequency": "305"
+    "productive": "305",
+    "coverage": "0"
   },
   {
     "id": "178",
@@ -1599,7 +1776,8 @@
     "meaning": "soft leather",
     "pinyin": "wěi",
     "stroke": "4",
-    "frequency": "100"
+    "productive": "100",
+    "coverage": "0"
   },
   {
     "id": "179",
@@ -1608,7 +1786,8 @@
     "meaning": "leek",
     "pinyin": "jiǔ",
     "stroke": "9",
-    "frequency": "20"
+    "productive": "20",
+    "coverage": "0"
   },
   {
     "id": "180",
@@ -1617,7 +1796,8 @@
     "meaning": "sound",
     "pinyin": "yīn",
     "stroke": "9",
-    "frequency": "43"
+    "productive": "43",
+    "coverage": "0"
   },
   {
     "id": "181",
@@ -1626,7 +1806,8 @@
     "meaning": "page",
     "pinyin": "yè",
     "stroke": "6",
-    "frequency": "372"
+    "productive": "372",
+    "coverage": "0"
   },
   {
     "id": "182",
@@ -1635,7 +1816,8 @@
     "meaning": "wind",
     "pinyin": "fēng",
     "stroke": "4",
-    "frequency": "182"
+    "productive": "182",
+    "coverage": "0"
   },
   {
     "id": "183",
@@ -1644,7 +1826,8 @@
     "meaning": "fly",
     "pinyin": "fēi",
     "stroke": "4",
-    "frequency": "92"
+    "productive": "92",
+    "coverage": "0"
   },
   {
     "id": "184",
@@ -1653,7 +1836,8 @@
     "meaning": "eat",
     "pinyin": "shí",
     "stroke": "3",
-    "frequency": "403"
+    "productive": "403",
+    "coverage": "0"
   },
   {
     "id": "185",
@@ -1662,7 +1846,8 @@
     "meaning": "head",
     "pinyin": "shǒu",
     "stroke": "9",
-    "frequency": "20"
+    "productive": "20",
+    "coverage": "0"
   },
   {
     "id": "186",
@@ -1671,7 +1856,8 @@
     "meaning": "fragrant",
     "pinyin": "xiāng",
     "stroke": "9",
-    "frequency": "37"
+    "productive": "37",
+    "coverage": "0"
   },
   {
     "id": "187",
@@ -1680,7 +1866,8 @@
     "meaning": "horse",
     "pinyin": "mǎ",
     "stroke": "3",
-    "frequency": "472"
+    "productive": "472",
+    "coverage": "0"
   },
   {
     "id": "188",
@@ -1689,7 +1876,8 @@
     "meaning": "bone",
     "pinyin": "gǔ",
     "stroke": "9",
-    "frequency": "185"
+    "productive": "185",
+    "coverage": "0"
   },
   {
     "id": "189",
@@ -1698,7 +1886,8 @@
     "meaning": "high",
     "pinyin": "gāo",
     "stroke": "10",
-    "frequency": "34"
+    "productive": "34",
+    "coverage": "0"
   },
   {
     "id": "190",
@@ -1707,7 +1896,8 @@
     "meaning": "long hair",
     "pinyin": "biāo",
     "stroke": "10",
-    "frequency": "243"
+    "productive": "243",
+    "coverage": "0"
   },
   {
     "id": "191",
@@ -1716,7 +1906,8 @@
     "meaning": "fight",
     "pinyin": "dòu",
     "stroke": "10",
-    "frequency": "23"
+    "productive": "23",
+    "coverage": "0"
   },
   {
     "id": "192",
@@ -1725,7 +1916,8 @@
     "meaning": "sacrificial wine",
     "pinyin": "chàng",
     "stroke": "10",
-    "frequency": "8"
+    "productive": "8",
+    "coverage": "0"
   },
   {
     "id": "193",
@@ -1734,7 +1926,8 @@
     "meaning": "cauldron",
     "pinyin": "lì",
     "stroke": "10",
-    "frequency": "73"
+    "productive": "73",
+    "coverage": "0"
   },
   {
     "id": "194",
@@ -1743,7 +1936,8 @@
     "meaning": "ghost",
     "pinyin": "guǐ",
     "stroke": "9",
-    "frequency": "141"
+    "productive": "141",
+    "coverage": "0"
   },
   {
     "id": "195",
@@ -1752,7 +1946,8 @@
     "meaning": "fish",
     "pinyin": "yú",
     "stroke": "8",
-    "frequency": "571"
+    "productive": "571",
+    "coverage": "0"
   },
   {
     "id": "196",
@@ -1761,7 +1956,8 @@
     "meaning": "bird",
     "pinyin": "niǎo",
     "stroke": "5",
-    "frequency": "750"
+    "productive": "750",
+    "coverage": "0"
   },
   {
     "id": "197",
@@ -1770,7 +1966,8 @@
     "meaning": "salty",
     "pinyin": "lǔ",
     "stroke": "7",
-    "frequency": "44"
+    "productive": "44",
+    "coverage": "0"
   },
   {
     "id": "198",
@@ -1779,7 +1976,8 @@
     "meaning": "deer",
     "pinyin": "lù",
     "stroke": "11",
-    "frequency": "104"
+    "productive": "104",
+    "coverage": "0"
   },
   {
     "id": "199",
@@ -1788,7 +1986,8 @@
     "meaning": "wheat",
     "pinyin": "mài",
     "stroke": "7",
-    "frequency": "131"
+    "productive": "131",
+    "coverage": "0"
   },
   {
     "id": "200",
@@ -1797,7 +1996,8 @@
     "meaning": "hemp",
     "pinyin": "má",
     "stroke": "11",
-    "frequency": "34"
+    "productive": "34",
+    "coverage": "0"
   },
   {
     "id": "201",
@@ -1806,7 +2006,8 @@
     "meaning": "yellow",
     "pinyin": "huáng",
     "stroke": "11",
-    "frequency": "42"
+    "productive": "42",
+    "coverage": "0"
   },
   {
     "id": "202",
@@ -1815,7 +2016,8 @@
     "meaning": "millet",
     "pinyin": "shǔ",
     "stroke": "12",
-    "frequency": "46"
+    "productive": "46",
+    "coverage": "0"
   },
   {
     "id": "203",
@@ -1824,7 +2026,8 @@
     "meaning": "black",
     "pinyin": "hēi",
     "stroke": "12",
-    "frequency": "172"
+    "productive": "172",
+    "coverage": "0"
   },
   {
     "id": "204",
@@ -1833,7 +2036,8 @@
     "meaning": "embroidery",
     "pinyin": "zhǐ",
     "stroke": "12",
-    "frequency": "8"
+    "productive": "8",
+    "coverage": "0"
   },
   {
     "id": "205",
@@ -1842,7 +2046,8 @@
     "meaning": "frog",
     "pinyin": "mǐn",
     "stroke": "8",
-    "frequency": "40"
+    "productive": "40",
+    "coverage": "0"
   },
   {
     "id": "206",
@@ -1851,7 +2056,8 @@
     "meaning": "tripod",
     "pinyin": "dǐng",
     "stroke": "12",
-    "frequency": "14"
+    "productive": "14",
+    "coverage": "0"
   },
   {
     "id": "207",
@@ -1860,7 +2066,8 @@
     "meaning": "drum",
     "pinyin": "gǔ",
     "stroke": "13",
-    "frequency": "46"
+    "productive": "46",
+    "coverage": "0"
   },
   {
     "id": "208",
@@ -1869,7 +2076,8 @@
     "meaning": "rat",
     "pinyin": "shǔ",
     "stroke": "13",
-    "frequency": "92"
+    "productive": "92",
+    "coverage": "0"
   },
   {
     "id": "209",
@@ -1878,7 +2086,8 @@
     "meaning": "nose",
     "pinyin": "bí",
     "stroke": "14",
-    "frequency": "49"
+    "productive": "49",
+    "coverage": "0"
   },
   {
     "id": "210",
@@ -1887,7 +2096,8 @@
     "meaning": "even",
     "pinyin": "qí",
     "stroke": "6",
-    "frequency": "18"
+    "productive": "18",
+    "coverage": "0"
   },
   {
     "id": "211",
@@ -1896,7 +2106,8 @@
     "meaning": "tooth",
     "pinyin": "chǐ",
     "stroke": "8",
-    "frequency": "162"
+    "productive": "162",
+    "coverage": "0"
   },
   {
     "id": "212",
@@ -1905,7 +2116,8 @@
     "meaning": "dragon",
     "pinyin": "lóng",
     "stroke": "5",
-    "frequency": "14"
+    "productive": "14",
+    "coverage": "0"
   },
   {
     "id": "213",
@@ -1914,7 +2126,8 @@
     "meaning": "turtle",
     "pinyin": "guī",
     "stroke": "7",
-    "frequency": "24"
+    "productive": "24",
+    "coverage": "0"
   },
   {
     "id": "214",
@@ -1923,6 +2136,7 @@
     "meaning": "flute",
     "pinyin": "yuè",
     "stroke": "17",
-    "frequency": "19"
+    "productive": "19",
+    "coverage": "0"
   }
 ]
