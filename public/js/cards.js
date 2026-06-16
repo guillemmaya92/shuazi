@@ -52,7 +52,7 @@ function makeCard(card, isStack) {
   el.className = 'card ' + (isStack ? 'stack-under' : 'top');
   el.dataset.page = '0';
 
-  const cardWords = (state.wordsByChar[card.char] || []).slice(0, 4);
+  const cardWords = [...(state.wordsByChar[card.char] || [])].sort((a, b) => (a.group || 9) - (b.group || 9)).slice(0, 4);
   const wordsHTML = cardWords.map(w =>
     `<div class="word-item"><strong>${w.id}</strong>${w.pinyin ? `<span class="word-pinyin">${w.pinyin}</span>` : ''}<span class="word-meaning">${w.meaning}</span></div>`
   ).join('');

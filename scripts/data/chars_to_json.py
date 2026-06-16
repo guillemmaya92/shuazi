@@ -21,7 +21,7 @@ for _, row in df.iterrows():
         "stroke":     int(row["stroke"]),
         "hsk":        int(row["hsk"]),
         "coverage":   round(float(row["coverage"]), 4),
-        "appears":    int(row["appears"]),
+        "frequency":    int(row["frequency"]),
     }
     data.append(item)
 
