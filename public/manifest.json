@@ -1,7 +1,10 @@
 {
-  "name": "shuazi",
-  "short_name": "shuazi",
-  "description": "juego de escribir caracteres chinos",
+  "name": "刷字 ShuaziApp",
+  "short_name": "Shuazi",
+  "description": "Learn Chinese Hanzi with interactive flashcards, an HSK 1-6 character dictionary, and a radicals reference.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "books", "productivity"],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
