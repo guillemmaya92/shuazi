@@ -475,6 +475,7 @@ export function renderProfile() {
   if (state.userPlan !== 'pro') {
     container.querySelector('#upgradeBannerBtn')?.addEventListener('click', () => {
       if (!state.supaUser) { container.querySelector('#authEmail')?.focus(); return; }
+      gtag('event', 'upgrade_to_pro_click');
       startCheckout();
     });
   }
@@ -485,6 +486,7 @@ export function renderProfile() {
     });
   } else {
     container.querySelector('#signInGoogleBtn').addEventListener('click', async () => {
+      gtag('event', 'login_google_click');
       await supa.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
     });
     const emailEl = container.querySelector('#authEmail');

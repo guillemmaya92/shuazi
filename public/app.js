@@ -94,3 +94,7 @@ if ('serviceWorker' in navigator && location.hostname !== 'localhost' && locatio
       .catch(err => console.log('SW fail', err));
   });
 }
+
+window.addEventListener('appinstalled', () => {
+  gtag('event', 'pwa_install');
+});
