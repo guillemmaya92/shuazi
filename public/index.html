@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
@@ -12,7 +12,44 @@
   <meta name="apple-mobile-web-app-title" content="刷字"/>
   <meta name="theme-color" content="#0e1215"/>
   <link rel="manifest" href="./manifest.json"/>
-  <link rel="stylesheet" href="./styles.css"/>
+
+  <!-- Critical CSS inline: prevents FOUC and unblocks first paint -->
+  <style>
+    :root{--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px)}
+    [data-theme="dark"]{--bg:#0e1215;--surf:#161c21;--surf2:#1d252c;--bdr:rgba(255,255,255,.08);--txt:#e8f0f4;--muted:#8fa4b0;--faint:#7090a0;--red:#d9705a;--red-bg:rgba(217,112,90,.15);--green:#68bf8a;--green-bg:rgba(104,191,138,.14);--blue:#64a0e6;--blue-bg:rgba(100,160,230,.15);--sh:0 28px 70px rgba(0,0,0,.6),0 4px 14px rgba(0,0,0,.3);--tabbar:rgba(14,18,21,.88);--bar-bg:rgba(255,255,255,.18);--bar-act:rgba(255,255,255,.92)}
+    [data-theme="light"]{--bg:#f0ebe4;--surf:#faf6f1;--surf2:#ffffff;--bdr:rgba(0,0,0,.08);--txt:#1c1510;--muted:#6b5e54;--faint:#6a5c50;--red:#b04030;--red-bg:rgba(176,64,48,.11);--green:#3a7a56;--green-bg:rgba(58,122,86,.11);--blue:#2560b0;--blue-bg:rgba(37,96,176,.11);--sh:0 28px 70px rgba(28,21,16,.18),0 4px 14px rgba(28,21,16,.08);--tabbar:rgba(240,235,228,.92);--bar-bg:rgba(0,0,0,.18);--bar-act:rgba(0,0,0,.85)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;touch-action:none}
+    body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
+    button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
+    .root{width:100%;max-width:860px;height:100dvh;display:grid;grid-template-rows:1fr auto;box-shadow:0 0 60px rgba(0,0,0,.4)}
+    .screens{overflow:hidden;position:relative}
+    .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:max(14px,var(--safe-t));padding-left:max(16px,var(--safe-l));padding-right:max(16px,var(--safe-r));padding-bottom:8px;gap:10px;opacity:0;pointer-events:none;transition:opacity 220ms ease}
+    .screen.active{opacity:1;pointer-events:all}
+    .tabbar{display:flex;background:var(--tabbar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--bdr);padding-bottom:max(4px,var(--safe-b));padding-top:2px}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 0;color:var(--faint);transition:color 180ms ease;min-height:36px}
+    .tab.active{color:var(--blue)}
+    .tab svg{width:16px;height:16px}
+    .tab span{font-size:.52rem;font-weight:600;letter-spacing:.02em}
+    .header{display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:34px;height:34px;flex-shrink:0;border-radius:10px;background:var(--red-bg);border:1px solid var(--bdr);display:grid;place-items:center;font-size:14px;line-height:1;color:var(--red)}
+    .title{font-size:.95rem;font-weight:700;line-height:1.1}
+    .sub{font-size:.62rem;color:var(--faint);margin-top:0}
+    .hdr-stats{display:flex;gap:14px;align-items:center}
+    .st{text-align:center}
+    .st .v{font-size:.92rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+    .st .l{font-size:.56rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+    #sKnown .v{color:var(--green)}
+    #sRepaso .v{color:var(--blue)}
+    .icon-btn{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:var(--surf);border:1px solid var(--bdr);color:var(--muted)}
+    .deck-wrap{position:relative;flex:1}
+    .deck{position:absolute;inset:0}
+  </style>
+
+  <!-- Full CSS loaded non-blocking; noscript fallback for crawlers/no-JS -->
+  <link rel="preload" href="./styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+  <noscript><link rel="stylesheet" href="./styles.css"/></noscript>
   <title>刷字 ShuaziApp</title>
   <meta name="description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
   <link rel="canonical" href="https://shuaziapp.com/"/>
@@ -55,13 +92,28 @@
   }
   </script>
 
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZRKKJ7TCWT"></script>
+  <!-- GA: deferred until first interaction or 3s — removes 151 KB from critical path -->
   <script>
-    window.dataLayer = window.dataLayer || [];
+    window.dataLayer=window.dataLayer||[];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-ZRKKJ7TCWT');
+    gtag('js',new Date());
+    function _loadGA(){
+      if(window._gaLoaded)return; window._gaLoaded=true;
+      var s=document.createElement('script');s.async=true;
+      s.src='https://www.googletagmanager.com/gtag/js?id=G-ZRKKJ7TCWT';
+      document.head.appendChild(s);
+      gtag('config','G-ZRKKJ7TCWT');
+    }
+    ['click','keydown','touchstart','scroll'].forEach(function(e){
+      document.addEventListener(e,_loadGA,{once:true,passive:true});
+    });
+    setTimeout(_loadGA,3000);
   </script>
+
+  <!-- Supabase ready-gate: resolves when the async SDK finishes loading -->
+  <script>window._supabaseReady=new Promise(function(r){window._supabaseResolve=r;})</script>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"/>
+
 </head>
 <body>
 
@@ -131,7 +183,7 @@
       </div>
       <div class="search-bar-wrap" id="searchBarWrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <input id="searchInput" type="text" placeholder="Search…" aria-label="Search characters" autocomplete="off" autocorrect="off" spellcheck="false"/>
         <button id="searchClear" aria-label="Clear">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -237,8 +289,11 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://js.stripe.com/v3/"></script>
+<!-- Supabase loaded async (non-blocking); onload resolves the ready-gate above -->
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+        crossorigin="anonymous"
+        onload="window._supabaseResolve()"></script>
+<!-- Stripe removed: checkout uses server-side redirect, no Stripe.js needed client-side -->
 <script type="module" src="./app.js"></script>
 </body>
 </html>

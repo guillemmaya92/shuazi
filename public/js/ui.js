@@ -67,6 +67,7 @@ export function renderGroups() {
       const tile = document.createElement('button');
       tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '');
       tile.title = `${rad.meaning} · ${rad.stroke} stroke${rad.stroke === '1' ? '' : 's'}`;
+      tile.setAttribute('aria-label', `${rad.radical}, ${rad.pinyin}, ${rad.meaning}`);
       tile.innerHTML = `<div class="tc">${rad.radical}</div><div class="tp">${rad.pinyin}</div>`;
       let radPressTimer = null;
       tile.addEventListener('pointerdown', e => {
@@ -155,6 +156,7 @@ export function renderGroups() {
       const isKnown  = state.known.has(card.char);
       const isRepaso = state.unknown.has(card.char);
       tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
+      tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
       tile.innerHTML = `
         <div class="tc">${card.char}</div>
         <div class="tp">${card.pinyin}</div>

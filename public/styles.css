@@ -11,7 +11,7 @@
   --bdr:       rgba(255,255,255,.08);
   --txt:       #e8f0f4;
   --muted:     #8fa4b0;
-  --faint:     #4a5c68;
+  --faint:     #7090a0; /* was #4a5c68 — lifted to 5.6:1 contrast on dark bg */
   --red:       #d9705a;
   --red-bg:    rgba(217,112,90,.15);
   --green:     #68bf8a;
@@ -29,8 +29,8 @@
   --surf2:     #ffffff;
   --bdr:       rgba(0,0,0,.08);
   --txt:       #1c1510;
-  --muted:     #7a6d63;
-  --faint:     #b0a49a;
+  --muted:     #6b5e54; /* was #7a6d63 — darkened to 5.1:1 contrast on light bg */
+  --faint:     #6a5c50; /* was #b0a49a — darkened to 5.3:1 contrast on light bg */
   --red:       #b04030;
   --red-bg:    rgba(176,64,48,.11);
   --green:     #3a7a56;

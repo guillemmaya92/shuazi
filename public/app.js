@@ -40,6 +40,7 @@ try {
 if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
   window.history.replaceState({}, '', window.location.pathname);
   setTimeout(async () => {
+    await window._supabaseReady;
     await loadUserPlan();
     state.deck = buildDeck(state.CHARACTERS);
     render();
@@ -49,6 +50,7 @@ if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
 }
 
 loadData().then(async () => {
+  await window._supabaseReady;
   const { data: { session } } = await supa.auth.getSession();
   if (session) {
     state.supaUser = session.user;
