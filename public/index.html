@@ -114,6 +114,21 @@
   <script>window._supabaseReady=new Promise(function(r){window._supabaseResolve=r;})</script>
   <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"/>
 
+  <!-- Parallelise JS module fetching: browser downloads all modules at once instead of waterfall -->
+  <link rel="modulepreload" href="./app.js"/>
+  <link rel="modulepreload" href="./js/config.js"/>
+  <link rel="modulepreload" href="./js/state.js"/>
+  <link rel="modulepreload" href="./js/auth.js"/>
+  <link rel="modulepreload" href="./js/progress.js"/>
+  <link rel="modulepreload" href="./js/cards.js"/>
+  <link rel="modulepreload" href="./js/ui.js"/>
+
+  <!-- Preload the biggest blocking data fetch -->
+  <link rel="preload" href="./data/characters.json" as="fetch" crossorigin/>
+
+  <!-- Early connection to Supabase so the first query has no DNS/TLS overhead -->
+  <link rel="preconnect" href="https://coysmojauucqgdhhxyrz.supabase.co"/>
+
 </head>
 <body>
 

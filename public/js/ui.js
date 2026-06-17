@@ -52,41 +52,53 @@ export function renderGroups() {
     const radChev   = radDiv.querySelector('.chevron');
     if (activeRadical) radGrid.classList.add('radical-filtered');
 
-    radHeader.addEventListener('click', () => {
-      if (radicalsCollapsed) { radicalsCollapsed = false; radWrap.classList.remove('collapsed'); radChev.classList.add('open'); }
-      else { radicalsCollapsed = true; radWrap.classList.add('collapsed'); radChev.classList.remove('open'); }
-    });
-
     if (state.gridSort === 'pinyin')          sortedRadicals.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') sortedRadicals.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
     else if (state.gridSort === 'coverage')   sortedRadicals.sort((a, b) => (Number(b.coverage)   || 0) - (Number(a.coverage)   || 0));
     else if (state.gridSort === 'stroke')     sortedRadicals.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
     else                                      sortedRadicals.sort((a, b) => Number(a.id) - Number(b.id));
 
-    sortedRadicals.forEach(rad => {
-      const tile = document.createElement('button');
-      tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '');
-      tile.title = `${rad.meaning} · ${rad.stroke} stroke${rad.stroke === '1' ? '' : 's'}`;
-      tile.setAttribute('aria-label', `${rad.radical}, ${rad.pinyin}, ${rad.meaning}`);
-      tile.innerHTML = `<div class="tc">${rad.radical}</div><div class="tp">${rad.pinyin}</div>`;
-      let radPressTimer = null;
-      tile.addEventListener('pointerdown', e => {
-        e.stopPropagation();
-        radPressTimer = setTimeout(() => {
-          radPressTimer = null;
-          activeRadical = activeRadical === rad.radical ? null : rad.radical;
-          renderGroups();
-          if (navigator.vibrate) navigator.vibrate(30);
-        }, 450);
+    function renderRadicalTiles() {
+      sortedRadicals.forEach(rad => {
+        const tile = document.createElement('button');
+        tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '');
+        tile.title = `${rad.meaning} · ${rad.stroke} stroke${rad.stroke === '1' ? '' : 's'}`;
+        tile.setAttribute('aria-label', `${rad.radical}, ${rad.pinyin}, ${rad.meaning}`);
+        tile.innerHTML = `<div class="tc">${rad.radical}</div><div class="tp">${rad.pinyin}</div>`;
+        let radPressTimer = null;
+        tile.addEventListener('pointerdown', e => {
+          e.stopPropagation();
+          radPressTimer = setTimeout(() => {
+            radPressTimer = null;
+            activeRadical = activeRadical === rad.radical ? null : rad.radical;
+            renderGroups();
+            if (navigator.vibrate) navigator.vibrate(30);
+          }, 450);
+        });
+        tile.addEventListener('pointerup', () => {
+          if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; openRadicalModal(rad); }
+        });
+        tile.addEventListener('pointercancel', () => { if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; } });
+        tile.addEventListener('pointermove', e => { if (radPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(radPressTimer); radPressTimer = null; } });
+        tile.addEventListener('contextmenu', e => e.preventDefault());
+        radGrid.appendChild(tile);
       });
-      tile.addEventListener('pointerup', () => {
-        if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; openRadicalModal(rad); }
-      });
-      tile.addEventListener('pointercancel', () => { if (radPressTimer) { clearTimeout(radPressTimer); radPressTimer = null; } });
-      tile.addEventListener('pointermove', e => { if (radPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(radPressTimer); radPressTimer = null; } });
-      tile.addEventListener('contextmenu', e => e.preventDefault());
-      radGrid.appendChild(tile);
+    }
+
+    radHeader.addEventListener('click', () => {
+      if (radicalsCollapsed) {
+        radicalsCollapsed = false;
+        radWrap.classList.remove('collapsed');
+        radChev.classList.add('open');
+        if (!radGrid.childElementCount) renderRadicalTiles();
+      } else {
+        radicalsCollapsed = true;
+        radWrap.classList.add('collapsed');
+        radChev.classList.remove('open');
+      }
     });
+
+    if (!radicalsCollapsed || q) renderRadicalTiles();
   }
 
   levels.forEach(hsk => {
@@ -146,76 +158,88 @@ export function renderGroups() {
     const grid   = div.querySelector(`#grid-${hsk}`);
     const chev   = div.querySelector('.chevron');
 
-    header.addEventListener('click', () => {
-      if (collapsedGroups.has(hsk)) { collapsedGroups.delete(hsk); wrap.classList.remove('collapsed'); chev.classList.add('open'); }
-      else { collapsedGroups.add(hsk); wrap.classList.add('collapsed'); chev.classList.remove('open'); }
-    });
-
-    group.forEach(card => {
-      const tile = document.createElement('button');
-      const isKnown  = state.known.has(card.char);
-      const isRepaso = state.unknown.has(card.char);
-      tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
-      tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
-      tile.innerHTML = `
-        <div class="tc">${card.char}</div>
-        <div class="tp">${card.pinyin}</div>
-        <div class="toggle-btn">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="2,6 5,9 10,3"/>
-          </svg>
-        </div>`;
-
-      let pressTimer = null;
-      function startPress() {
-        pressTimer = setTimeout(() => {
-          pressTimer = null;
-          if (state.unknown.has(card.char)) {
-            state.unknown.delete(card.char);
-            tile.classList.remove('repaso');
-            state.deck.push(card);
-          } else if (state.known.has(card.char)) {
-            state.known.delete(card.char);
-            state.unknown.add(card.char);
-            tile.classList.remove('known');
-            tile.classList.add('repaso');
-            if (!state.deck.find(c => c.char === card.char)) state.deck.push(card);
-          } else {
-            state.known.add(card.char);
-            tile.classList.add('known');
-            state.deck = state.deck.filter(c => c.char !== card.char);
-          }
-          saveState();
-          const newKnownCount = group.filter(c => state.known.has(c.char)).length;
-          const newPct = group.length ? Math.round(newKnownCount / group.length * 100) : 0;
-          div.querySelector('.count').textContent = `${newKnownCount}/${group.length} known`;
-          div.querySelector('.hsk-prog-fill').style.width = newPct + '%';
-          const _f = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
-          const _k = _f.filter(c => state.known.has(c.char)).length;
-          const _r = _f.filter(c => state.unknown.has(c.char)).length;
-          document.getElementById('vKnown').textContent  = _k;
-          document.getElementById('vRepaso').textContent = _r;
-          document.getElementById('vRest').textContent   = _f.length - _k - _r;
-          if (navigator.vibrate) navigator.vibrate(30);
-        }, 450);
+    function renderTiles() {
+      if (isLocked) {
+        grid.innerHTML = `
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">HSK ${hsk} is available with shuazi Pro</p>
+          </div>`;
+        return;
       }
-      function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+      group.forEach(card => {
+        const tile = document.createElement('button');
+        const isKnown  = state.known.has(card.char);
+        const isRepaso = state.unknown.has(card.char);
+        tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
+        tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
+        tile.innerHTML = `
+          <div class="tc">${card.char}</div>
+          <div class="tp">${card.pinyin}</div>
+          <div class="toggle-btn">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="2,6 5,9 10,3"/>
+            </svg>
+          </div>`;
 
-      tile.addEventListener('pointerdown',   e => { e.stopPropagation(); startPress(); });
-      tile.addEventListener('pointerup',     () => { if (pressTimer) { cancelPress(); openModal(card); } });
-      tile.addEventListener('pointercancel', cancelPress);
-      tile.addEventListener('pointermove',   e => { if (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6) cancelPress(); });
-      tile.addEventListener('contextmenu',   e => e.preventDefault());
-      grid.appendChild(tile);
+        let pressTimer = null;
+        function startPress() {
+          pressTimer = setTimeout(() => {
+            pressTimer = null;
+            if (state.unknown.has(card.char)) {
+              state.unknown.delete(card.char);
+              tile.classList.remove('repaso');
+              state.deck.push(card);
+            } else if (state.known.has(card.char)) {
+              state.known.delete(card.char);
+              state.unknown.add(card.char);
+              tile.classList.remove('known');
+              tile.classList.add('repaso');
+              if (!state.deck.find(c => c.char === card.char)) state.deck.push(card);
+            } else {
+              state.known.add(card.char);
+              tile.classList.add('known');
+              state.deck = state.deck.filter(c => c.char !== card.char);
+            }
+            saveState();
+            const newKnownCount = group.filter(c => state.known.has(c.char)).length;
+            const newPct = group.length ? Math.round(newKnownCount / group.length * 100) : 0;
+            div.querySelector('.count').textContent = `${newKnownCount}/${group.length} known`;
+            div.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+            const _f = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
+            const _k = _f.filter(c => state.known.has(c.char)).length;
+            const _r = _f.filter(c => state.unknown.has(c.char)).length;
+            document.getElementById('vKnown').textContent  = _k;
+            document.getElementById('vRepaso').textContent = _r;
+            document.getElementById('vRest').textContent   = _f.length - _k - _r;
+            if (navigator.vibrate) navigator.vibrate(30);
+          }, 450);
+        }
+        function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+
+        tile.addEventListener('pointerdown',   e => { e.stopPropagation(); startPress(); });
+        tile.addEventListener('pointerup',     () => { if (pressTimer) { cancelPress(); openModal(card); } });
+        tile.addEventListener('pointercancel', cancelPress);
+        tile.addEventListener('pointermove',   e => { if (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6) cancelPress(); });
+        tile.addEventListener('contextmenu',   e => e.preventDefault());
+        grid.appendChild(tile);
+      });
+    }
+
+    header.addEventListener('click', () => {
+      if (collapsedGroups.has(hsk)) {
+        collapsedGroups.delete(hsk);
+        wrap.classList.remove('collapsed');
+        chev.classList.add('open');
+        if (!grid.childElementCount) renderTiles();
+      } else {
+        collapsedGroups.add(hsk);
+        wrap.classList.add('collapsed');
+        chev.classList.remove('open');
+      }
     });
 
-    if (isLocked) {
-      grid.innerHTML = `
-        <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">HSK ${hsk} is available with shuazi Pro</p>
-        </div>`;
-    }
+    if (!isCollapsed) renderTiles();
   });
 }
 
@@ -225,10 +249,11 @@ const modalContent = document.getElementById('modal-content');
 
 export function closeResetModal() {
   const rb = document.getElementById('reset-backdrop');
+  rb.classList.remove('open');
+  rb.addEventListener('transitionend', () => { rb.style.display = 'none'; }, { once: true });
   const rm = document.getElementById('reset-modal');
-  rb.style.opacity = '0';
-  rm.style.transform = 'translateY(100%)';
-  setTimeout(() => { rb.style.display = 'none'; rm.style.transform = ''; }, 300);
+  rm.style.transition = '';
+  rm.style.transform  = '';
 }
 
 export async function openModal(card) {
@@ -547,8 +572,7 @@ export function renderProfile() {
     `;
     const rb = document.getElementById('reset-backdrop');
     rb.style.display = 'flex';
-    rb.style.opacity = '0';
-    requestAnimationFrame(() => { rb.style.transition = 'opacity 200ms ease'; rb.style.opacity = '1'; });
+    requestAnimationFrame(() => rb.classList.add('open'));
   });
 
   document.getElementById('resetCancelBtn').onclick  = () => closeResetModal();

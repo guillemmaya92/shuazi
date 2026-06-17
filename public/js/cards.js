@@ -81,9 +81,9 @@ function makeCard(card, isStack) {
       <div class="seg"        data-i="1"></div>
     </div>
     <div class="tap-zones">
-      <button class="tz tz-left"   tabindex="-1"></button>
-      <button class="tz tz-center" tabindex="-1"></button>
-      <button class="tz tz-right"  tabindex="-1"></button>
+      <button class="tz tz-left"   tabindex="-1" aria-label="Mark as left"></button>
+      <button class="tz tz-center" tabindex="-1" aria-label="Reveal answer"></button>
+      <button class="tz tz-right"  tabindex="-1" aria-label="More info"></button>
     </div>
     <div class="pages" id="pages">
       <div class="page" style="justify-content:space-between;">
@@ -109,9 +109,6 @@ function makeCard(card, isStack) {
       </div>
     </div>
   `;
-
-  // Pre-fetch words in background so they're ready when user interacts
-  fetchWordsForChar(card);
 
   const pages    = el.querySelector('#pages');
   const segs     = el.querySelectorAll('.seg');
@@ -245,14 +242,7 @@ function attachDrag(cardEl) {
     sx = x; sy = y; dx = 0; dy = 0; active = true; axis = null;
     cardEl.classList.remove('fly', 'snap');
   }
-  function onMove(x, y) {
-    if (!active) return;
-    dx = x - sx; dy = y - sy;
-    if (!axis) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8)
-        axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
-      else return;
-    }
+  function applyVisuals() {
     if (axis === 'y') {
       if (dy >= 0) { resetVisuals(); cardEl.style.transform = ''; cardEl.style.opacity = ''; return; }
       const t = Math.min(1, Math.abs(dy) / 100);
@@ -268,6 +258,16 @@ function attachDrag(cardEl) {
       cl.style.opacity = dx < -50 ? '1' : '0'; cr.style.opacity = dx > 50 ? '1' : '0';
       tu.style.opacity = '0'; cu.style.opacity = '0';
     }
+  }
+  function onMove(x, y) {
+    if (!active) return;
+    dx = x - sx; dy = y - sy;
+    if (!axis) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8)
+        axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+      else return;
+    }
+    applyVisuals();
   }
   function onEnd() {
     if (!active) return; active = false;

@@ -37,19 +37,25 @@ if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
 }
 
 loadData().then(async () => {
-  await window._supabaseReady;
-  const { data: { session } } = await supa.auth.getSession();
-  if (session) {
-    state.supaUser = session.user;
-    await loadUserPlan();
-    await loadProgressFromSupabase();
-    state.deck = buildDeck(state.CHARACTERS);
-    render();
-  } else {
-    init(state.CHARACTERS);
-  }
+  // Render immediately after data loads — don't block on auth for LCP
+  init(state.CHARACTERS);
   renderGroups();
 
+  // Auth check in background: updates deck/progress once session is known
+  window._supabaseReady.then(async () => {
+    const { data: { session } } = await supa.auth.getSession();
+    if (session) {
+      state.supaUser = session.user;
+      await loadUserPlan();
+      await loadProgressFromSupabase();
+      state.deck = buildDeck(state.CHARACTERS);
+      render();
+      renderGroups();
+      renderProfile();
+    }
+  });
+
+  await window._supabaseReady;
   supa.auth.onAuthStateChange(async (event, session) => {
     state.supaUser = session?.user ?? null;
     if (event === 'SIGNED_IN') {

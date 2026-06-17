@@ -120,6 +120,8 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   display:grid; place-items:center; font-size:14px; line-height:1;
   color:var(--red);
 }
+/* #b04030 gives 4.1:1 on the red-bg/light combo — darkened to pass WCAG AA (4.5:1) */
+[data-theme="light"] .logo { color: #963828; }
 .title   { font-size:.95rem; font-weight:700; line-height:1.1; }
 .sub     { font-size:.62rem; color:var(--faint); margin-top:0px; }
 .hdr-stats { display:flex; gap:14px; align-items:center; }
@@ -459,6 +461,16 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .modal::-webkit-scrollbar { display:none; }
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+#reset-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+#reset-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
 .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
 .modal #modal-content .info-row { margin-top:-14px; }
 .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }
