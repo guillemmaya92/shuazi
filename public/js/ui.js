@@ -2,7 +2,7 @@ import { supa } from './config.js';
 import { state } from './state.js';
 import { saveState } from './progress.js';
 import { startCheckout } from './auth.js';
-import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin } from './cards.js';
+import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar } from './cards.js';
 
 /* ── GROUPS ── */
 const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
@@ -231,7 +231,8 @@ export function closeResetModal() {
   setTimeout(() => { rb.style.display = 'none'; rm.style.transform = ''; }, 300);
 }
 
-export function openModal(card) {
+export async function openModal(card) {
+  await fetchWordsForChar(card);
   const cardWords = (state.wordsByChar[card.char] || []);
   const GROUP_LABELS = { 1: 'Common', 2: 'Uncommon', 3: 'Rare' };
   const groupMap = {};

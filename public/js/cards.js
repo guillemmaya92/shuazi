@@ -1,7 +1,24 @@
-import { FREE_HSK } from './config.js';
+import { supa, FREE_HSK } from './config.js';
 import { state } from './state.js';
 import { saveState, loadState } from './progress.js';
 import { renderGroups } from './ui.js';
+
+export async function fetchWordsForChar(card) {
+  const key = card.char;
+  if (state.wordsByChar[key] !== undefined) return;
+  state.wordsByChar[key] = []; // prevent concurrent fetches
+  const { data } = await supa
+    .from('words')
+    .select('word, pinyin, meaning, grp')
+    .contains('char_ids', [card.id])
+    .order('grp');
+  state.wordsByChar[key] = (data || []).map(w => ({
+    id:      w.word,
+    pinyin:  w.pinyin,
+    meaning: w.meaning,
+    group:   String(w.grp),
+  }));
+}
 
 export function normalizePinyin(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -52,11 +69,6 @@ function makeCard(card, isStack) {
   el.className = 'card ' + (isStack ? 'stack-under' : 'top');
   el.dataset.page = '0';
 
-  const cardWords = [...(state.wordsByChar[card.char] || [])].sort((a, b) => (a.group || 9) - (b.group || 9)).slice(0, 4);
-  const wordsHTML = cardWords.map(w =>
-    `<div class="word-item"><strong>${w.id}</strong>${w.pinyin ? `<span class="word-pinyin">${w.pinyin}</span>` : ''}<span class="word-meaning">${w.meaning}</span></div>`
-  ).join('');
-
   el.innerHTML = `
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
@@ -93,27 +105,42 @@ function makeCard(card, isStack) {
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
         </div>
         <div class="words-title">Compound words</div>
-        <div class="words-list">${wordsHTML}</div>
+        <div class="words-list"></div>
       </div>
     </div>
   `;
 
-  const pages = el.querySelector('#pages');
-  const segs  = el.querySelectorAll('.seg');
-  const tzL   = el.querySelector('.tz-left');
-  const tzC   = el.querySelector('.tz-center');
-  const tzR   = el.querySelector('.tz-right');
-  const aa    = el.querySelector('#aa');
+  // Pre-fetch words in background so they're ready when user interacts
+  fetchWordsForChar(card);
+
+  const pages    = el.querySelector('#pages');
+  const segs     = el.querySelectorAll('.seg');
+  const tzL      = el.querySelector('.tz-left');
+  const tzC      = el.querySelector('.tz-center');
+  const tzR      = el.querySelector('.tz-right');
+  const aa       = el.querySelector('#aa');
+  const wordsList = el.querySelector('.words-list');
 
   function goPage(n) {
     el.dataset.page = String(n);
     pages.style.transform = `translateX(-${n * 100}%)`;
     segs.forEach((s, i) => s.classList.toggle('active', i === n));
+    if (n === 1) fillInfoWords();
+  }
+
+  async function fillInfoWords() {
+    if (wordsList.dataset.loaded) return;
+    await fetchWordsForChar(card);
+    wordsList.dataset.loaded = '1';
+    const cardWords = (state.wordsByChar[card.char] || []).slice(0, 4);
+    wordsList.innerHTML = cardWords.map(w =>
+      `<div class="word-item"><strong>${w.id}</strong>${w.pinyin ? `<span class="word-pinyin">${w.pinyin}</span>` : ''}<span class="word-meaning">${w.meaning}</span></div>`
+    ).join('') || '<div style="color:var(--faint);font-size:.8rem">No words found</div>';
   }
 
   tzL.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
   tzR.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c < PAGES - 1) goPage(c + 1); });
-  tzC.addEventListener('click', e => {
+  tzC.addEventListener('click', async e => {
     e.stopPropagation();
     if (+el.dataset.page !== 0) return;
     const tapHint = el.querySelector('#tap-hint');
@@ -123,6 +150,7 @@ function makeCard(card, isStack) {
     } else {
       el.dataset.answer = '1';
       tapHint.style.visibility = 'hidden';
+      await fetchWordsForChar(card);
       const w = (state.wordsByChar[card.char] || [])[0];
       const exHTML = w
         ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`

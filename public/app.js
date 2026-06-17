@@ -6,28 +6,15 @@ import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 
 async function loadData() {
-  const [chars, words, phrases, radicals] = await Promise.all([
+  const [chars, phrases, radicals] = await Promise.all([
     fetch('./data/characters.json').then(r => r.json()),
-    fetch('./data/words.json').then(r => r.json()),
     fetch('./data/slang.json').then(r => r.json()).catch(() => []),
     fetch('./data/radicals.json').then(r => r.json()).catch(() => [])
   ]);
   state.CHARACTERS = chars;
-  state.WORDS      = words;
   state.PHRASES    = phrases;
   state.RADICALS   = radicals;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
-  words.forEach(w => {
-    const seen = new Set();
-    w.chars.forEach(cid => {
-      if (seen.has(cid)) return;
-      seen.add(cid);
-      const ch = state.charById[cid]?.char;
-      if (!ch) return;
-      if (!state.wordsByChar[ch]) state.wordsByChar[ch] = [];
-      if (!state.wordsByChar[ch].find(x => x.id === w.id)) state.wordsByChar[ch].push(w);
-    });
-  });
 }
 
 // Restore theme before first paint
