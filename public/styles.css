@@ -317,7 +317,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 .groups-scroll {
   flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  display:flex; flex-direction:column; gap:16px;
+  display:flex; flex-direction:column; gap:8px;
   padding-bottom:4px;
 }
 .groups-legend { display:flex; gap:14px; padding:0 2px 4px; }
@@ -436,6 +436,24 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-tile.repaso .tc { color:var(--blue); -webkit-text-fill-color:var(--blue); }
 .char-tile.repaso .tp { color:var(--blue); opacity:.6; }
 .char-tile .toggle-btn { display:none; }
+.groups-section-title {
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
+  font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--faint); margin:16px 2px 3px;
+}
+.groups-section-title .groups-legend { padding:0; flex-shrink:0; }
+.groups-section-title .groups-legend-item {
+  text-transform:none; font-weight:400; letter-spacing:normal;
+}
+.groups-section-title .groups-legend-dot { opacity:.45; }
+.groups-section-title:first-child { margin-top:2px; }
+.groups-section-sub {
+  display:block; font-size:.58rem; font-weight:400; letter-spacing:0;
+  text-transform:none; color:var(--faint); opacity:.7; margin-top:2px;
+}
+.char-tile.empty { opacity:.4; }
+.char-tile.empty .tc { color:var(--faint); -webkit-text-fill-color:var(--faint); }
+.char-tile.empty .tp { color:var(--faint); }
 .radical-tile.active { background:rgba(138,123,168,.22); border-color:rgba(138,123,168,.5); }
 .radical-tile.active .tc { color:#8a7ba8; -webkit-text-fill-color:#8a7ba8; }
 .radical-tile.active .tp { color:#8a7ba8; opacity:.7; }

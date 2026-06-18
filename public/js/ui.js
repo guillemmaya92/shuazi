@@ -17,6 +17,19 @@ export function renderGroups() {
   const q = state.gridSearch.trim();
   container.innerHTML = '';
 
+  const sectionTitle = (text, sub, rightHTML = '') => {
+    const h = document.createElement('div');
+    h.className = 'groups-section-title';
+    h.innerHTML = `<div class="groups-section-titletext">${text}<span class="groups-section-sub">${sub}</span></div>${rightHTML}`;
+    container.appendChild(h);
+  };
+
+  // A filter active in one grid forces the other grid closed.
+  const radClosed  = activeComponent ? true : (q ? false : radicalsCollapsed);
+  const compClosed = activeRadical   ? true : (q ? false : componentsCollapsed);
+
+  if (state.RADICALS?.length || state.COMPONENTS?.length) sectionTitle('Filters', 'long-press to filter characters');
+
   if (state.RADICALS?.length) {
     let sortedRadicals = [...state.RADICALS];
     if (q) {
@@ -41,10 +54,10 @@ export function renderGroups() {
           <span class="count">${q ? `${sortedRadicals.length} / ${state.RADICALS.length}` : `${state.RADICALS.length}`} radicals</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <svg class="chevron ${(q ? false : radicalsCollapsed) ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron ${radClosed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-      <div class="char-grid-wrap ${(q ? false : radicalsCollapsed) ? 'collapsed' : ''}"><div class="char-grid"></div></div>
+      <div class="char-grid-wrap ${radClosed ? 'collapsed' : ''}"><div class="char-grid"></div></div>
     `;
     container.appendChild(radDiv);
 
@@ -60,10 +73,12 @@ export function renderGroups() {
     else if (state.gridSort === 'stroke')     sortedRadicals.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
     else                                      sortedRadicals.sort((a, b) => Number(a.id) - Number(b.id));
 
+    const radicalsInChars = new Set(state.CHARACTERS.map(c => c.radical));
     function renderRadicalTiles() {
       sortedRadicals.forEach(rad => {
         const tile = document.createElement('button');
-        tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '');
+        const isEmpty = !radicalsInChars.has(rad.radical);
+        tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '') + (isEmpty ? ' empty' : '');
         tile.title = `${rad.meaning} · ${rad.stroke} stroke${rad.stroke === '1' ? '' : 's'}`;
         tile.setAttribute('aria-label', `${rad.radical}, ${rad.pinyin}, ${rad.meaning}`);
         tile.innerHTML = `<div class="tc">${rad.radical}</div><div class="tp">${rad.pinyin}</div>`;
@@ -101,7 +116,7 @@ export function renderGroups() {
       }
     });
 
-    if (!radicalsCollapsed || q) renderRadicalTiles();
+    if (!radClosed) renderRadicalTiles();
   }
 
   if (state.COMPONENTS?.length) {
@@ -128,10 +143,10 @@ export function renderGroups() {
           <span class="count">${q ? `${sortedComponents.length} / ${state.COMPONENTS.length}` : `${state.COMPONENTS.length}`} components</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <svg class="chevron ${(q ? false : componentsCollapsed) ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron ${compClosed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-      <div class="char-grid-wrap ${(q ? false : componentsCollapsed) ? 'collapsed' : ''}"><div class="char-grid"></div></div>
+      <div class="char-grid-wrap ${compClosed ? 'collapsed' : ''}"><div class="char-grid"></div></div>
     `;
     container.appendChild(compDiv);
 
@@ -150,7 +165,8 @@ export function renderGroups() {
     function renderComponentTiles() {
       sortedComponents.forEach(comp => {
         const tile = document.createElement('button');
-        tile.className = 'char-tile component-tile' + (comp.id === activeComponent ? ' active' : '');
+        const isEmpty = !(state.charsByComponent[comp.id]?.size);
+        tile.className = 'char-tile component-tile' + (comp.id === activeComponent ? ' active' : '') + (isEmpty ? ' empty' : '');
         tile.title = `${comp.meaning} · ${comp.stroke} stroke${comp.stroke === 1 || comp.stroke === '1' ? '' : 's'}`;
         tile.setAttribute('aria-label', `${comp.component}, ${comp.pinyin}, ${comp.meaning}`);
         tile.innerHTML = `<div class="tc">${comp.component}</div><div class="tp">${comp.pinyin}</div>`;
@@ -188,8 +204,14 @@ export function renderGroups() {
       }
     });
 
-    if (!componentsCollapsed || q) renderComponentTiles();
+    if (!compClosed) renderComponentTiles();
   }
+
+  if (state.CHARACTERS?.length) sectionTitle('Characters', 'long-press to mark known / review',
+    `<div class="groups-legend">
+       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
+     </div>`);
 
   levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
