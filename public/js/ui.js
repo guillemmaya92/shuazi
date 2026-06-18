@@ -432,7 +432,13 @@ export function renderProfile() {
             <div style="flex:1;height:1px;background:var(--bdr)"></div>or<div style="flex:1;height:1px;background:var(--bdr)"></div>
           </div>
           <input id="authEmail" type="email" placeholder="Email" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
-          <input id="authPass" type="password" placeholder="Password" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+          <div style="position:relative;width:100%">
+            <input id="authPass" type="password" placeholder="Password" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 40px 9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+            <button id="togglePass" type="button" tabindex="-1" aria-label="Show password" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;background:none;border:none;color:var(--muted);cursor:pointer">
+              <svg id="eyeOpen" width="17" height="17" viewBox="0 0 16 16" fill="currentColor" style="display:none"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>
+              <svg id="eyeOff" width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/></svg>
+            </button>
+          </div>
           <div id="authError" style="font-size:.62rem;color:#c04050;min-height:.8rem;margin-top:-4px"></div>
           <div style="display:flex;gap:8px">
             <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">Sign in</button>
@@ -520,6 +526,16 @@ export function renderProfile() {
     const emailEl = container.querySelector('#authEmail');
     const passEl  = container.querySelector('#authPass');
     const errEl   = container.querySelector('#authError');
+    const toggleBtn = container.querySelector('#togglePass');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const show = passEl.type === 'password';
+        passEl.type = show ? 'text' : 'password';
+        container.querySelector('#eyeOpen').style.display = show ? '' : 'none';
+        container.querySelector('#eyeOff').style.display  = show ? 'none' : '';
+        toggleBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      });
+    }
     container.querySelector('#signInBtn').addEventListener('click', async () => {
       errEl.textContent = ''; errEl.style.color = '#c04050';
       const { error } = await supa.auth.signInWithPassword({ email: emailEl.value.trim(), password: passEl.value });
@@ -527,9 +543,24 @@ export function renderProfile() {
     });
     container.querySelector('#signUpBtn').addEventListener('click', async () => {
       errEl.textContent = ''; errEl.style.color = '#c04050';
-      const { error } = await supa.auth.signUp({ email: emailEl.value.trim(), password: passEl.value });
-      if (error) errEl.textContent = error.message;
-      else { errEl.style.color = 'var(--green)'; errEl.textContent = 'Check your email to confirm!'; }
+      const { data, error } = await supa.auth.signUp({
+        email: emailEl.value.trim(),
+        password: passEl.value,
+        options: { emailRedirectTo: window.location.href }
+      });
+      if (error) {
+        console.error('signUp error:', error);
+        errEl.textContent = error.message || 'Sign up failed. Please try again.';
+        return;
+      }
+      // Supabase returns a user with an empty identities array when the email
+      // is already registered (to prevent email enumeration) — surface that.
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        errEl.textContent = 'This email is already registered. Try signing in.';
+        return;
+      }
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = 'Check your email to confirm!';
     });
   }
 

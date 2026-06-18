@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'shuazi-shell-v2';
+const SHELL_CACHE = 'shuazi-shell-v3';
 const DATA_CACHE  = 'shuazi-data-v1';
 
 const SHELL_ASSETS = [
@@ -18,7 +18,8 @@ const SHELL_ASSETS = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(SHELL_CACHE)
-      .then(c => c.addAll(SHELL_ASSETS))
+      // cache: 'reload' bypasses the browser HTTP cache so we never store stale assets
+      .then(c => c.addAll(SHELL_ASSETS.map(u => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
@@ -29,12 +30,12 @@ self.addEventListener('activate', e => {
       Promise.all(
         keys.filter(k => k !== SHELL_CACHE && k !== DATA_CACHE).map(k => caches.delete(k))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
   // External CDN (supabase, GA): network-only, no local caching
@@ -49,17 +50,26 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // App shell (HTML, CSS, JS, icons): cache-first for near-instant repeat loads
-  event.respondWith(cacheFirst(event.request, SHELL_CACHE));
+  // HTML / navigation: network-first so new deploys always show up
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(networkFirst(event.request, SHELL_CACHE));
+    return;
+  }
+
+  // CSS / JS / icons: stale-while-revalidate (instant load + refreshes for next visit)
+  event.respondWith(staleWhileRevalidate(event.request, SHELL_CACHE));
 });
 
-async function cacheFirst(request, cacheName) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  const fresh = await fetch(request);
+async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
-  cache.put(request, fresh.clone());
-  return fresh;
+  try {
+    const fresh = await fetch(request);
+    cache.put(request, fresh.clone());
+    return fresh;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || Response.error();
+  }
 }
 
 async function staleWhileRevalidate(request, cacheName) {
@@ -68,6 +78,6 @@ async function staleWhileRevalidate(request, cacheName) {
   const revalidate = fetch(request).then(fresh => {
     cache.put(request, fresh.clone());
     return fresh;
-  });
+  }).catch(() => cached);
   return cached || revalidate;
 }
