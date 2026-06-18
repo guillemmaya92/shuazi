@@ -6,14 +6,14 @@ import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 
 // Paginated fetch — Supabase caps each request at 1000 rows, so page through.
-async function fetchAll(table, columns) {
+async function fetchAll(table, columns, orderBy = 'id') {
   const pageSize = 1000;
   let from = 0, all = [];
   for (;;) {
     const { data, error } = await supa
       .from(table)
       .select(columns)
-      .order('id')
+      .order(orderBy)
       .range(from, from + pageSize - 1);
     if (error) throw error;
     all = all.concat(data);
@@ -42,6 +42,29 @@ async function loadData() {
   }));
   state.RADICALS   = radicals;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
+
+  // Components are optional — a failure here must never block chars/cards.
+  try {
+    const [components, compChar] = await Promise.all([
+      fetchAll('components', 'id, component, pinyin, meaning, stroke, productive, coverage'),
+      fetchAll('component_char', 'id_component, id_char', 'id_component')
+    ]);
+    // Some components have null pinyin/meaning — coalesce so sort/search/render never crash.
+    state.COMPONENTS = components.map(c => ({
+      ...c,
+      component: c.component ?? '',
+      pinyin:    c.pinyin    ?? '',
+      meaning:   c.meaning   ?? '',
+    }));
+    // component_char is many-to-many — build component id → set of char ids for filtering.
+    const byComp = {};
+    compChar.forEach(({ id_component, id_char }) => {
+      (byComp[id_component] ||= new Set()).add(id_char);
+    });
+    state.charsByComponent = byComp;
+  } catch (e) {
+    console.error('Components failed to load (chars/cards unaffected):', e);
+  }
 }
 
 // Restore theme before first paint

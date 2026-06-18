@@ -8,6 +8,8 @@ import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, 
 const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
 let radicalsCollapsed = true;
 let activeRadical = null;
+let componentsCollapsed = true;
+let activeComponent = null; // component id
 
 export function renderGroups() {
   const container = document.getElementById('groups-scroll');
@@ -71,6 +73,7 @@ export function renderGroups() {
           radPressTimer = setTimeout(() => {
             radPressTimer = null;
             activeRadical = activeRadical === rad.radical ? null : rad.radical;
+            activeComponent = null;
             renderGroups();
             if (navigator.vibrate) navigator.vibrate(30);
           }, 450);
@@ -101,6 +104,93 @@ export function renderGroups() {
     if (!radicalsCollapsed || q) renderRadicalTiles();
   }
 
+  if (state.COMPONENTS?.length) {
+    let sortedComponents = [...state.COMPONENTS];
+    if (q) {
+      const exact = q.startsWith('"') && q.endsWith('"') && q.length > 2;
+      const term = exact ? q.slice(1, -1) : q;
+      sortedComponents = sortedComponents.filter(c =>
+        c.component.includes(term) ||
+        (exact
+          ? normalizePinyin(c.pinyin) === normalizePinyin(term)
+          : normalizePinyin(c.pinyin).includes(normalizePinyin(term)) || c.meaning.toLowerCase().includes(term.toLowerCase())
+        )
+      );
+    }
+
+    const compDiv = document.createElement('div');
+    compDiv.className = 'hsk-group';
+    compDiv.innerHTML = `
+      <div class="hsk-group-header">
+        <div class="hsk-group-label">
+          <span class="badge component">Components</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--faint);flex-shrink:0"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          <span class="count">${q ? `${sortedComponents.length} / ${state.COMPONENTS.length}` : `${state.COMPONENTS.length}`} components</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg class="chevron ${(q ? false : componentsCollapsed) ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="char-grid-wrap ${(q ? false : componentsCollapsed) ? 'collapsed' : ''}"><div class="char-grid"></div></div>
+    `;
+    container.appendChild(compDiv);
+
+    const compHeader = compDiv.querySelector('.hsk-group-header');
+    const compWrap   = compDiv.querySelector('.char-grid-wrap');
+    const compGrid   = compDiv.querySelector('.char-grid');
+    const compChev   = compDiv.querySelector('.chevron');
+    if (activeComponent) compGrid.classList.add('component-filtered');
+
+    if (state.gridSort === 'pinyin')          sortedComponents.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
+    else if (state.gridSort === 'productive') sortedComponents.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
+    else if (state.gridSort === 'coverage')   sortedComponents.sort((a, b) => (Number(b.coverage)   || 0) - (Number(a.coverage)   || 0));
+    else if (state.gridSort === 'stroke')     sortedComponents.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
+    else                                      sortedComponents.sort((a, b) => Number(a.id) - Number(b.id));
+
+    function renderComponentTiles() {
+      sortedComponents.forEach(comp => {
+        const tile = document.createElement('button');
+        tile.className = 'char-tile component-tile' + (comp.id === activeComponent ? ' active' : '');
+        tile.title = `${comp.meaning} · ${comp.stroke} stroke${comp.stroke === 1 || comp.stroke === '1' ? '' : 's'}`;
+        tile.setAttribute('aria-label', `${comp.component}, ${comp.pinyin}, ${comp.meaning}`);
+        tile.innerHTML = `<div class="tc">${comp.component}</div><div class="tp">${comp.pinyin}</div>`;
+        let compPressTimer = null;
+        tile.addEventListener('pointerdown', e => {
+          e.stopPropagation();
+          compPressTimer = setTimeout(() => {
+            compPressTimer = null;
+            activeComponent = activeComponent === comp.id ? null : comp.id;
+            activeRadical = null;
+            renderGroups();
+            if (navigator.vibrate) navigator.vibrate(30);
+          }, 450);
+        });
+        tile.addEventListener('pointerup', () => {
+          if (compPressTimer) { clearTimeout(compPressTimer); compPressTimer = null; openComponentModal(comp); }
+        });
+        tile.addEventListener('pointercancel', () => { if (compPressTimer) { clearTimeout(compPressTimer); compPressTimer = null; } });
+        tile.addEventListener('pointermove', e => { if (compPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(compPressTimer); compPressTimer = null; } });
+        tile.addEventListener('contextmenu', e => e.preventDefault());
+        compGrid.appendChild(tile);
+      });
+    }
+
+    compHeader.addEventListener('click', () => {
+      if (componentsCollapsed) {
+        componentsCollapsed = false;
+        compWrap.classList.remove('collapsed');
+        compChev.classList.add('open');
+        if (!compGrid.childElementCount) renderComponentTiles();
+      } else {
+        componentsCollapsed = true;
+        compWrap.classList.add('collapsed');
+        compChev.classList.remove('open');
+      }
+    });
+
+    if (!componentsCollapsed || q) renderComponentTiles();
+  }
+
   levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
@@ -118,6 +208,10 @@ export function renderGroups() {
     }
     if (!group.length) return;
     if (activeRadical) group = group.filter(c => c.radical === activeRadical);
+    if (activeComponent) {
+      const compSet = state.charsByComponent[activeComponent];
+      group = compSet ? group.filter(c => compSet.has(c.id)) : [];
+    }
     if (!group.length) return;
     if (state.gridSort === 'pinyin')      group = [...group].sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') group = [...group].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
@@ -129,7 +223,7 @@ export function renderGroups() {
     const pct = group.length ? Math.round(knownCount / group.length * 100) : 0;
     const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
     const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill' };
-    const isCollapsed = (q || activeRadical) ? false : collapsedGroups.has(hsk);
+    const isCollapsed = (q || activeRadical || activeComponent) ? false : collapsedGroups.has(hsk);
     const isLocked = state.userPlan === 'free' && !isAvailable(hsk);
 
     const div = document.createElement('div');
@@ -325,6 +419,28 @@ function openRadicalModal(rad) {
       <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
+    </div>
+    <div class="words-title">Compound characters <span style="font-size:.65rem;color:var(--faint);font-weight:400">(${chars.length})</span></div>
+    <div class="words-list">${charsHTML}</div>
+  `;
+  backdrop.classList.add('open');
+}
+
+function openComponentModal(comp) {
+  const set = state.charsByComponent[comp.id];
+  const chars = set ? state.CHARACTERS.filter(c => set.has(c.id)) : [];
+  const charsHTML = chars.length === 0
+    ? '<div class="word-item" style="color:var(--faint)">No characters found</div>'
+    : chars.map(c =>
+        `<div class="word-item"><strong style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.1rem">${c.char}</strong><span class="word-pinyin">${c.pinyin}</span><span class="word-meaning">${c.meaning}</span></div>`
+      ).join('');
+
+  modalContent.innerHTML = `
+    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="info-cell"><div class="lbl">Component</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
+      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${comp.pinyin}</div></div>
+      <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${comp.stroke}</div></div>
+      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${comp.meaning}</div></div>
     </div>
     <div class="words-title">Compound characters <span style="font-size:.65rem;color:var(--faint);font-weight:400">(${chars.length})</span></div>
     <div class="words-list">${charsHTML}</div>

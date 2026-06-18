@@ -192,6 +192,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .hsk-1 { background:rgba(220,158,40,.14);  color:#d89e32; border:1px solid rgba(220,158,40,.28); }
 .hsk-2 { background:rgba(42,118,136,.16);  color:#3a9aaf; border:1px solid rgba(42,118,136,.30); }
 .radical { background:rgba(138,123,168,.14); color:#8a7ba8; border:1px solid rgba(138,123,168,.28); }
+.component { background:rgba(62,156,143,.14); color:#3e9c8f; border:1px solid rgba(62,156,143,.28); }
 .hsk-3 { background:rgba(210,95,30,.14);   color:#c8612a; border:1px solid rgba(210,95,30,.28); }
 .hsk-4 { background:rgba(168,28,38,.16);   color:#c04050; border:1px solid rgba(168,28,38,.30); }
 .hsk-5 { background:rgba(55,90,148,.20);   color:#6890c8; border:1px solid rgba(55,90,148,.38); }
@@ -439,6 +440,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .radical-tile.active .tc { color:#8a7ba8; -webkit-text-fill-color:#8a7ba8; }
 .radical-tile.active .tp { color:#8a7ba8; opacity:.7; }
 .char-grid.radical-filtered .radical-tile:not(.active) { display:none; }
+.component-tile.active { background:rgba(62,156,143,.22); border-color:rgba(62,156,143,.5); }
+.component-tile.active .tc { color:#3e9c8f; -webkit-text-fill-color:#3e9c8f; }
+.component-tile.active .tp { color:#3e9c8f; opacity:.7; }
+.char-grid.component-filtered .component-tile:not(.active) { display:none; }
 
 /* char detail modal */
 .modal-backdrop {

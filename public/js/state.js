@@ -3,6 +3,8 @@ export const state = {
   WORDS:         [],
   PHRASES:       [],
   RADICALS:      [],
+  COMPONENTS:    [],
+  charsByComponent: {},
   charById:      {},
   wordsByChar:   {},
   deck:          [],
