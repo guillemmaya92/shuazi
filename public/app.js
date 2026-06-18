@@ -5,14 +5,41 @@ import { loadProgressFromSupabase } from './js/progress.js';
 import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 
+// Paginated fetch — Supabase caps each request at 1000 rows, so page through.
+async function fetchAll(table, columns) {
+  const pageSize = 1000;
+  let from = 0, all = [];
+  for (;;) {
+    const { data, error } = await supa
+      .from(table)
+      .select(columns)
+      .order('id')
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 async function loadData() {
-  const [chars, phrases, radicals] = await Promise.all([
-    fetch('./data/characters.json').then(r => r.json()),
-    fetch('./data/slang.json').then(r => r.json()).catch(() => []),
-    fetch('./data/radicals.json').then(r => r.json()).catch(() => [])
+  await window._supabaseReady;
+  const [chars, radicals, slang] = await Promise.all([
+    fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency'),
+    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, coverage'),
+    fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image')
   ]);
   state.CHARACTERS = chars;
-  state.PHRASES    = phrases;
+  // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
+  state.PHRASES    = slang.map(s => ({
+    id:      s.slang,
+    pinyin:  s.pinyin,
+    literal: s.literal,
+    meaning: s.meaning,
+    origin:  s.origin,
+    image:   s.image,
+  }));
   state.RADICALS   = radicals;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
 }

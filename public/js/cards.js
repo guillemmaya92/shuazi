@@ -3,21 +3,27 @@ import { state } from './state.js';
 import { saveState, loadState } from './progress.js';
 import { renderGroups } from './ui.js';
 
-export async function fetchWordsForChar(card) {
+// Cache in-flight promises so prefetch + on-demand callers share one request
+// (and a fast tap awaits the prefetch instead of racing it to an empty result).
+const _wordPromises = {};
+export function fetchWordsForChar(card) {
   const key = card.char;
-  if (state.wordsByChar[key] !== undefined) return;
-  state.wordsByChar[key] = []; // prevent concurrent fetches
-  const { data } = await supa
-    .from('words')
-    .select('word, pinyin, meaning, grp')
-    .contains('char_ids', [card.id])
-    .order('grp');
-  state.wordsByChar[key] = (data || []).map(w => ({
-    id:      w.word,
-    pinyin:  w.pinyin,
-    meaning: w.meaning,
-    group:   String(w.grp),
-  }));
+  if (state.wordsByChar[key] !== undefined) return Promise.resolve();
+  if (_wordPromises[key]) return _wordPromises[key];
+  _wordPromises[key] = (async () => {
+    const { data } = await supa
+      .from('words')
+      .select('word, pinyin, meaning, group, char_word!inner(id_char)')
+      .eq('char_word.id_char', card.id)
+      .order('group');
+    state.wordsByChar[key] = (data || []).map(w => ({
+      id:      w.word,
+      pinyin:  w.pinyin,
+      meaning: w.meaning,
+      group:   String(w.group),
+    }));
+  })();
+  return _wordPromises[key];
 }
 
 export function normalizePinyin(str) {
@@ -170,6 +176,9 @@ export function render() {
   if (state.deck.length === 0) { showDone(); return; }
   if (state.deck.length > 1) deckEl.appendChild(makeCard(state.deck[1], true));
   deckEl.appendChild(makeCard(state.deck[0], false));
+  // Warm the cache for the visible cards so reveal/info feels instant
+  if (state.deck[0]) fetchWordsForChar(state.deck[0]);
+  if (state.deck[1]) fetchWordsForChar(state.deck[1]);
 }
 
 export function classifyKnown() {

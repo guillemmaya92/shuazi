@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'shuazi-shell-v3';
+const SHELL_CACHE = 'shuazi-shell-v4';
 const DATA_CACHE  = 'shuazi-data-v1';
 
 const SHELL_ASSETS = [
