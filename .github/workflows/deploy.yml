@@ -22,19 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Append ?b=<commit-sha> to CSS/JS so each deploy busts Cloudflare's cache
+      # without purging — see scripts/build/fingerprint.mjs.
+      - name: Fingerprint assets
+        run: node scripts/build/fingerprint.mjs ${{ github.sha }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
       - id: deployment
         uses: actions/deploy-pages@v4
-
-      # Cloudflare caches assets in front of GitHub Pages with a long TTL, so a
-      # fresh deploy isn't visible until the edge cache is purged.
-      - name: Purge Cloudflare cache
-        run: |
-          curl -sS --fail -X POST \
-            "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}'

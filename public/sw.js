@@ -1,6 +1,13 @@
-const SHELL_CACHE = 'shuazi-shell-v4';
+// Build id from the registration URL (sw.js?b=<id>). Each deploy registers a
+// new URL, so the worker updates past Cloudflare's long edge cache, gets a fresh
+// cache name, and precaches the matching ?b= asset URLs the page requests.
+const BUILD = new URL(self.location.href).searchParams.get('b') || 'dev';
+const SHELL_CACHE = 'shuazi-shell-' + BUILD;
 const DATA_CACHE  = 'shuazi-data-v1';
 
+// Version only CSS/JS — must match exactly what fingerprint.mjs rewrites in the
+// page, so these precache keys line up with the actual network requests.
+const v = u => (/\.(css|js)$/.test(u) ? `${u}?b=${BUILD}` : u);
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -13,7 +20,7 @@ const SHELL_ASSETS = [
   '/js/state.js',
   '/js/ui.js',
   '/manifest.json',
-];
+].map(v);
 
 self.addEventListener('install', e => {
   e.waitUntil(
