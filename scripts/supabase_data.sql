@@ -42,13 +42,13 @@ alter table char_word      enable row level security;
 alter table slang          enable row level security;
 
 -- Policy
-create policy "public read" on components     		for select to anon using (true);
-create policy "public read" on radicals    			for select to anon using (true);
-create policy "public read" on chars  				for select to anon using (true);
-create policy "public read" on words     			for select to anon using (true);
-create policy "public read" on char_word 			for select to anon using (true);
-create policy "public read" on component_char 		for select to anon using (true);
-create policy "public read" on slang 				for select to anon using (true);
+create policy "public read" on components     		for select to anon, authenticated using (true);
+create policy "public read" on radicals    			for select to anon, authenticated using (true);
+create policy "public read" on chars  				for select to anon, authenticated using (true);
+create policy "public read" on words     			for select to anon, authenticated using (true);
+create policy "public read" on char_word 			for select to anon, authenticated using (true);
+create policy "public read" on component_char 		for select to anon, authenticated using (true);
+create policy "public read" on slang 				for select to anon, authenticated using (true);
 
 -- Index
 create index if not exists char_word_id_char_idx on char_word (id_char);
