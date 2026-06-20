@@ -269,6 +269,27 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .word-pinyin  { font-size:.7rem; color:var(--muted); }
 .word-meaning { font-size:.7rem; color:var(--faint); }
 
+/* expandable word → phrases in modal */
+.word-exp { border-bottom:1px solid var(--bdr); }
+.word-exp:last-child { border-bottom:none; }
+.word-exp-header {
+  width:100%; display:flex; align-items:flex-start; gap:8px;
+  padding:9px 13px; text-align:left; cursor:pointer;
+}
+.word-exp-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.word-exp-info strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+.word-exp-chev { transition:transform 200ms ease; flex-shrink:0; margin-top:4px; color:var(--faint); }
+.word-exp-chev.open { transform:rotate(180deg); }
+.phrase-body { overflow:hidden; transition:max-height 250ms ease, opacity 200ms ease; max-height:1500px; opacity:1; }
+.phrase-body.collapsed { max-height:0; opacity:0; }
+.phrase-item {
+  padding:7px 13px 7px 22px; border-top:1px solid var(--bdr);
+  background:var(--surf2); display:flex; flex-direction:column; gap:1px;
+}
+.wp-hanzi   { color:var(--txt); font-size:.9rem; font-weight:600; line-height:1.35; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+.wp-pinyin  { font-size:.7rem; color:var(--muted); line-height:1.3; }
+.wp-meaning { font-size:.7rem; color:var(--faint); line-height:1.3; }
+
 /* done */
 .done {
   position:absolute; inset:0; display:flex; flex-direction:column;

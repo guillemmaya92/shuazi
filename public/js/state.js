@@ -7,6 +7,7 @@ export const state = {
   charsByComponent: {},
   charById:      {},
   wordsByChar:   {},
+  phrasesByWord: {},
   deck:          [],
   known:         new Set(),
   unknown:       new Set(),

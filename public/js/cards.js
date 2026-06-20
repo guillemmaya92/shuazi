@@ -13,10 +13,11 @@ export function fetchWordsForChar(card) {
   _wordPromises[key] = (async () => {
     const { data } = await supa
       .from('words')
-      .select('word, pinyin, meaning, group, char_word!inner(id_char)')
+      .select('id, word, pinyin, meaning, group, char_word!inner(id_char)')
       .eq('char_word.id_char', card.id)
       .order('group');
     state.wordsByChar[key] = (data || []).map(w => ({
+      dbId:    w.id,
       id:      w.word,
       pinyin:  w.pinyin,
       meaning: w.meaning,
@@ -24,6 +25,38 @@ export function fetchWordsForChar(card) {
     }));
   })();
   return _wordPromises[key];
+}
+
+// Lazily fetch the phrases linked to a word (via the word_phrase join table),
+// caching by the word's numeric id so each word is only queried once.
+const _phrasePromises = {};
+export function fetchPhrasesForWord(wordId) {
+  if (state.phrasesByWord[wordId] !== undefined) return Promise.resolve();
+  if (_phrasePromises[wordId]) return _phrasePromises[wordId];
+  _phrasePromises[wordId] = (async () => {
+    // 1) ids of phrases linked to this word (filter the join table by id_word)
+    const { data: links } = await supa
+      .from('word_phrase')
+      .select('id_phrase')
+      .eq('id_word', wordId);
+    const ids = (links || []).map(l => l.id_phrase);
+    if (ids.length === 0) {
+      state.phrasesByWord[wordId] = [];
+      return;
+    }
+    // 2) fetch those phrases
+    const { data } = await supa
+      .from('phrases')
+      .select('phrase, pinyin, meaning, count')
+      .in('id', ids)
+      .order('count', { ascending: false });
+    state.phrasesByWord[wordId] = (data || []).map(p => ({
+      phrase:  p.phrase,
+      pinyin:  p.pinyin,
+      meaning: p.meaning,
+    }));
+  })();
+  return _phrasePromises[wordId];
 }
 
 export function normalizePinyin(str) {
@@ -154,7 +187,7 @@ function makeCard(card, isStack) {
       el.dataset.answer = '1';
       tapHint.style.visibility = 'hidden';
       await fetchWordsForChar(card);
-      const w = (state.wordsByChar[card.char] || [])[0];
+      const w = (state.wordsByChar[card.char] || []).find(x => x.group !== '0');
       const exHTML = w
         ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`
         : '—';

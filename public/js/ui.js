@@ -2,7 +2,7 @@ import { supa } from './config.js';
 import { state } from './state.js';
 import { saveState } from './progress.js';
 import { startCheckout } from './auth.js';
-import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar } from './cards.js';
+import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
 import { initTranslator } from './translator.js';
 
 /* ── GROUPS ── */
@@ -376,7 +376,7 @@ export function closeResetModal() {
 export async function openModal(card) {
   await fetchWordsForChar(card);
   const cardWords = (state.wordsByChar[card.char] || []);
-  const GROUP_LABELS = { 1: 'Common', 2: 'Uncommon', 3: 'Rare' };
+  const GROUP_LABELS = { 0: 'Word', 1: 'Common', 2: 'Uncommon', 3: 'Rare' };
   const groupMap = {};
   cardWords.forEach(w => {
     const g = w.group ?? 'Other';
@@ -389,7 +389,17 @@ export async function openModal(card) {
     : groupOrder.map((g, i) => {
         const label = GROUP_LABELS[g] ?? g;
         const items = groupMap[g].map(w =>
-          `<div class="word-item"><strong>${w.id}</strong><span class="word-pinyin">${w.pinyin}</span><span class="word-meaning">${w.meaning}</span></div>`
+          `<div class="word-exp" data-word-id="${w.dbId}">
+            <button class="word-exp-header">
+              <div class="word-exp-info">
+                <strong>${w.id}</strong>
+                <span class="word-pinyin">${w.pinyin}</span>
+                <span class="word-meaning">${w.meaning}</span>
+              </div>
+              <svg class="word-exp-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="phrase-body collapsed"></div>
+          </div>`
         ).join('');
         const open = i === 0;
         return `
@@ -422,6 +432,30 @@ export async function openModal(card) {
       btn.dataset.open = !open;
       body.classList.toggle('collapsed', open);
       chev.classList.toggle('open', !open);
+    });
+  });
+
+  modalContent.querySelectorAll('.word-exp-header').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const wrap = btn.parentElement;
+      const body = btn.nextElementSibling;
+      const chev = btn.querySelector('.word-exp-chev');
+      const willOpen = body.classList.contains('collapsed');
+
+      if (willOpen && !body.dataset.loaded) {
+        body.dataset.loaded = '1';
+        const wordId = +wrap.dataset.wordId;
+        await fetchPhrasesForWord(wordId);
+        const phrases = state.phrasesByWord[wordId] || [];
+        body.innerHTML = phrases.length === 0
+          ? '<div class="phrase-item" style="color:var(--faint)">No phrases found</div>'
+          : phrases.map(p =>
+              `<div class="phrase-item"><span class="wp-hanzi">${p.phrase}</span><span class="wp-pinyin">${p.pinyin ?? ''}</span><span class="wp-meaning">${p.meaning ?? ''}</span></div>`
+            ).join('');
+      }
+
+      body.classList.toggle('collapsed', !willOpen);
+      chev.classList.toggle('open', willOpen);
     });
   });
 
