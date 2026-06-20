@@ -150,6 +150,29 @@ def load_words():
         for r in rows
     ]
 
+def load_word_phrase():
+    rows = _sheet('word_phrase')
+    seen = set()
+    result = []
+    for r in rows:
+        key = (int(r['id_word']), int(r['id_phrase']))
+        if key not in seen:
+            seen.add(key)
+            result.append({'id_word': key[0], 'id_phrase': key[1]})
+    return result
+
+def load_phrases():
+    rows = _sheet('phrases')
+    return [
+        {
+            'id':      int(r['id']),
+            'phrase':  r['phrase'],
+            'pinyin':  r['pinyin'],
+            'meaning': r['meaning'],
+            'count':   int(r['count']) if r.get('count') is not None else None,
+        }
+        for r in rows
+    ]
 
 def load_slang():
     rows = _sheet('slang')
@@ -174,10 +197,12 @@ TABLE_LOADERS = {
     'chars':          load_chars,
     'char_word':      load_char_word,
     'words':          load_words,
+    'word_phrase':    load_word_phrase,
+    'phrases':        load_phrases,
     'slang':          load_slang,
 }
 
-DEFAULT_ORDER = ['components', 'radicals', 'chars', 'words', 'component_char', 'char_word', 'slang']
+DEFAULT_ORDER = ['components', 'radicals', 'chars', 'words', 'phrases', 'component_char', 'char_word', 'word_phrase', 'slang']
 
 
 # ---------------------------------------------------------------------------
