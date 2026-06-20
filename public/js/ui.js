@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { saveState } from './progress.js';
 import { startCheckout } from './auth.js';
 import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar } from './cards.js';
+import { initTranslator } from './translator.js';
 
 /* ── GROUPS ── */
 const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
@@ -473,27 +474,31 @@ function openComponentModal(comp) {
 backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
 
 /* ── TABS ── */
-const tabCards   = document.getElementById('tab-cards');
-const tabGroups  = document.getElementById('tab-groups');
-const tabPhrases = document.getElementById('tab-slang');
-const tabProfile = document.getElementById('tab-profile');
-const scrCards   = document.getElementById('screen-cards');
-const scrGroups  = document.getElementById('screen-groups');
-const scrPhrases = document.getElementById('screen-slang');
-const scrProfile = document.getElementById('screen-profile');
+const tabCards     = document.getElementById('tab-cards');
+const tabGroups    = document.getElementById('tab-groups');
+const tabPhrases   = document.getElementById('tab-slang');
+const tabTranslate = document.getElementById('tab-translator');
+const tabProfile   = document.getElementById('tab-profile');
+const scrCards     = document.getElementById('screen-cards');
+const scrGroups    = document.getElementById('screen-groups');
+const scrPhrases   = document.getElementById('screen-slang');
+const scrTranslate = document.getElementById('screen-translator');
+const scrProfile   = document.getElementById('screen-profile');
 
 export function showTab(tab) {
-  [scrCards, scrGroups, scrPhrases, scrProfile].forEach(s => s.classList.remove('active'));
-  [tabCards, tabGroups, tabPhrases, tabProfile].forEach(t => t.classList.remove('active'));
-  if (tab === 'cards')        { scrCards.classList.add('active');   tabCards.classList.add('active'); }
-  else if (tab === 'groups')  { scrGroups.classList.add('active');  tabGroups.classList.add('active'); renderGroups(); }
-  else if (tab === 'slang')   { scrPhrases.classList.add('active'); tabPhrases.classList.add('active'); renderSlang(); }
-  else                        { scrProfile.classList.add('active'); tabProfile.classList.add('active'); renderProfile(); }
+  [scrCards, scrGroups, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
+  [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
+  if (tab === 'cards')          { scrCards.classList.add('active');     tabCards.classList.add('active'); }
+  else if (tab === 'groups')    { scrGroups.classList.add('active');    tabGroups.classList.add('active'); renderGroups(); }
+  else if (tab === 'slang')     { scrPhrases.classList.add('active');   tabPhrases.classList.add('active'); renderSlang(); }
+  else if (tab === 'translator'){ scrTranslate.classList.add('active'); tabTranslate.classList.add('active'); initTranslator(); }
+  else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
 }
-tabCards.onclick   = () => showTab('cards');
-tabGroups.onclick  = () => showTab('groups');
-tabPhrases.onclick = () => showTab('slang');
-tabProfile.onclick = () => showTab('profile');
+tabCards.onclick     = () => showTab('cards');
+tabGroups.onclick    = () => showTab('groups');
+tabPhrases.onclick   = () => showTab('slang');
+tabTranslate.onclick = () => showTab('translator');
+tabProfile.onclick   = () => showTab('profile');
 
 /* ── PROFILE ── */
 export function renderProfile() {
@@ -889,18 +894,23 @@ export function setTheme(t) {
   const icon = t === 'dark'
     ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
     : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh'].forEach(id => {
+  ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
     document.getElementById(id).innerHTML = icon;
   });
 }
 
 const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh'].forEach(id => {
+['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
   document.getElementById(id).onclick = toggleTheme;
 });
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown', e => {
+  // Don't hijack keys (space, arrows…) while typing in a text field — e.g. the translator.
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  // Only the cards screen reacts to deck shortcuts.
+  if (!scrCards.classList.contains('active')) return;
   const deckEl = document.getElementById('deck');
   const top = deckEl.querySelector('.card.top'); if (!top) return;
   if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') classifyKnown();

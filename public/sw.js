@@ -19,6 +19,7 @@ const SHELL_ASSETS = [
   '/js/progress.js',
   '/js/state.js',
   '/js/ui.js',
+  '/js/translator.js',
   '/manifest.json',
 ].map(v);
 

@@ -122,6 +122,7 @@
   <link rel="modulepreload" href="./js/progress.js"/>
   <link rel="modulepreload" href="./js/cards.js"/>
   <link rel="modulepreload" href="./js/ui.js"/>
+  <link rel="modulepreload" href="./js/translator.js"/>
 
   <!-- Preload the biggest blocking data fetch -->
   <link rel="preload" href="./data/characters.json" as="fetch" crossorigin/>
@@ -225,7 +226,38 @@
       </div>
     </div>
 
-    <!-- ── SCREEN 4: PROFILE ── -->
+    <!-- ── SCREEN 4: TRANSLATOR ── -->
+    <div class="screen" id="screen-translator">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">译</div>
+          <div>
+            <div class="title">Translator</div>
+            <div class="sub">Any language → Chinese & pinyin</div>
+          </div>
+        </div>
+        <div class="hdr-stats">
+          <button class="icon-btn" id="themeBtnT" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="translator-scroll">
+        <textarea id="trInput" class="tr-input" placeholder="Type in any language, e.g. I like learning Chinese" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+        <button id="trGo" class="tr-btn" disabled>Loading…</button>
+        <div id="trZhSection" class="tr-section" style="display:none">
+          <div class="words-title">Hanzi translation</div>
+          <div id="trZh" class="tr-zh-line"></div>
+        </div>
+        <div id="trTokensSection" class="tr-section" style="display:none">
+          <div class="words-title">Tokenized translation</div>
+          <div id="trResult" class="tr-result"></div>
+        </div>
+        <div id="trEmpty" class="tr-empty">The Chinese translation will appear here, segmented into words with pinyin.</div>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 5: PROFILE ── -->
     <div class="screen" id="screen-profile">
       <div class="groups-header">
         <div>
@@ -264,6 +296,17 @@
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
       <span>Slang</span>
+    </button>
+    <button class="tab" id="tab-translator" aria-label="Translator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m5 8 6 6"/>
+        <path d="m4 14 6-6 2-3"/>
+        <path d="M2 5h12"/>
+        <path d="M7 2h1"/>
+        <path d="m22 22-5-10-5 10"/>
+        <path d="M14 18h6"/>
+      </svg>
+      <span>Translate</span>
     </button>
     <button class="tab" id="tab-profile" aria-label="Profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
