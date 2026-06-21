@@ -116,6 +116,8 @@ export function initTranslator() {
   const zhLineEl    = document.getElementById('trZh');
   const speakBtn    = document.getElementById('trSpeak');
   const clearBtn    = document.getElementById('trClear');
+  const countEl      = document.getElementById('trCount');
+  const inputClearBtn = document.getElementById('trInputClear');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
   if (!input || !button) return;
@@ -185,25 +187,35 @@ export function initTranslator() {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
   });
 
+  const inputField = input.parentElement;
   // Auto-grow the textarea to fit its content (capped by max-height in CSS).
+  // When the content is capped a scrollbar shows on the right edge; expose its
+  // width so the clear cross and counter shift left and never sit under it.
   const autoGrow = () => {
     input.style.height = 'auto';
     input.style.height = input.scrollHeight + 'px';
+    // offsetWidth - clientWidth = both 1px borders + the scrollbar (0 if none).
+    const sb = Math.max(0, input.offsetWidth - input.clientWidth - 2);
+    inputField.style.setProperty('--sb', sb + 'px');
   };
-  // Show the clear button whenever there's something to clear: input text or
-  // a translation shown below.
+  // Show the clear button only when there's a translation shown below.
   const syncClear = () => {
     if (!clearBtn) return;
     const hasResult = zhSection.style.display !== 'none';
-    clearBtn.style.display = (input.value.trim() || hasResult) ? '' : 'none';
+    clearBtn.style.display = hasResult ? '' : 'none';
   };
-  input.addEventListener('input', () => { autoGrow(); syncClear(); });
+  // Keep the character counter — and the inline clear cross (top-right of the
+  // text box, only shown when there's text) — in sync with the input.
+  const syncCount = () => {
+    if (countEl) countEl.textContent = input.value.length;
+    if (inputClearBtn) inputClearBtn.style.display = input.value ? '' : 'none';
+  };
+  input.addEventListener('input', () => { autoGrow(); syncClear(); syncCount(); });
+  syncCount();
 
-  // Clear the input and any previous translation.
+  // Clear only the translation, leaving the written text untouched.
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      input.value = '';
-      autoGrow();
       resultEl.innerHTML = '';
       zhLineEl.textContent = '';
       hideSections();
@@ -214,7 +226,18 @@ export function initTranslator() {
     });
   }
 
-  wireMic(input, () => { autoGrow(); syncClear(); });
+  // Inline cross clears just the written text in the box.
+  if (inputClearBtn) {
+    inputClearBtn.addEventListener('click', () => {
+      input.value = '';
+      autoGrow();
+      syncClear();
+      syncCount();
+      input.focus();
+    });
+  }
+
+  wireMic(input, () => { autoGrow(); syncClear(); syncCount(); });
 }
 
 // Wires the mic button to the Web Speech API (speech-to-text). Dictated text

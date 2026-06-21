@@ -244,7 +244,13 @@
       </header>
       <div class="translator-scroll">
         <div class="tr-input-wrap">
-          <textarea id="trInput" class="tr-input" placeholder="Type in any language..." autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+          <div class="tr-input-field">
+            <textarea id="trInput" class="tr-input" placeholder="Type in any language..." autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+            <button id="trInputClear" class="tr-input-clear" aria-label="Clear text" type="button" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            <span id="trCount" class="tr-count">0</span>
+          </div>
           <div class="tr-actions">
             <div class="tr-actions-left">
               <button id="trClear" class="tr-btn tr-clear" aria-label="Clear" type="button" style="display:none">
