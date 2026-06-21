@@ -645,6 +645,17 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   50%      { box-shadow:0 0 0 7px color-mix(in srgb, var(--blue) 0%, transparent); }
 }
 
+/* Mic transcribing state — hides the icon and shows a spinner */
+.tr-mic.transcribing { cursor:default; }
+.tr-mic.transcribing svg { display:none; }
+.tr-mic.transcribing::after {
+  content:""; width:15px; height:15px; border-radius:50%;
+  border:2px solid color-mix(in srgb, var(--blue) 30%, transparent);
+  border-top-color:var(--blue);
+  animation:tr-spin 0.7s linear infinite;
+}
+@keyframes tr-spin { to { transform:rotate(360deg); } }
+
 .tr-section { display:flex; flex-direction:column; gap:8px; }
 
 /* Listen / clear buttons (bottom-left of the input) */

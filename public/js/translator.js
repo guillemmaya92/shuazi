@@ -332,11 +332,87 @@ export function initTranslator() {
   wireMic(input, () => { autoGrow(); syncClear(); syncCount(); });
 }
 
-// Wires the mic button to the Web Speech API (speech-to-text). Dictated text
-// is appended to whatever is already in the input. Hidden when unsupported.
-function wireMic(input, autoGrow) {
+// Appends dictated text to whatever is already in the input, then syncs the UI.
+function appendDictation(input, text, onInput) {
+  text = (text || '').trim();
+  if (!text) return;
+  const base = input.value.trim();
+  input.value = base ? base + ' ' + text : text;
+  onInput?.();
+}
+
+// Wires the mic button. Primary path records audio with MediaRecorder and
+// transcribes it via the Groq/Whisper Edge Function (works in every browser,
+// auto-detects the language). Falls back to the browser's Web Speech API when
+// recording isn't available. `onInput` re-syncs the UI after text is added.
+function wireMic(input, onInput) {
   const micBtn = document.getElementById('trMic');
   if (!micBtn) return;
+
+  const canRecord = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+  if (!canRecord) { wireMicWebSpeech(input, onInput, micBtn); return; }
+
+  let recorder = null;
+  let stream = null;
+  let chunks = [];
+  let recording = false;
+
+  const setState = (s) => {
+    micBtn.classList.toggle('listening', s === 'recording');
+    micBtn.classList.toggle('transcribing', s === 'transcribing');
+    micBtn.disabled = s === 'transcribing';
+  };
+
+  async function transcribe(blob) {
+    setState('transcribing');
+    try {
+      const fd = new FormData();
+      fd.append('file', blob, 'audio.webm');
+      const res = await fetch(`${SUPA_URL}/functions/v1/stt`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${SUPA_KEY}` }, // browser sets the multipart boundary
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'STT ' + res.status);
+      appendDictation(input, data.text, onInput);
+    } catch (e) {
+      console.error('Transcription failed:', e);
+    } finally {
+      setState('idle');
+    }
+  }
+
+  async function start() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      console.warn('Microphone unavailable / permission denied:', e);
+      return;
+    }
+    chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      recording = false;
+      const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+      if (blob.size) transcribe(blob); else setState('idle');
+    };
+    recorder.start();
+    recording = true;
+    setState('recording');
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (recording) recorder.stop();
+    else start();
+  });
+}
+
+// Fallback: the browser's built-in Web Speech API. Dictated text is appended to
+// the input. Used only when audio recording isn't available.
+function wireMicWebSpeech(input, onInput, micBtn) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { micBtn.style.display = 'none'; return; }
 
@@ -358,7 +434,7 @@ function wireMic(input, autoGrow) {
       let txt = '';
       for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
       input.value = base + txt;
-      if (autoGrow) autoGrow();
+      onInput?.();
     };
     const stop = () => { listening = false; micBtn.classList.remove('listening'); };
     recognition.onend = stop;
