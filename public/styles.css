@@ -582,7 +582,12 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tr-actions-left { display:flex; gap:8px; }
 .tr-actions-right { display:flex; gap:8px; margin-left:auto; }
 .tr-input {
-  width:100%; min-height:110px; max-height:50vh; resize:none; overflow-y:auto;
+  /* grows with content (see autoGrow in translator.js) up to a dynamic cap of
+     --tr-max-lines text lines; the em-based maths adapt to font-size/zoom.
+     +46px = top/bottom padding (14+30, border-box) + 2px borders. */
+  --tr-max-lines:8;
+  width:100%; min-height:110px; resize:none; overflow-y:auto;
+  max-height:calc(var(--tr-max-lines) * 1.45em + 46px);
   background:var(--surf2); border:1px solid var(--bdr); border-radius:16px;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
   font:inherit; font-size:1.05rem; line-height:1.45;

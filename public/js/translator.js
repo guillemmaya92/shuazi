@@ -53,13 +53,43 @@ async function translateToChinese(text) {
   return out;
 }
 
-// Speaks Chinese text via the Web Speech API. `onState` (optional) is called
-// with true when playback starts and false when it ends, for UI feedback.
-function speak(text, onState) {
-  if (!('speechSynthesis' in window) || !text) return;
+// Picks the best available Mandarin voice. Voices load asynchronously, so this
+// is re-evaluated lazily (and on `voiceschanged`). Preference order favours the
+// higher-quality network voices (Google / Microsoft natural) over the basic
+// local ones, and Mainland Mandarin (zh-CN) over other Chinese variants.
+let zhVoice = null;
+function pickChineseVoice() {
+  const voices = speechSynthesis.getVoices();
+  const zh = voices.filter(v => /^zh\b|^cmn\b|zh[-_]/i.test(v.lang) || /chinese|mandarin|普通话|中文/i.test(v.name));
+  if (!zh.length) return null;
+  const score = v => {
+    let s = 0;
+    if (/zh[-_]?cn|cmn[-_]?hans|普通话/i.test(v.lang + ' ' + v.name)) s += 4; // Mainland Mandarin
+    if (/google/i.test(v.name)) s += 3;                                       // Google network voices
+    if (/natural|xiaoxiao|yunyang|xiaoyi|微软|huihui/i.test(v.name)) s += 2;   // MS natural voices
+    if (!v.localService) s += 1;                                              // network > local
+    return s;
+  };
+  return zh.sort((a, b) => score(b) - score(a))[0];
+}
+function getChineseVoice() {
+  if (!zhVoice) zhVoice = pickChineseVoice();
+  return zhVoice;
+}
+if ('speechSynthesis' in window) {
+  // Voices are often not ready on first call; refresh once they arrive.
+  speechSynthesis.addEventListener?.('voiceschanged', () => { zhVoice = pickChineseVoice(); });
+}
+
+// Speaks Chinese text via the Web Speech API (fallback). `onState` (optional)
+// is called with true when playback starts and false when it ends.
+function speakWebSpeech(text, onState) {
+  if (!('speechSynthesis' in window) || !text) { onState?.(false); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-CN';
+  const voice = getChineseVoice();
+  if (voice) u.voice = voice;
   u.rate = 0.9;
   if (onState) {
     u.onstart = () => onState(true);
@@ -67,6 +97,68 @@ function speak(text, onState) {
     u.onerror = () => onState(false);
   }
   speechSynthesis.speak(u);
+}
+
+// ── Cloud TTS (Google via the Supabase Edge Function) ──
+// High-quality, consistent Mandarin across all devices. Audio is cached in
+// memory (instant replay) and in localStorage (survives reloads, saves quota).
+const ttsMem = new Map();        // text -> object URL for this session
+let stopCurrent = null;          // stops whatever is currently playing
+
+function b64ToUrl(b64, mime) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: mime || 'audio/mpeg' }));
+}
+
+// Resolves to a playable object URL, hitting localStorage then the network.
+async function fetchTtsUrl(text) {
+  if (ttsMem.has(text)) return ttsMem.get(text);
+  const lsKey = 'tts:' + text;
+  let b64 = null;
+  try { b64 = localStorage.getItem(lsKey); } catch { /* ignore */ }
+  if (!b64) {
+    const res = await fetch(`${SUPA_URL}/functions/v1/tts`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.audio) throw new Error(data.error || 'TTS ' + res.status);
+    b64 = data.audio;
+    try { localStorage.setItem(lsKey, b64); } catch { /* quota full — skip persisting */ }
+  }
+  const url = b64ToUrl(b64, 'audio/mpeg');
+  ttsMem.set(text, url);
+  return url;
+}
+
+function stopPlayback() {
+  if (stopCurrent) { stopCurrent(); stopCurrent = null; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// Speaks Chinese text. Tries cloud TTS first, falls back to Web Speech on any
+// failure. `onState` (optional) toggles UI feedback (true while playing).
+async function speak(text, onState) {
+  if (!text) return;
+  stopPlayback();
+  onState?.(true);
+  let cleared = false;
+  const done = () => { if (!cleared) { cleared = true; onState?.(false); } };
+  try {
+    const url = await fetchTtsUrl(text);
+    const audio = new Audio(url);
+    stopCurrent = () => { audio.pause(); done(); };
+    audio.onended = () => { done(); stopCurrent = null; };
+    audio.onerror = () => { done(); stopCurrent = null; };
+    await audio.play();
+  } catch (e) {
+    console.warn('Cloud TTS failed, using Web Speech fallback:', e);
+    done();
+    speakWebSpeech(text, onState);
+  }
 }
 
 function renderTokens(zhText, resultEl) {
