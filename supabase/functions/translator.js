@@ -13,45 +13,18 @@
 const MODEL = "deepseek/deepseek-chat";
 const MAX_CHARS = 2000;
 
-// Strict JSON Schema — the model is forced to return exactly this shape.
-const SCHEMA = {
-  type: "json_schema",
-  json_schema: {
-    name: "translation",
-    strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        translation: { type: "string" },
-        tokens: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              zh: { type: "string" },
-              en: { type: "string" },
-            },
-            required: ["zh", "en"],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ["translation", "tokens"],
-      additionalProperties: false,
-    },
-  },
-};
-
+// Compact output keeps generated tokens (and therefore latency) low: the model
+// returns just an array of [word, gloss] pairs — the full translation is
+// reconstructed by joining the words, so it's never emitted twice.
 const SYSTEM_PROMPT =
-  "You are a professional translator. Translate the user message into Simplified Chinese, then segment the translation into natural word-level tokens. " +
-  'Reply with ONLY a JSON object of the form {"translation": string, "tokens": [{"zh": string, "en": string}]} where ' +
-  '"translation" is the full Simplified Chinese translation, and "tokens" is that translation split into words in order. ' +
-  'For each token, "zh" is the Chinese word (or punctuation mark) and "en" is a short literal English gloss for it in this context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (use an empty string for punctuation). ' +
-  "No pinyin, no extra keys, no explanations.";
+  "You are a professional translator. Translate the user message into Simplified Chinese, then segment it into natural word-level tokens. " +
+  'Reply with ONLY a compact JSON object {"t": [[zh, en], ...]} — an array of [word, gloss] pairs in order. ' +
+  'Each "zh" is one Chinese word (or punctuation mark); each "en" is a short literal English gloss for it in context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ' +
+  "No translation field, no pinyin, no extra keys, no explanations.";
 
-// Calls OpenRouter with the given response format. `requireParams` only routes
-// to providers that honour every parameter (used for the strict-schema attempt).
-function callOpenRouter(key, text, responseFormat, requireParams) {
+// Calls OpenRouter. Uses plain JSON mode (fast — parseModelJson tolerates any
+// imperfect formatting) and routes to the highest-throughput provider.
+function callOpenRouter(key, text) {
   return fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -61,8 +34,8 @@ function callOpenRouter(key, text, responseFormat, requireParams) {
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.2,
-      response_format: responseFormat,
-      ...(requireParams ? { provider: { require_parameters: true } } : {}),
+      response_format: { type: "json_object" },
+      provider: { sort: "throughput" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: text },
@@ -130,13 +103,7 @@ Deno.serve(async (req) => {
 
   let resp;
   try {
-    // Preferred path: strict JSON Schema, restricted to providers that honour
-    // it. If that fails (e.g. no such provider available), fall back to basic
-    // JSON mode — parseModelJson then handles any imperfect formatting.
-    resp = await callOpenRouter(key, text, SCHEMA, true);
-    if (!resp.ok) {
-      resp = await callOpenRouter(key, text, { type: "json_object" }, false);
-    }
+    resp = await callOpenRouter(key, text);
   } catch (e) {
     return json({ error: "Upstream request failed", detail: String(e) }, 502);
   }
@@ -150,21 +117,28 @@ Deno.serve(async (req) => {
   const content = data?.choices?.[0]?.message?.content?.trim();
   if (!content) return json({ error: "Empty translation" }, 502);
 
-  // The model is asked for JSON, but sometimes wraps it in a ```json fence or
-  // adds stray text around it. Extract the JSON object before parsing, and
-  // degrade gracefully to the raw text if it still isn't parseable.
-  let translation = content;
+  // Expand the compact pairs into { zh, en } tokens and rebuild the full
+  // translation by joining the words. Accepts the legacy object shape too, and
+  // degrades to the raw reply if nothing parseable comes back.
+  let translation = "";
   let tokens = null;
   const parsed = parseModelJson(content);
-  if (parsed) {
-    if (typeof parsed.translation === "string" && parsed.translation.trim()) {
-      translation = parsed.translation.trim();
-    }
-    if (Array.isArray(parsed.tokens)) {
-      tokens = parsed.tokens
-        .filter((t) => t && typeof t.zh === "string" && t.zh.length)
-        .map((t) => ({ zh: t.zh, en: typeof t.en === "string" ? t.en.trim() : "" }));
-    }
+  const pairs = Array.isArray(parsed?.t) ? parsed.t
+    : Array.isArray(parsed?.tokens) ? parsed.tokens
+    : null;
+  if (pairs) {
+    tokens = pairs
+      .map((p) => (Array.isArray(p) ? { zh: p[0], en: p[1] } : p))
+      .filter((t) => t && typeof t.zh === "string" && t.zh.length)
+      .map((t) => ({ zh: t.zh, en: typeof t.en === "string" ? t.en.trim() : "" }));
+    translation = tokens.map((t) => t.zh).join("");
+  }
+  if (!translation) {
+    // Couldn't parse tokens — use any translation field, else the raw reply.
+    translation = typeof parsed?.translation === "string" && parsed.translation.trim()
+      ? parsed.translation.trim()
+      : content;
+    tokens = null;
   }
   if (!translation) return json({ error: "Empty translation" }, 502);
 

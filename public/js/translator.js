@@ -38,6 +38,14 @@ function ensureLibs() {
 // Resolves to { translation, tokens } — tokens may be null (raw-text fallback).
 async function translateToChinese(text) {
   if (CJK_RE.test(text)) return { translation: text, tokens: null }; // already Chinese
+
+  // Cache identical inputs in localStorage — repeated phrases return instantly.
+  const cacheKey = 'tr:' + text;
+  try {
+    const hit = localStorage.getItem(cacheKey);
+    if (hit) return JSON.parse(hit);
+  } catch { /* ignore parse/quota errors */ }
+
   const response = await fetch(`${SUPA_URL}/functions/v1/translator`, {
     method: 'POST',
     headers: {
@@ -68,7 +76,9 @@ async function translateToChinese(text) {
       } catch { /* leave out as-is */ }
     }
   }
-  return { translation: out, tokens };
+  const result = { translation: out, tokens };
+  try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch { /* quota full — skip */ }
+  return result;
 }
 
 // Picks the best available Mandarin voice. Voices load asynchronously, so this
@@ -232,12 +242,14 @@ function renderTokens(zhText, tokens, resultEl) {
 
   for (const seg of list) {
     const isPunct = !seg.latin && (seg.punct ?? PUNCT_RE.test(seg.origin));
+    const hasGloss = !isPunct && !!seg.en;
     const el = document.createElement('div');
     el.className = 'tr-token' + (isPunct ? ' punct' : '');
     const py  = seg.latin || isPunct ? '' : seg.result;
-    const en  = !isPunct && seg.en ? `<span class="en">${escapeHtml(seg.en)}</span>` : '';
+    const en  = hasGloss ? `<span class="en">${escapeHtml(seg.en)}</span>` : '';
     el.innerHTML = `<span class="py">${py}</span><span class="zh">${escapeHtml(seg.origin)}</span>${en}`;
-    // Tap a (non-punctuation) token to hear that word on its own.
+    // Tap a (non-punctuation) token to hear that word. The English gloss is
+    // shown only via the eye toggle in the section header.
     if (!isPunct) {
       el.addEventListener('click', () => {
         speak(seg.origin, on => el.classList.toggle('speaking', on));
@@ -263,6 +275,7 @@ export function initTranslator() {
   const inputClearBtn = document.getElementById('trInputClear');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
+  const eyeBtn       = document.getElementById('trEye');
   if (!input || !button) return;
 
   // Start loading the library as soon as the tab is first opened.
@@ -283,6 +296,25 @@ export function initTranslator() {
     });
   }
 
+  // The eye reveals / hides every English gloss at once.
+  if (eyeBtn) {
+    eyeBtn.addEventListener('click', () => {
+      const showing = eyeBtn.classList.toggle('showing');
+      resultEl.querySelectorAll('.tr-token').forEach(t => {
+        if (t.querySelector('.en')) t.classList.toggle('revealed', showing);
+      });
+    });
+  }
+
+  // Shows the eye only when there are glosses to reveal, and resets it (and any
+  // per-word reveals) to the default hidden state for each new translation.
+  function syncEye() {
+    if (!eyeBtn) return;
+    const hasGlosses = !!resultEl.querySelector('.en');
+    eyeBtn.style.display = hasGlosses ? '' : 'none';
+    eyeBtn.classList.remove('showing');
+  }
+
   function hideSections() {
     zhSection.style.display = 'none';
     tokensSection.style.display = 'none';
@@ -290,6 +322,7 @@ export function initTranslator() {
       speakBtn.style.display = 'none';
       speakBtn.classList.remove('playing');
     }
+    if (eyeBtn) { eyeBtn.style.display = 'none'; eyeBtn.classList.remove('showing'); }
     if ('speechSynthesis' in window) speechSynthesis.cancel();
   }
 
@@ -311,6 +344,7 @@ export function initTranslator() {
       const { translation: zh, tokens } = await translateToChinese(text);
       zhLineEl.textContent = zh;
       renderTokens(zh, tokens, resultEl);
+      syncEye();
       zhSection.style.display = '';
       tokensSection.style.display = '';
       if (canSpeak) speakBtn.style.display = '';

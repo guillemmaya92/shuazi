@@ -562,6 +562,24 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 .tr-input-wrap { display:flex; flex-direction:column; gap:10px; }
 .tr-input-field { position:relative; display:flex; --sb:0px; }
+/* Modern gradient border: a masked ring drawn around the text box. The mask
+   punches out the centre so only the 1.5px edge shows. It fades in on focus and
+   the gradient angle spins continuously (animatable via the @property angle). */
+@property --tr-angle {
+  syntax: '<angle>'; initial-value: 0deg; inherits: false;
+}
+.tr-input-field::before {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  border-radius:16px; padding:1px;
+  background:linear-gradient(var(--tr-angle), var(--blue), var(--green), var(--blue));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0; transition:opacity 150ms ease;
+}
+.tr-input-field:focus-within::before {
+  opacity:1; animation:tr-border-spin 8s linear infinite;
+}
+@keyframes tr-border-spin { from { --tr-angle:0deg; } to { --tr-angle:360deg; } }
 .tr-count {
   position:absolute; right:calc(12px + var(--sb)); bottom:10px;
   font-size:.75rem; line-height:1; color:var(--faint);
@@ -694,17 +712,27 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 .tr-result { display:flex; flex-wrap:wrap; gap:8px; }
 .tr-token {
+  position:relative;
   background:var(--surf); border:1px solid var(--bdr); border-radius:12px;
   padding:8px 10px; text-align:center; min-width:46px;
-  cursor:pointer; user-select:none;
+  cursor:pointer; user-select:none; -webkit-touch-callout:none;
   transition:transform 120ms ease, border-color 150ms ease, background 150ms ease;
 }
 .tr-token:not(.punct):hover { border-color:color-mix(in srgb, var(--green) 45%, var(--bdr)); }
 .tr-token:not(.punct):active { transform:scale(.94); }
+/* Animated gradient ring while the word is playing (same effect as the input). */
+.tr-token::before {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  border-radius:inherit; padding:1px;
+  background:linear-gradient(var(--tr-angle), var(--blue), var(--green), var(--blue));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0; transition:opacity 150ms ease;
+}
 .tr-token.speaking {
-  border-color:var(--green);
   background:color-mix(in srgb, var(--green) 12%, var(--surf));
 }
+.tr-token.speaking::before { opacity:1; animation:tr-border-spin 8s linear infinite; }
 .tr-token .py {
   display:block; font-size:.62rem; color:var(--green);
   margin-bottom:4px; white-space:nowrap;
@@ -714,10 +742,31 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
 }
+/* Tokenized header: title + the show-all-meanings eye toggle. */
+.tr-tokens-head { display:flex; align-items:center; justify-content:space-between; }
+.tr-eye {
+  width:24px; height:24px; display:grid; place-items:center; flex:0 0 auto;
+  border-radius:50%; background:var(--surf); border:1px solid var(--bdr);
+  color:var(--muted); cursor:pointer; padding:0;
+}
+.tr-eye svg { width:14px; height:14px; }
+.tr-eye:active { opacity:.6; }
+.tr-eye .ic-eye { display:none; }
+.tr-eye.showing .ic-eye { display:block; }
+.tr-eye.showing .ic-eye-off { display:none; }
+
+/* English gloss: a tap-to-reveal flashcard — collapsed until its token is
+   revealed (per-word tap, or all at once via the eye), growing/shrinking the
+   token block as it appears/disappears. */
 .tr-token .en {
   display:block; font-size:.6rem; color:var(--faint);
-  margin-top:4px; white-space:nowrap; font-style:italic;
+  white-space:nowrap; font-style:italic;
+  /* max-width:0 keeps the hidden gloss from widening the token — it only
+     contributes to the box size once revealed. */
+  max-height:0; max-width:0; opacity:0; margin-top:0; overflow:hidden;
+  transition:max-height .18s ease, opacity .18s ease, margin-top .18s ease;
 }
+.tr-token.revealed .en { max-height:2em; max-width:none; opacity:1; margin-top:4px; }
 .tr-token.punct {
   background:transparent; border:none; color:var(--faint);
   min-width:0; padding:8px 2px; cursor:default;
