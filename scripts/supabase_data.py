@@ -145,7 +145,7 @@ def load_words():
             'word':    r['word'],
             'pinyin':  r['pinyin'],
             'meaning': r['meaning'],
-            'group':   int(r['group']) if r.get('group') is not None else None,
+            'hsk':     int(r['hsk']) if r.get('hsk') is not None else None,
         }
         for r in rows
     ]

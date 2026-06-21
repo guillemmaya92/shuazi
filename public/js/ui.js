@@ -376,10 +376,9 @@ export function closeResetModal() {
 export async function openModal(card) {
   await fetchWordsForChar(card);
   const cardWords = (state.wordsByChar[card.char] || []);
-  const GROUP_LABELS = { 0: 'Word', 1: 'Common', 2: 'Uncommon', 3: 'Rare' };
   const groupMap = {};
   cardWords.forEach(w => {
-    const g = w.group ?? 'Other';
+    const g = w.hsk ?? 'Other';
     if (!groupMap[g]) groupMap[g] = [];
     groupMap[g].push(w);
   });
@@ -387,7 +386,7 @@ export async function openModal(card) {
   const groupsHTML = groupOrder.length === 0
     ? '<div class="word-item" style="color:var(--faint)">No words found</div>'
     : groupOrder.map((g, i) => {
-        const label = GROUP_LABELS[g] ?? g;
+        const label = g === 'Other' ? 'Other' : `HSK ${g}`;
         const items = groupMap[g].map(w =>
           `<div class="word-exp" data-word-id="${w.dbId}">
             <button class="word-exp-header">
@@ -545,9 +544,11 @@ export function renderProfile() {
     const knownN   = filtered.filter(c => state.known.has(c.char)).length;
     const reviewN  = filtered.filter(c => state.unknown.has(c.char)).length;
     const leftN    = total - knownN - reviewN;
-    const totalCov = filtered.reduce((s, c) => s + (c.coverage ?? 0), 0);
-    const knownCov = filtered.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
-    const pct = totalCov ? Math.round(knownCov / totalCov * 100) : 0;
+    // coverage is each char's absolute share of typical Chinese text, so the
+    // overall progress is simply the summed coverage of known chars (× 100).
+    // It reflects all known chars regardless of the active HSK filter.
+    const knownCov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
+    const pct = Math.min(100, Math.round(knownCov * 100));
     return { total, knownN, reviewN, leftN, pct };
   }
 

@@ -256,6 +256,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   width:100%; display:flex; align-items:center; gap:6px;
   padding:9px 13px; font-size:.72rem; font-weight:700;
   color:var(--muted); text-align:left; cursor:pointer;
+  background:rgba(0,0,0,.12);
 }
 .word-group-header span:first-child { flex:1; }
 .word-group-count {
@@ -559,8 +560,12 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .translator-scroll::-webkit-scrollbar-thumb { background:var(--bdr); border-radius:999px; }
 .translator-scroll { scrollbar-width:thin; scrollbar-color:var(--bdr) transparent; }
 
+.tr-input-wrap { display:flex; flex-direction:column; gap:10px; }
+.tr-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tr-actions-left { display:flex; gap:8px; }
+.tr-actions-right { display:flex; gap:8px; margin-left:auto; }
 .tr-input {
-  width:100%; min-height:110px; resize:vertical;
+  width:100%; min-height:110px; max-height:50vh; resize:none; overflow-y:auto;
   background:var(--surf2); border:1px solid var(--bdr); border-radius:16px;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
   font:inherit; font-size:1.05rem; line-height:1.45;
@@ -571,15 +576,80 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tr-input:focus { border-color:var(--green); }
 
 .tr-btn {
-  width:100%; padding:13px; border-radius:14px;
-  background:var(--green-bg); border:1px solid rgba(104,191,138,.28);
-  color:var(--green); font-size:.85rem; font-weight:700; letter-spacing:.02em;
-  cursor:pointer; transition:transform 120ms ease, opacity 150ms ease;
+  width:36px; height:36px; padding:0; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--green) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--green) 35%, transparent);
+  color:var(--green); -webkit-text-fill-color:var(--green);
+  cursor:pointer;
+  transition:transform 140ms cubic-bezier(.34,1.56,.64,1), background 160ms ease, color 160ms ease;
 }
-.tr-btn:active { transform:scale(.98); }
-.tr-btn:disabled { opacity:.5; cursor:default; }
+.tr-btn svg { width:17px; height:17px; }
+.tr-btn:hover { background:color-mix(in srgb, var(--green) 26%, transparent); }
+.tr-btn:active {
+  transform:scale(.9);
+  background:var(--green);
+  color:#fff; -webkit-text-fill-color:#fff;
+  border-color:var(--green);
+}
+.tr-btn:disabled {
+  opacity:.45; cursor:default; transform:none;
+  background:color-mix(in srgb, var(--green) 12%, transparent);
+  color:var(--green); -webkit-text-fill-color:var(--green);
+}
+
+/* Mic button — blue variant */
+.tr-mic {
+  background:color-mix(in srgb, var(--blue) 16%, transparent);
+  border-color:color-mix(in srgb, var(--blue) 35%, transparent);
+  color:var(--blue); -webkit-text-fill-color:var(--blue);
+}
+.tr-mic:hover { background:color-mix(in srgb, var(--blue) 26%, transparent); }
+.tr-mic:active {
+  background:var(--blue); border-color:var(--blue);
+  color:#fff; -webkit-text-fill-color:#fff;
+}
+
+/* Mic recording state */
+.tr-mic.listening {
+  background:var(--blue); border-color:var(--blue);
+  color:#fff; -webkit-text-fill-color:#fff;
+  animation:tr-pulse 1.4s ease-in-out infinite;
+}
+@keyframes tr-pulse {
+  0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--blue) 55%, transparent); }
+  50%      { box-shadow:0 0 0 7px color-mix(in srgb, var(--blue) 0%, transparent); }
+}
 
 .tr-section { display:flex; flex-direction:column; gap:8px; }
+
+/* Listen / clear buttons (bottom-left of the input) */
+.tr-speak, .tr-clear { width:31px; height:31px; }
+.tr-speak svg, .tr-clear svg { width:15px; height:15px; }
+
+/* Listen — grey variant */
+.tr-speak {
+  background:color-mix(in srgb, var(--muted) 14%, transparent);
+  border-color:color-mix(in srgb, var(--muted) 32%, transparent);
+  color:var(--muted); -webkit-text-fill-color:var(--muted);
+}
+.tr-speak:hover { background:color-mix(in srgb, var(--muted) 24%, transparent); }
+.tr-speak:active, .tr-speak.playing {
+  background:var(--muted); border-color:var(--muted);
+  color:var(--surf2); -webkit-text-fill-color:var(--surf2);
+}
+
+/* Clear — red variant */
+.tr-clear {
+  background:color-mix(in srgb, var(--red) 14%, transparent);
+  border-color:color-mix(in srgb, var(--red) 32%, transparent);
+  color:var(--red); -webkit-text-fill-color:var(--red);
+}
+.tr-clear:hover { background:color-mix(in srgb, var(--red) 24%, transparent); }
+.tr-clear:active {
+  background:var(--red); border-color:var(--red);
+  color:#fff; -webkit-text-fill-color:#fff;
+}
 
 .tr-zh-line {
   font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
@@ -591,6 +661,14 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tr-token {
   background:var(--surf); border:1px solid var(--bdr); border-radius:12px;
   padding:8px 10px; text-align:center; min-width:46px;
+  cursor:pointer; user-select:none;
+  transition:transform 120ms ease, border-color 150ms ease, background 150ms ease;
+}
+.tr-token:not(.punct):hover { border-color:color-mix(in srgb, var(--green) 45%, var(--bdr)); }
+.tr-token:not(.punct):active { transform:scale(.94); }
+.tr-token.speaking {
+  border-color:var(--green);
+  background:color-mix(in srgb, var(--green) 12%, var(--surf));
 }
 .tr-token .py {
   display:block; font-size:.62rem; color:var(--green);
@@ -603,7 +681,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .tr-token.punct {
   background:transparent; border:none; color:var(--faint);
-  min-width:0; padding:8px 2px;
+  min-width:0; padding:8px 2px; cursor:default;
 }
 .tr-token.punct .py { display:none; }
 

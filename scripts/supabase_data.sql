@@ -82,7 +82,7 @@ create table components (
 
 create table radicals (
     id          int primary key,
-    radical     text not null unique,   -- unique so chars.radical can reference it
+    radical     text not null unique,
     traditional text,
     pinyin      text,
     meaning     text,
@@ -109,7 +109,7 @@ create table words (
     word        text not null,
     pinyin      text,
     meaning     text,
-    "group"     int
+    hsk         int
 );
 
 create table phrases (

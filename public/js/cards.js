@@ -13,15 +13,15 @@ export function fetchWordsForChar(card) {
   _wordPromises[key] = (async () => {
     const { data } = await supa
       .from('words')
-      .select('id, word, pinyin, meaning, group, char_word!inner(id_char)')
+      .select('id, word, pinyin, meaning, hsk, frequency, char_word!inner(id_char)')
       .eq('char_word.id_char', card.id)
-      .order('group');
+      .order('frequency', { ascending: true });
     state.wordsByChar[key] = (data || []).map(w => ({
       dbId:    w.id,
       id:      w.word,
       pinyin:  w.pinyin,
       meaning: w.meaning,
-      group:   String(w.group),
+      hsk:     w.hsk,
     }));
   })();
   return _wordPromises[key];
@@ -187,7 +187,7 @@ function makeCard(card, isStack) {
       el.dataset.answer = '1';
       tapHint.style.visibility = 'hidden';
       await fetchWordsForChar(card);
-      const w = (state.wordsByChar[card.char] || []).find(x => x.group !== '0');
+      const w = (state.wordsByChar[card.char] || [])[0];
       const exHTML = w
         ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`
         : '—';

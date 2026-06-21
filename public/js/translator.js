@@ -10,7 +10,6 @@ import { SUPA_URL, SUPA_KEY } from './config.js';
 const PUNCT_RE   = /^[\s\p{P}]+$/u;
 const CJK_RE     = /[㐀-鿿豈-﫿]/;     // han characters
 const WORD_RE    = /[\p{L}\p{N}]/u;                     // any letter or number
-const BASE_LABEL = 'Translate & tokenize';
 
 let segment, addDict, OutputFormat;
 let libsPromise = null; // de-dupes concurrent loads
@@ -54,6 +53,22 @@ async function translateToChinese(text) {
   return out;
 }
 
+// Speaks Chinese text via the Web Speech API. `onState` (optional) is called
+// with true when playback starts and false when it ends, for UI feedback.
+function speak(text, onState) {
+  if (!('speechSynthesis' in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  u.rate = 0.9;
+  if (onState) {
+    u.onstart = () => onState(true);
+    u.onend   = () => onState(false);
+    u.onerror = () => onState(false);
+  }
+  speechSynthesis.speak(u);
+}
+
 function renderTokens(zhText, resultEl) {
   resultEl.innerHTML = '';
   const segments = segment(zhText, { format: OutputFormat.AllSegment });
@@ -79,6 +94,12 @@ function renderTokens(zhText, resultEl) {
     const el = document.createElement('div');
     el.className = 'tr-token' + (isPunct ? ' punct' : '');
     el.innerHTML = `<span class="py">${seg.latin || isPunct ? '' : seg.result}</span><span class="zh">${seg.origin}</span>`;
+    // Tap a (non-punctuation) token to hear that word on its own.
+    if (!isPunct) {
+      el.addEventListener('click', () => {
+        speak(seg.origin, on => el.classList.toggle('speaking', on));
+      });
+    }
     resultEl.appendChild(el);
   }
 }
@@ -93,22 +114,38 @@ export function initTranslator() {
   const resultEl   = document.getElementById('trResult');
   const emptyEl     = document.getElementById('trEmpty');
   const zhLineEl    = document.getElementById('trZh');
+  const speakBtn    = document.getElementById('trSpeak');
+  const clearBtn    = document.getElementById('trClear');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
   if (!input || !button) return;
 
   // Start loading the library as soon as the tab is first opened.
   ensureLibs().then(() => {
-    button.textContent = BASE_LABEL;
     button.disabled = false;
   });
+
+  // The listen button only makes sense with speech synthesis available.
+  const canSpeak = !!speakBtn && 'speechSynthesis' in window;
 
   if (wired) return;
   wired = true;
 
+  // Listen to the full Chinese sentence.
+  if (canSpeak) {
+    speakBtn.addEventListener('click', () => {
+      speak(zhLineEl.textContent, on => speakBtn.classList.toggle('playing', on));
+    });
+  }
+
   function hideSections() {
     zhSection.style.display = 'none';
     tokensSection.style.display = 'none';
+    if (speakBtn) {
+      speakBtn.style.display = 'none';
+      speakBtn.classList.remove('playing');
+    }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
   }
 
   async function handleSubmit() {
@@ -117,14 +154,13 @@ export function initTranslator() {
     zhLineEl.textContent = '';
     hideSections();
     if (!text) {
-      emptyEl.textContent = 'The Chinese translation will appear here, segmented into words with pinyin.';
+      emptyEl.textContent = '';
       emptyEl.className = 'tr-empty';
-      emptyEl.style.display = 'block';
+      emptyEl.style.display = 'none';
       return;
     }
     emptyEl.style.display = 'none';
     button.disabled = true;
-    button.textContent = 'Translating…';
     try {
       await ensureLibs();
       const zh = await translateToChinese(text);
@@ -132,6 +168,8 @@ export function initTranslator() {
       renderTokens(zh, resultEl);
       zhSection.style.display = '';
       tokensSection.style.display = '';
+      if (canSpeak) speakBtn.style.display = '';
+      syncClear();
     } catch (e) {
       console.error(e);
       emptyEl.textContent = 'Could not translate: ' + e.message;
@@ -139,12 +177,78 @@ export function initTranslator() {
       emptyEl.style.display = 'block';
     } finally {
       button.disabled = false;
-      button.textContent = BASE_LABEL;
     }
   }
 
   button.addEventListener('click', handleSubmit);
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
+  });
+
+  // Auto-grow the textarea to fit its content (capped by max-height in CSS).
+  const autoGrow = () => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  };
+  // Show the clear button whenever there's something to clear: input text or
+  // a translation shown below.
+  const syncClear = () => {
+    if (!clearBtn) return;
+    const hasResult = zhSection.style.display !== 'none';
+    clearBtn.style.display = (input.value.trim() || hasResult) ? '' : 'none';
+  };
+  input.addEventListener('input', () => { autoGrow(); syncClear(); });
+
+  // Clear the input and any previous translation.
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      autoGrow();
+      resultEl.innerHTML = '';
+      zhLineEl.textContent = '';
+      hideSections();
+      emptyEl.textContent = '';
+      emptyEl.style.display = 'none';
+      syncClear();
+      input.focus();
+    });
+  }
+
+  wireMic(input, () => { autoGrow(); syncClear(); });
+}
+
+// Wires the mic button to the Web Speech API (speech-to-text). Dictated text
+// is appended to whatever is already in the input. Hidden when unsupported.
+function wireMic(input, autoGrow) {
+  const micBtn = document.getElementById('trMic');
+  if (!micBtn) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { micBtn.style.display = 'none'; return; }
+
+  let recognition = null;
+  let listening = false;
+  let base = '';
+
+  micBtn.addEventListener('click', () => {
+    if (listening) { recognition.stop(); return; }
+
+    recognition = new SR();
+    recognition.lang = navigator.language || 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    base = input.value.trim() ? input.value.trim() + ' ' : '';
+
+    recognition.onstart = () => { listening = true; micBtn.classList.add('listening'); };
+    recognition.onresult = e => {
+      let txt = '';
+      for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+      input.value = base + txt;
+      if (autoGrow) autoGrow();
+    };
+    const stop = () => { listening = false; micBtn.classList.remove('listening'); };
+    recognition.onend = stop;
+    recognition.onerror = stop;
+
+    recognition.start();
   });
 }

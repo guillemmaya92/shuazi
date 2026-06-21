@@ -19,7 +19,7 @@ for _, row in df.iterrows():
         "id":      str(row["id"]),
         "pinyin":  str(row["pinyin"])  if pd.notna(row["pinyin"])  else "",
         "meaning": str(row["meaning"]) if pd.notna(row["meaning"]) else "",
-        "group":   str(row["group"])   if pd.notna(row["group"])   else "",
+        "hsk":     str(row["hsk"])     if pd.notna(row["hsk"])     else "",
         "chars":   chars
     }
     data.append(item)
