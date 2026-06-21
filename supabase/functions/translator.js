@@ -13,11 +13,92 @@
 const MODEL = "deepseek/deepseek-chat";
 const MAX_CHARS = 2000;
 
+// Strict JSON Schema — the model is forced to return exactly this shape.
+const SCHEMA = {
+  type: "json_schema",
+  json_schema: {
+    name: "translation",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        translation: { type: "string" },
+        tokens: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              zh: { type: "string" },
+              en: { type: "string" },
+            },
+            required: ["zh", "en"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["translation", "tokens"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const SYSTEM_PROMPT =
+  "You are a professional translator. Translate the user message into Simplified Chinese, then segment the translation into natural word-level tokens. " +
+  'Reply with ONLY a JSON object of the form {"translation": string, "tokens": [{"zh": string, "en": string}]} where ' +
+  '"translation" is the full Simplified Chinese translation, and "tokens" is that translation split into words in order. ' +
+  'For each token, "zh" is the Chinese word (or punctuation mark) and "en" is a short literal English gloss for it in this context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (use an empty string for punctuation). ' +
+  "No pinyin, no extra keys, no explanations.";
+
+// Calls OpenRouter with the given response format. `requireParams` only routes
+// to providers that honour every parameter (used for the strict-schema attempt).
+function callOpenRouter(key, text, responseFormat, requireParams) {
+  return fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.2,
+      response_format: responseFormat,
+      ...(requireParams ? { provider: { require_parameters: true } } : {}),
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: text },
+      ],
+    }),
+  });
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// Extracts and parses the JSON object from a model reply that may be wrapped in
+// a ```json code fence or padded with stray text. Returns the parsed object, or
+// null if nothing parseable is found.
+function parseModelJson(content) {
+  // Strip a leading/trailing markdown code fence if present.
+  let s = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  try {
+    return JSON.parse(s);
+  } catch {
+    // Fall back to the outermost { ... } block anywhere in the text.
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(s.slice(start, end + 1));
+      } catch {
+        /* give up */
+      }
+    }
+    return null;
+  }
+}
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -49,25 +130,13 @@ Deno.serve(async (req) => {
 
   let resp;
   try {
-    resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.2,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a professional translator. Translate the user message into Simplified Chinese. Reply with ONLY the translation — no pinyin, no quotes, no explanations.",
-          },
-          { role: "user", content: text },
-        ],
-      }),
-    });
+    // Preferred path: strict JSON Schema, restricted to providers that honour
+    // it. If that fails (e.g. no such provider available), fall back to basic
+    // JSON mode — parseModelJson then handles any imperfect formatting.
+    resp = await callOpenRouter(key, text, SCHEMA, true);
+    if (!resp.ok) {
+      resp = await callOpenRouter(key, text, { type: "json_object" }, false);
+    }
   } catch (e) {
     return json({ error: "Upstream request failed", detail: String(e) }, 502);
   }
@@ -78,8 +147,26 @@ Deno.serve(async (req) => {
   }
 
   const data = await resp.json();
-  const translation = data?.choices?.[0]?.message?.content?.trim();
+  const content = data?.choices?.[0]?.message?.content?.trim();
+  if (!content) return json({ error: "Empty translation" }, 502);
+
+  // The model is asked for JSON, but sometimes wraps it in a ```json fence or
+  // adds stray text around it. Extract the JSON object before parsing, and
+  // degrade gracefully to the raw text if it still isn't parseable.
+  let translation = content;
+  let tokens = null;
+  const parsed = parseModelJson(content);
+  if (parsed) {
+    if (typeof parsed.translation === "string" && parsed.translation.trim()) {
+      translation = parsed.translation.trim();
+    }
+    if (Array.isArray(parsed.tokens)) {
+      tokens = parsed.tokens
+        .filter((t) => t && typeof t.zh === "string" && t.zh.length)
+        .map((t) => ({ zh: t.zh, en: typeof t.en === "string" ? t.en.trim() : "" }));
+    }
+  }
   if (!translation) return json({ error: "Empty translation" }, 502);
 
-  return json({ translation }, 200);
+  return json({ translation, tokens }, 200);
 });

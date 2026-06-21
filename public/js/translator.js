@@ -11,7 +11,7 @@ const PUNCT_RE   = /^[\s\p{P}]+$/u;
 const CJK_RE     = /[㐀-鿿豈-﫿]/;     // han characters
 const WORD_RE    = /[\p{L}\p{N}]/u;                     // any letter or number
 
-let segment, addDict, OutputFormat;
+let segment, addDict, OutputFormat, pinyin;
 let libsPromise = null; // de-dupes concurrent loads
 
 // Lazy-load pinyin-pro (+ full dictionary). A failure loading the full
@@ -20,7 +20,7 @@ function ensureLibs() {
   if (libsPromise) return libsPromise;
   libsPromise = (async () => {
     const pp = await import('https://esm.sh/pinyin-pro');
-    ({ segment, addDict, OutputFormat } = pp);
+    ({ segment, addDict, OutputFormat, pinyin } = pp);
 
     try {
       const res  = await fetch('https://cdn.jsdelivr.net/npm/@pinyin-pro/data/complete.json');
@@ -33,9 +33,11 @@ function ensureLibs() {
 }
 
 // DeepSeek via the Supabase Edge Function (proxies OpenRouter server-side).
-// DeepSeek detects the source language itself.
+// DeepSeek detects the source language itself and returns the translation
+// already segmented into word tokens, each with a literal English gloss.
+// Resolves to { translation, tokens } — tokens may be null (raw-text fallback).
 async function translateToChinese(text) {
-  if (CJK_RE.test(text)) return text; // already Chinese — nothing to translate
+  if (CJK_RE.test(text)) return { translation: text, tokens: null }; // already Chinese
   const response = await fetch(`${SUPA_URL}/functions/v1/translator`, {
     method: 'POST',
     headers: {
@@ -48,9 +50,25 @@ async function translateToChinese(text) {
   if (!response.ok) {
     throw new Error(data.error ? `${data.error}${data.detail ? ': ' + data.detail : ''}` : 'Translate function ' + response.status);
   }
-  const out = data?.translation?.trim();
+  let out = data?.translation?.trim();
   if (!out) throw new Error('Empty translation response');
-  return out;
+  let tokens = Array.isArray(data.tokens) ? data.tokens : null;
+
+  // Safety net: if the server ever leaks a raw JSON blob as the translation
+  // (e.g. an older function build, or the model wrapping it in a code fence),
+  // recover the real translation and tokens here so the UI never shows JSON.
+  if (!tokens && /^\s*```|^\s*\{[\s\S]*"translation"/.test(out)) {
+    const stripped = out.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+    const start = stripped.indexOf('{'), end = stripped.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try {
+        const parsed = JSON.parse(stripped.slice(start, end + 1));
+        if (typeof parsed.translation === 'string' && parsed.translation.trim()) out = parsed.translation.trim();
+        if (Array.isArray(parsed.tokens)) tokens = parsed.tokens;
+      } catch { /* leave out as-is */ }
+    }
+  }
+  return { translation: out, tokens };
 }
 
 // Picks the best available Mandarin voice. Voices load asynchronously, so this
@@ -161,8 +179,32 @@ async function speak(text, onState) {
   }
 }
 
-function renderTokens(zhText, resultEl) {
-  resultEl.innerHTML = '';
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Normalises the server tokens ({ zh, en }) into the render shape, computing
+// pinyin per word locally. `en` is the literal English gloss shown as a legend.
+function tokensFromServer(tokens) {
+  return tokens
+    .filter(t => t && typeof t.zh === 'string' && t.zh.length)
+    .map(t => {
+      const origin = t.zh;
+      const latin = !CJK_RE.test(origin) && WORD_RE.test(origin);
+      const punct = !latin && PUNCT_RE.test(origin);
+      return {
+        origin,
+        result: latin || punct ? '' : pinyin(origin),
+        en: typeof t.en === 'string' ? t.en : '',
+        latin,
+        punct,
+      };
+    });
+}
+
+// Fallback when the model didn't return tokens: segment locally with pinyin-pro
+// (no English glosses available in this path).
+function tokensFromSegment(zhText) {
   const segments = segment(zhText, { format: OutputFormat.AllSegment });
 
   // pinyin-pro splits non-Han words (e.g. names like "Guillem") character by
@@ -173,19 +215,28 @@ function renderTokens(zhText, resultEl) {
     const isLatinWord = !CJK_RE.test(seg.origin) && WORD_RE.test(seg.origin);
     if (isLatinWord) {
       if (buf) buf.origin += seg.origin;
-      else buf = { origin: seg.origin, result: '', latin: true };
+      else buf = { origin: seg.origin, result: '', en: '', latin: true };
       continue;
     }
     if (buf) { merged.push(buf); buf = null; }
-    merged.push({ origin: seg.origin, result: seg.result, latin: false });
+    const punct = PUNCT_RE.test(seg.origin);
+    merged.push({ origin: seg.origin, result: seg.result, en: '', latin: false, punct });
   }
   if (buf) merged.push(buf);
+  return merged;
+}
 
-  for (const seg of merged) {
-    const isPunct = !seg.latin && PUNCT_RE.test(seg.origin);
+function renderTokens(zhText, tokens, resultEl) {
+  resultEl.innerHTML = '';
+  const list = (tokens && tokens.length) ? tokensFromServer(tokens) : tokensFromSegment(zhText);
+
+  for (const seg of list) {
+    const isPunct = !seg.latin && (seg.punct ?? PUNCT_RE.test(seg.origin));
     const el = document.createElement('div');
     el.className = 'tr-token' + (isPunct ? ' punct' : '');
-    el.innerHTML = `<span class="py">${seg.latin || isPunct ? '' : seg.result}</span><span class="zh">${seg.origin}</span>`;
+    const py  = seg.latin || isPunct ? '' : seg.result;
+    const en  = !isPunct && seg.en ? `<span class="en">${escapeHtml(seg.en)}</span>` : '';
+    el.innerHTML = `<span class="py">${py}</span><span class="zh">${escapeHtml(seg.origin)}</span>${en}`;
     // Tap a (non-punctuation) token to hear that word on its own.
     if (!isPunct) {
       el.addEventListener('click', () => {
@@ -257,9 +308,9 @@ export function initTranslator() {
     button.disabled = true;
     try {
       await ensureLibs();
-      const zh = await translateToChinese(text);
+      const { translation: zh, tokens } = await translateToChinese(text);
       zhLineEl.textContent = zh;
-      renderTokens(zh, resultEl);
+      renderTokens(zh, tokens, resultEl);
       zhSection.style.display = '';
       tokensSection.style.display = '';
       if (canSpeak) speakBtn.style.display = '';

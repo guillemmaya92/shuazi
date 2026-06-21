@@ -714,6 +714,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
 }
+.tr-token .en {
+  display:block; font-size:.6rem; color:var(--faint);
+  margin-top:4px; white-space:nowrap; font-style:italic;
+}
 .tr-token.punct {
   background:transparent; border:none; color:var(--faint);
   min-width:0; padding:8px 2px; cursor:default;
