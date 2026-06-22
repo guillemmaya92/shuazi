@@ -68,6 +68,6 @@ with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
     if https:
         print("(certificado autofirmado: acepta el aviso de seguridad en el movil una vez)")
     else:
-        print("(openssl no disponible -> sirviendo por HTTP; el microfono no funcionara en movil)")
+        print("(openssl no disponible -> sirviendo por HTsolo TP; el microfono no funcionara en movil)")
     print("Ctrl + C para parar el servidor")
     httpd.serve_forever()

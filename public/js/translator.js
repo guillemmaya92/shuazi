@@ -252,6 +252,9 @@ function renderTokens(zhText, tokens, resultEl) {
     // shown only via the eye toggle in the section header.
     if (!isPunct) {
       el.addEventListener('click', () => {
+        // Mark this word as selected (keeps the gradient border), exclusive.
+        resultEl.querySelectorAll('.tr-token.selected').forEach(t => t.classList.remove('selected'));
+        el.classList.add('selected');
         speak(seg.origin, on => el.classList.toggle('speaking', on));
       });
     }
@@ -272,7 +275,6 @@ export function initTranslator() {
   const speakBtn    = document.getElementById('trSpeak');
   const clearBtn    = document.getElementById('trClear');
   const countEl      = document.getElementById('trCount');
-  const inputClearBtn = document.getElementById('trInputClear');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
   const eyeBtn       = document.getElementById('trEye');
@@ -339,6 +341,7 @@ export function initTranslator() {
     }
     emptyEl.style.display = 'none';
     button.disabled = true;
+    button.classList.add('tr-loading');
     try {
       await ensureLibs();
       const { translation: zh, tokens } = await translateToChinese(text);
@@ -355,13 +358,18 @@ export function initTranslator() {
       emptyEl.className = 'tr-empty err';
       emptyEl.style.display = 'block';
     } finally {
+      button.classList.remove('tr-loading');
       button.disabled = false;
     }
   }
 
   button.addEventListener('click', handleSubmit);
+  // Enter sends (chat-style); Shift+Enter inserts a newline.
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      handleSubmit();
+    }
   });
 
   const inputField = input.parentElement;
@@ -381,11 +389,9 @@ export function initTranslator() {
     const hasResult = zhSection.style.display !== 'none';
     clearBtn.style.display = hasResult ? '' : 'none';
   };
-  // Keep the character counter — and the inline clear cross (top-right of the
-  // text box, only shown when there's text) — in sync with the input.
+  // Keep the (optional) character counter in sync with the input.
   const syncCount = () => {
     if (countEl) countEl.textContent = input.value.length;
-    if (inputClearBtn) inputClearBtn.style.display = input.value ? '' : 'none';
   };
   input.addEventListener('input', () => { autoGrow(); syncClear(); syncCount(); });
   syncCount();
@@ -399,17 +405,6 @@ export function initTranslator() {
       emptyEl.textContent = '';
       emptyEl.style.display = 'none';
       syncClear();
-      input.focus();
-    });
-  }
-
-  // Inline cross clears just the written text in the box.
-  if (inputClearBtn) {
-    inputClearBtn.addEventListener('click', () => {
-      input.value = '';
-      autoGrow();
-      syncClear();
-      syncCount();
       input.focus();
     });
   }

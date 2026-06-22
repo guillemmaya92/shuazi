@@ -253,35 +253,18 @@
         </div>
       </header>
       <div class="translator-scroll">
-        <div class="tr-input-wrap">
-          <div class="tr-input-field">
-            <textarea id="trInput" class="tr-input" placeholder="Type in any language..." autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
-            <button id="trInputClear" class="tr-input-clear" aria-label="Clear text" type="button" style="display:none">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-            <span id="trCount" class="tr-count">0</span>
-          </div>
-          <div class="tr-actions">
-            <div class="tr-actions-left">
-              <button id="trClear" class="tr-btn tr-clear" aria-label="Clear" type="button" style="display:none">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
+        <div id="trZhSection" class="tr-section" style="display:none">
+          <div class="words-title tr-zh-head">
+            <span>Hanzi translation</span>
+            <div class="tr-zh-actions">
               <button id="trSpeak" class="tr-btn tr-speak" aria-label="Listen" type="button" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
               </button>
-            </div>
-            <div class="tr-actions-right">
-              <button id="trMic" class="tr-btn tr-mic" aria-label="Dictate" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
-              </button>
-              <button id="trGo" class="tr-btn" aria-label="Translate" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
+              <button id="trClear" class="tr-btn tr-clear" aria-label="Clear" type="button" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             </div>
           </div>
-        </div>
-        <div id="trZhSection" class="tr-section" style="display:none">
-          <div class="words-title">Hanzi translation</div>
           <div id="trZh" class="tr-zh-line"></div>
         </div>
         <div id="trTokensSection" class="tr-section" style="display:none">
@@ -295,6 +278,21 @@
           <div id="trResult" class="tr-result"></div>
         </div>
         <div id="trEmpty" class="tr-empty" style="display:none"></div>
+      </div>
+      <!-- ChatGPT-style composer pinned to the bottom -->
+      <div class="tr-composer">
+        <div class="tr-input-field">
+          <textarea id="trInput" class="tr-input" rows="1" placeholder="Type in any language..." autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
+          <div class="tr-input-tools">
+            <button id="trMic" class="tr-btn tr-mic" aria-label="Dictate" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
+              <span class="audio-wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+            </button>
+            <button id="trGo" class="tr-btn" aria-label="Translate" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
