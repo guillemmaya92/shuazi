@@ -896,6 +896,79 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tr-empty { font-size:.78rem; color:var(--faint); line-height:1.6; padding:8px 2px; }
 .tr-empty.err { color:var(--red); }
 
+/* ── RECENTS DRAWER (ChatGPT-style push: content slides aside, panel stays flat) ── */
+:root { --recents-w: min(82%, 340px); }
+
+/* The app content shifts right to reveal the panel; its corners round off. */
+.root {
+  position:relative; z-index:2;
+  background:var(--bg);            /* opaque so it always covers the panel behind */
+  transition:transform .3s cubic-bezier(.4,0,.2,1), border-radius .3s ease;
+  will-change:transform;
+}
+body.recents-open .root { transform:translateX(var(--recents-w)); border-radius:22px; overflow:hidden; }
+body.recents-dragging .root { transition:none; }
+body.recents-dragging .root,
+body.recents-open .root { border-radius:22px; overflow:hidden; }
+
+/* Flat panel pinned to the left, sitting behind the content. */
+.tr-history-panel {
+  position:fixed; top:0; left:0; bottom:0; z-index:1;
+  /* +30px underlaps the content's rounded corners so no gap shows behind them */
+  width:calc(var(--recents-w) + 30px);
+  display:flex; flex-direction:column;
+  background:var(--surf);
+  padding-top:max(14px, var(--safe-t));
+  padding-left:max(10px, var(--safe-l));
+  visibility:hidden;   /* only revealed while dragging / open */
+}
+body.recents-open .tr-history-panel,
+body.recents-dragging .tr-history-panel { visibility:visible; }
+/* Transparent catcher over the shifted content — tap to close. */
+.tr-history-scrim {
+  position:fixed; top:0; bottom:0; right:0; left:var(--recents-w);
+  z-index:3; pointer-events:none;
+}
+body.recents-open .tr-history-scrim { pointer-events:auto; }
+.tr-history-head {
+  display:flex; align-items:center; justify-content:space-between;
+  /* extra right padding keeps the × clear of the 30px content underlap */
+  padding:6px 44px 12px 6px; font-size:.95rem; font-weight:700;
+}
+.tr-history-list {
+  flex:1; min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; gap:6px;
+  /* extra right padding keeps the delete buttons clear of the content underlap */
+  padding:0 40px 12px 8px;
+  scrollbar-width:thin; scrollbar-color:var(--bdr) transparent;
+}
+.tr-history-empty { font-size:.78rem; color:var(--faint); line-height:1.6; padding:10px 6px; }
+.tr-history-item {
+  display:flex; align-items:stretch; gap:4px;
+  border-radius:12px; transition:background 140ms ease;
+}
+.tr-history-item:hover { background:var(--surf2); }
+.tr-history-open {
+  flex:1; min-width:0; text-align:left; padding:9px 10px;
+  display:flex; flex-direction:column; gap:2px; border-radius:12px;
+}
+.tr-history-src {
+  font-size:.82rem; color:var(--txt); font-weight:600;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tr-history-zh {
+  font-size:.72rem; color:var(--faint);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+}
+.tr-history-del {
+  flex:0 0 auto; width:30px; align-self:center;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--faint); border-radius:8px; opacity:.6;
+}
+.tr-history-del svg { width:14px; height:14px; }
+.tr-history-del:hover { color:var(--red); opacity:1; }
+
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
 }

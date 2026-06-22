@@ -346,6 +346,17 @@ export function initTranslator() {
     if ('speechSynthesis' in window) speechSynthesis.cancel();
   }
 
+  // Renders an already-resolved translation into the result sections.
+  function showResult(zh, tokens) {
+    zhLineEl.textContent = zh;
+    renderTokens(zh, tokens, resultEl);
+    syncEye();
+    zhSection.style.display = '';
+    tokensSection.style.display = '';
+    if (canSpeak) speakBtn.style.display = '';
+    syncClear();
+  }
+
   async function handleSubmit() {
     const text = input.value.trim();
     resultEl.innerHTML = '';
@@ -363,14 +374,11 @@ export function initTranslator() {
     try {
       await ensureLibs();
       const { translation: zh, tokens } = await translateToChinese(text);
-      zhLineEl.textContent = zh;
-      renderTokens(zh, tokens, resultEl);
-      saveTranslation(text, zh, tokens);   // persist for the signed-in user
-      syncEye();
-      zhSection.style.display = '';
-      tokensSection.style.display = '';
-      if (canSpeak) speakBtn.style.display = '';
-      syncClear();
+      showResult(zh, tokens);
+      // Persist for the signed-in user, then refresh the history if it's open.
+      saveTranslation(text, zh, tokens).then(() => {
+        if (document.body.classList.contains('recents-open')) loadHistory();
+      });
     } catch (e) {
       console.error(e);
       emptyEl.textContent = 'Could not translate: ' + e.message;
@@ -429,6 +437,129 @@ export function initTranslator() {
   }
 
   wireMic(input, () => { autoGrow(); syncClear(); syncCount(); });
+
+  // ── HISTORY DRAWER ──
+  const historyBtn      = document.getElementById('trHistoryBtn');
+  const historyPanel    = document.getElementById('trHistory');
+  const historyClose    = document.getElementById('trHistoryClose');
+  const historyBackdrop = document.getElementById('trHistoryBackdrop');
+  const historyList     = document.getElementById('trHistoryList');
+
+  const isOpen = () => document.body.classList.contains('recents-open');
+  function openHistory()  { document.body.classList.add('recents-open');    historyPanel.setAttribute('aria-hidden', 'false'); loadHistory(); }
+  function closeHistory() { document.body.classList.remove('recents-open'); historyPanel.setAttribute('aria-hidden', 'true'); }
+
+  async function loadHistory() {
+    if (!state.supaUser) { renderHistory(null); return; }
+    try {
+      const { data } = await supa
+        .from('translations')
+        .select('source_text, translation, tokens, updated_at')
+        .eq('user_id', state.supaUser.id)
+        .order('updated_at', { ascending: false })
+        .limit(100);
+      renderHistory(data || []);
+    } catch (e) {
+      console.warn('Translator: could not load history:', e);
+      renderHistory([]);
+    }
+  }
+
+  function renderHistory(rows) {
+    if (!rows) {
+      historyList.innerHTML = '<div class="tr-history-empty">Sign in to keep your translation history.</div>';
+      return;
+    }
+    if (!rows.length) {
+      historyList.innerHTML = '<div class="tr-history-empty">No translations yet.</div>';
+      return;
+    }
+    historyList.innerHTML = '';
+    for (const row of rows) {
+      const item = document.createElement('div');
+      item.className = 'tr-history-item';
+      item.innerHTML =
+        `<button class="tr-history-open" type="button">
+           <span class="tr-history-src">${escapeHtml(row.source_text)}</span>
+           <span class="tr-history-zh">${escapeHtml(row.translation)}</span>
+         </button>
+         <button class="tr-history-del" type="button" aria-label="Delete">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+         </button>`;
+      item.querySelector('.tr-history-open').addEventListener('click', () => openFromHistory(row));
+      item.querySelector('.tr-history-del').addEventListener('click', async () => {
+        try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
+        item.remove();
+        if (!historyList.querySelector('.tr-history-item')) renderHistory([]);
+      });
+      historyList.appendChild(item);
+    }
+  }
+
+  async function openFromHistory(row) {
+    input.value = row.source_text;
+    autoGrow(); syncCount();
+    emptyEl.textContent = ''; emptyEl.className = 'tr-empty'; emptyEl.style.display = 'none';
+    closeHistory();
+    await ensureLibs();
+    showResult(row.translation, row.tokens);
+  }
+
+  historyBtn?.addEventListener('click', openHistory);
+  historyClose?.addEventListener('click', closeHistory);
+  historyBackdrop?.addEventListener('click', closeHistory);
+
+  // iPhone-style interactive drag: the app content tracks the finger (push).
+  // Swipe right anywhere to pull Recents in; drag left to push it back out.
+  // On release it snaps open or closed depending on how far it was dragged.
+  const trScreen = document.getElementById('screen-translator');
+  const rootEl   = document.querySelector('.root');
+  let startX = 0, startY = 0, width = 300, active = false, locked = false, mode = null, opened = false;
+
+  const setDrag = px => {                       // px: content offset, 0..width
+    document.body.classList.add('recents-dragging');
+    rootEl.style.transform = `translateX(${px}px)`;
+  };
+  const settle = open => {
+    document.body.classList.remove('recents-dragging');
+    document.body.classList.toggle('recents-open', open);
+    historyPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    rootEl.style.transform = '';
+  };
+
+  document.addEventListener('touchstart', e => {
+    opened = isOpen();
+    // Only engage on the translator tab (to open), or whenever it's already open (to close).
+    if (e.touches.length !== 1 || (!opened && !trScreen.classList.contains('active'))) { active = false; return; }
+    // Don't hijack the tab-bar pill drag or text selection in the input.
+    if (e.target.closest('.tabbar, .tr-input')) { active = false; return; }
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    // Content shift = panel width minus the 30px underlap (see CSS).
+    width  = (historyPanel.offsetWidth || 330) - 30;
+    active = true; locked = false; mode = null;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!active) return;
+    const dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
+    if (!locked) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx)) { active = false; return; }   // vertical → let it scroll
+      if (opened) { mode = 'close'; }
+      else { if (dx <= 0) { active = false; return; } mode = 'open'; loadHistory(); }
+      locked = true;
+    }
+    const base = opened ? width : 0;
+    setDrag(Math.max(0, Math.min(width, base + dx)));
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!active || !locked) { active = false; return; }
+    active = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (mode === 'open') settle(dx > width * 0.35);
+    else                 settle(dx > -width * 0.35);   // keep open unless dragged far left
+  }, { passive: true });
 }
 
 // Appends dictated text to whatever is already in the input, then syncs the UI.

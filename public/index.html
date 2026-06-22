@@ -247,6 +247,9 @@
           </div>
         </div>
         <div class="hdr-stats">
+          <button class="icon-btn" id="trHistoryBtn" aria-label="History">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+          </button>
           <button class="icon-btn" id="themeBtnT" aria-label="Theme">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
@@ -294,6 +297,7 @@
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- ── SCREEN 5: PROFILE ── -->
@@ -378,6 +382,18 @@
     </button>
   </nav>
 </div>
+
+<!-- Recents drawer: a flat panel revealed as the app content slides aside (ChatGPT-style push) -->
+<aside class="tr-history-panel" id="trHistory" role="dialog" aria-label="Recent translations" aria-hidden="true">
+  <div class="tr-history-head">
+    <span>Recents</span>
+    <button class="icon-btn" id="trHistoryClose" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <div class="tr-history-list" id="trHistoryList"></div>
+</aside>
+<div class="tr-history-scrim" id="trHistoryBackdrop" aria-hidden="true"></div>
 
 <!-- CHAR DETAIL MODAL -->
 <div class="modal-backdrop" id="modal-backdrop">
