@@ -5,7 +5,8 @@
    lazily the first time the tab is opened so it never sits on the critical
    path. */
 
-import { SUPA_URL, SUPA_KEY } from './config.js';
+import { SUPA_URL, SUPA_KEY, supa } from './config.js';
+import { state } from './state.js';
 
 const PUNCT_RE   = /^[\s\p{P}]+$/u;
 const CJK_RE     = /[㐀-鿿豈-﫿]/;     // han characters
@@ -79,6 +80,23 @@ async function translateToChinese(text) {
   const result = { translation: out, tokens };
   try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch { /* quota full — skip */ }
   return result;
+}
+
+// Persists a successful translation for the signed-in user (one row per source
+// phrase — re-translating updates it). No-op when logged out; never throws.
+async function saveTranslation(source, translation, tokens) {
+  if (!state.supaUser) return;
+  try {
+    await supa.from('translations').upsert({
+      user_id:     state.supaUser.id,
+      source_text: source,
+      translation,
+      tokens:      tokens ?? null,
+      updated_at:  new Date().toISOString(),
+    }, { onConflict: 'user_id,source_text' });
+  } catch (e) {
+    console.warn('Translator: could not save translation:', e);
+  }
 }
 
 // Picks the best available Mandarin voice. Voices load asynchronously, so this
@@ -347,6 +365,7 @@ export function initTranslator() {
       const { translation: zh, tokens } = await translateToChinese(text);
       zhLineEl.textContent = zh;
       renderTokens(zh, tokens, resultEl);
+      saveTranslation(text, zh, tokens);   // persist for the signed-in user
       syncEye();
       zhSection.style.display = '';
       tokensSection.style.display = '';
