@@ -87,15 +87,66 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 /* ── TAB BAR ── */
 .tabbar {
+  position:relative;
   display:flex;
+  touch-action:none;
   background: var(--tabbar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--bdr);
   padding-bottom: max(4px, var(--safe-b));
   padding-top: 2px;
+  /* Liquid-glass tuning (per theme) */
+  --glass-c:#bbbbbc; --glass-light:#fff; --glass-dark:#000;
+  --glass-rl:1; --glass-rd:1; --glass-sat:150%;
+  --glass-fill:36%;   /* knob tint opacity */
+}
+[data-theme="dark"] .tabbar {
+  --glass-rl:.42; --glass-rd:2;
+  --glass-fill:16%;   /* clearer glass on dark */
+}
+
+/* The sliding "liquid glass" knob behind the active tab. */
+.tab-pill {
+  position:absolute;
+  left:0; top:0;
+  width:0; height:0;
+  border-radius:13px;
+  pointer-events:none;
+  opacity:0;
+  isolation:isolate;
+  background-color: color-mix(in srgb, var(--glass-c) var(--glass-fill), transparent);
+  -webkit-backdrop-filter: blur(6px) saturate(var(--glass-sat));
+  backdrop-filter: blur(2px) saturate(var(--glass-sat)) url(#liquidGlass);
+  /* Multi-layer specular glass edges (light reflexes + dark refraction). */
+  box-shadow:
+    inset 0 0 0 1px      color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 10%), transparent),
+    inset 2px 1px 0 -1px  color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 90%), transparent),
+    inset -1.5px -1px 0 -1px color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 80%), transparent),
+    inset -2px -6px 1px -5px color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 60%), transparent),
+    inset -1px 2px 3px -1px color-mix(in srgb, var(--glass-dark) calc(var(--glass-rd) * 20%), transparent),
+    inset 0 -4px 1px -2px  color-mix(in srgb, var(--glass-dark) calc(var(--glass-rd) * 10%), transparent),
+    0 3px 6px 0           color-mix(in srgb, var(--glass-dark) calc(var(--glass-rd) * 8%), transparent);
+  /* translate/scale are independent props → they compose with the filter. */
+  transition:
+    translate .44s cubic-bezier(1,0,.4,1),
+    width .44s cubic-bezier(1,0,.4,1),
+    scale .38s cubic-bezier(.34,1.45,.5,1),
+    opacity .25s ease;
+  will-change: translate, width, scale;
+}
+.tab-pill.ready { opacity:1; }
+
+/* Liquid squish while sliding — direction set via JS transform-origin. */
+.tab-pill.sliding { animation: pillSquish .44s ease; }
+@keyframes pillSquish {
+  0%   { scale: 1 1; }
+  45%  { scale: 1.16 .94; }
+  100% { scale: 1 1; }
 }
 .tab {
+  position:relative;
+  z-index:1;
   flex:1; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   gap:2px; padding:5px 0;
@@ -106,6 +157,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tab.active { color:var(--blue); }
 .tab svg { width:26px; height:26px; }
 .tab span { font-size:.58rem; font-weight:600; letter-spacing:.02em; }
+/* Outline icon when idle, filled icon when active. */
+.tab .ic-fill { display:none; }
+.tab.active .ic-line { display:none; }
+.tab.active .ic-fill { display:block; }
 
 /* ══════════════════════════════
    SCREEN 1 — FLASHCARDS

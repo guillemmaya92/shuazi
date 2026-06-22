@@ -518,7 +518,99 @@ const scrPhrases   = document.getElementById('screen-slang');
 const scrTranslate = document.getElementById('screen-translator');
 const scrProfile   = document.getElementById('screen-profile');
 
+const TAB_ORDER = ['cards', 'groups', 'slang', 'translator', 'profile'];
+let activeTab = 'cards';
+
+/* Sliding pill that tracks the active tab. */
+const tabPill   = document.querySelector('.tab-pill');
+const glassMap  = document.getElementById('liquidGlassMap');
+const PILL_R    = 13; // must match .tab-pill border-radius
+
+/* Build a displacement map (RG = edge normal) so the SVG feDisplacementMap
+   refracts the backdrop only near the rim — the iOS "liquid glass" lens. */
+let _mapW = 0, _mapH = 0;
+function buildGlassMap(w, h) {
+  if (!glassMap || w < 4 || h < 4) return;
+  w = Math.round(w); h = Math.round(h);
+  if (w === _mapW && h === _mapH) return;   // size unchanged → reuse
+  _mapW = w; _mapH = h;
+
+  const cv  = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(w, h);
+  const d   = img.data;
+  const r   = Math.min(PILL_R, h / 2, w / 2);
+  const bezel = Math.min(16, h * 0.55);     // thickness of the refractive rim
+
+  // Signed distance to the rounded rectangle (negative = inside).
+  const sd = (px, py) => {
+    const qx = Math.abs(px) - (w / 2 - r);
+    const qy = Math.abs(py) - (h / 2 - r);
+    const ax = Math.max(qx, 0), ay = Math.max(qy, 0);
+    return Math.hypot(ax, ay) + Math.min(Math.max(qx, qy), 0) - r;
+  };
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = x - w / 2 + 0.5;
+      const py = y - h / 2 + 0.5;
+      const dist = sd(px, py);
+      const i = (y * w + x) * 4;
+      let R = 128, G = 128;
+      if (dist < 0) {
+        const t   = Math.max(0, 1 + dist / bezel); // 1 at rim → 0 deep inside
+        const amt = Math.pow(t, 1.8);
+        // Outward normal from the SDF gradient.
+        let nx = sd(px + 1, py) - sd(px - 1, py);
+        let ny = sd(px, py + 1) - sd(px, py - 1);
+        const len = Math.hypot(nx, ny) || 1;
+        nx /= len; ny /= len;
+        // Pull the backdrop inward at the edge (magnifying lens look).
+        R = 128 - nx * amt * 120;
+        G = 128 - ny * amt * 120;
+      }
+      d[i] = R; d[i + 1] = G; d[i + 2] = 128; d[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const url = cv.toDataURL();
+  glassMap.setAttribute('href', url);
+  glassMap.setAttribute('width', w);
+  glassMap.setAttribute('height', h);
+}
+
+let lastPillIndex = -1;
+let suppressSquish = false;   // skip the squish when settling after a drag
+function movePill() {
+  if (!tabPill) return;
+  const active = document.querySelector('.tab.active');
+  if (!active || !active.offsetWidth) return;
+  const padX = 10, padY = 4;
+  const w = active.offsetWidth - padX * 2;
+  const h = active.offsetHeight - padY * 2;
+  buildGlassMap(w, h);
+
+  const idx = TAB_ORDER.indexOf(activeTab);
+  const dir = (lastPillIndex < 0 || suppressSquish) ? 0 : Math.sign(idx - lastPillIndex);
+  suppressSquish = false;
+  if (dir !== 0) {
+    // Stretch in the travel direction (leading edge leads), like a liquid blob.
+    tabPill.style.transformOrigin = dir > 0 ? 'left center' : 'right center';
+    tabPill.classList.remove('sliding');
+    void tabPill.offsetWidth;            // restart the keyframe
+    tabPill.classList.add('sliding');
+  }
+  lastPillIndex = idx;
+
+  tabPill.style.width     = w + 'px';
+  tabPill.style.height    = h + 'px';
+  tabPill.style.translate = `${active.offsetLeft + padX}px ${active.offsetTop + padY}px`;
+  tabPill.classList.add('ready');
+}
+
 export function showTab(tab) {
+  activeTab = tab;
   [scrCards, scrGroups, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
   [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
   if (tab === 'cards')          { scrCards.classList.add('active');     tabCards.classList.add('active'); }
@@ -526,12 +618,115 @@ export function showTab(tab) {
   else if (tab === 'slang')     { scrPhrases.classList.add('active');   tabPhrases.classList.add('active'); renderSlang(); }
   else if (tab === 'translator'){ scrTranslate.classList.add('active'); tabTranslate.classList.add('active'); initTranslator(); }
   else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
+  movePill();
 }
+// Position the pill once layout is ready, and keep it aligned on resize.
+requestAnimationFrame(movePill);
+window.addEventListener('resize', movePill);
+window.addEventListener('load', movePill);
 tabCards.onclick     = () => showTab('cards');
 tabGroups.onclick    = () => showTab('groups');
 tabPhrases.onclick   = () => showTab('slang');
 tabTranslate.onclick = () => showTab('translator');
 tabProfile.onclick   = () => showTab('profile');
+
+/* ── DRAG THE PILL (Instagram-style) ──
+   The knob follows the finger across the bar in real time and snaps to the
+   nearest tab on release. A plain tap still falls through to the click handler. */
+(function () {
+  const barEl = document.querySelector('.tabbar');
+  if (!barEl || !tabPill) return;
+  const tabEls = [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile];
+  const PAD_X = 10, PAD_Y = 4, GROW = 1.18;
+  let dragging = false, moved = false, suppressClick = false;
+  let startX = 0, startY = 0, pillW = 0, pillTop = 0, minX = 0, maxX = 0;
+
+  const nearestIndex = clientX => {
+    let best = 0, bestD = Infinity;
+    tabEls.forEach((t, i) => {
+      const r = t.getBoundingClientRect();
+      const d = Math.abs(r.left + r.width / 2 - clientX);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  };
+
+  // Spring loop: pill lerps toward the finger and stretches with its velocity.
+  let targetLeft = 0, curLeft = 0, prevLeft = 0, curGrow = 1, raf = 0;
+  function tick() {
+    curLeft += (targetLeft - curLeft) * 0.4;
+    curGrow += (GROW - curGrow) * 0.22;
+    const v = curLeft - prevLeft; prevLeft = curLeft;
+    const stretch = Math.max(-0.22, Math.min(0.34, v * 0.05));  // speed → shape
+    const sx = curGrow * (1 + stretch);
+    const sy = curGrow * (1 - stretch * 0.7);
+    tabPill.style.translate = `${curLeft}px ${pillTop}px`;
+    tabPill.style.scale = `${sx} ${sy}`;
+    if (dragging || Math.abs(targetLeft - curLeft) > 0.3) raf = requestAnimationFrame(tick);
+    else raf = 0;
+  }
+
+  barEl.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const active = document.querySelector('.tab.active');
+    if (!active) return;
+    dragging = true; moved = false;
+    startX = e.clientX; startY = e.clientY;
+    pillW   = active.offsetWidth - PAD_X * 2;
+    pillTop = active.offsetTop + PAD_Y;
+    minX = tabEls[0].offsetLeft + PAD_X;
+    maxX = tabEls[tabEls.length - 1].offsetLeft + PAD_X;
+    curLeft = prevLeft = targetLeft = active.offsetLeft + PAD_X;
+  });
+
+  barEl.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved) {
+      if (Math.abs(dx) < 4) return;                 // ignore micro-movement
+      if (Math.abs(dy) > Math.abs(dx)) { dragging = false; return; } // vertical → bail
+      moved = true;
+      tabPill.classList.remove('sliding');
+      tabPill.style.transition = 'none';            // rAF drives it directly
+      tabPill.style.transformOrigin = 'center';
+      curGrow = 1;                                   // grow in from rest size
+      barEl.setPointerCapture?.(e.pointerId);
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+    const barRect = barEl.getBoundingClientRect();
+    targetLeft = Math.max(minX, Math.min(maxX, e.clientX - barRect.left - pillW / 2));
+    // Live-highlight the tab under the finger.
+    const idx = nearestIndex(e.clientX);
+    tabEls.forEach((t, i) => t.classList.toggle('active', i === idx));
+  });
+
+  const end = e => {
+    if (!dragging) return;
+    dragging = false;
+    if (moved) {
+      suppressClick = true;                         // cancel the trailing click
+      e.preventDefault?.();
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      tabPill.style.transition = '';                // restore CSS easing
+      tabPill.style.scale = '';                     // shrink back to rest size
+      suppressSquish = true;                        // smooth settle (no extra squish)
+      showTab(TAB_ORDER[nearestIndex(e.clientX)]);  // snap to nearest tab
+    }
+  };
+  barEl.addEventListener('pointerup', end);
+  barEl.addEventListener('pointercancel', () => {
+    dragging = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    tabPill.style.transition = '';
+    tabPill.style.scale = '';
+    suppressSquish = true;
+    movePill();
+  });
+  // Swallow the synthetic click that follows a drag so it doesn't re-trigger a tab.
+  barEl.addEventListener('click', e => {
+    if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; }
+  }, true);
+})();
 
 /* ── PROFILE ── */
 export function renderProfile() {
