@@ -27,10 +27,10 @@
     .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:max(14px,var(--safe-t));padding-left:max(16px,var(--safe-l));padding-right:max(16px,var(--safe-r));padding-bottom:8px;gap:10px;opacity:0;pointer-events:none;transition:opacity 220ms ease}
     .screen.active{opacity:1;pointer-events:all}
     .tabbar{display:flex;background:var(--tabbar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--bdr);padding-bottom:max(4px,var(--safe-b));padding-top:2px}
-    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 0;color:var(--faint);transition:color 180ms ease;min-height:40px}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 0;color:var(--faint);transition:color 180ms ease;min-height:44px}
     .tab.active{color:var(--blue)}
-    .tab svg{width:19px;height:19px}
-    .tab span{font-size:.56rem;font-weight:600;letter-spacing:.02em}
+    .tab svg{width:26px;height:26px}
+    .tab span{font-size:.58rem;font-weight:600;letter-spacing:.02em}
     .header{display:flex;align-items:center;justify-content:space-between}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{width:34px;height:34px;flex-shrink:0;border-radius:10px;background:var(--red-bg);border:1px solid var(--bdr);display:grid;place-items:center;font-size:14px;line-height:1;color:var(--red)}
@@ -307,42 +307,36 @@
   <!-- TAB BAR -->
   <nav class="tabbar" style="min-height:58px">
     <button class="tab active" id="tab-cards" aria-label="Flashcards">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="2" y="4" width="20" height="16" rx="3"/>
-        <path d="M8 10h8M8 14h5"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
+        <path d="M4 3h16a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm4 6a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H8Zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8Z"/>
       </svg>
       <span>Cards</span>
     </button>
     <button class="tab" id="tab-groups" aria-label="HSK Groups">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
-        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <rect x="3"  y="3"  width="8" height="8" rx="2"/>
+        <rect x="13" y="3"  width="8" height="8" rx="2"/>
+        <rect x="3"  y="13" width="8" height="8" rx="2"/>
+        <rect x="13" y="13" width="8" height="8" rx="2"/>
       </svg>
       <span>Groups</span>
     </button>
     <button class="tab" id="tab-slang" aria-label="Slang">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M4 3h16a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9.4l-4.6 3.8A1 1 0 0 1 3 21V6a3 3 0 0 1 1-3Z"/>
       </svg>
       <span>Slang</span>
     </button>
     <button class="tab" id="tab-translator" aria-label="Translator">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m5 8 6 6"/>
-        <path d="m4 14 6-6 2-3"/>
-        <path d="M2 5h12"/>
-        <path d="M7 2h1"/>
-        <path d="m22 22-5-10-5 10"/>
-        <path d="M14 18h6"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
+        <path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 4a1 1 0 0 0-1 1v1H7a1 1 0 0 0 0 2h6.6a8 8 0 0 1-1.6 3 8 8 0 0 1-1.1-1.6 1 1 0 1 0-1.8.9 10 10 0 0 0 1.5 2.2 9.6 9.6 0 0 1-2.4 1.4 1 1 0 1 0 .7 1.9 11.6 11.6 0 0 0 3.1-1.9 11.6 11.6 0 0 0 3.1 1.9 1 1 0 1 0 .7-1.9 9.6 9.6 0 0 1-2.4-1.4A10 10 0 0 0 15.7 10H17a1 1 0 1 0 0-2h-4V7a1 1 0 0 0-1-1Z"/>
       </svg>
       <span>Translate</span>
     </button>
     <button class="tab" id="tab-profile" aria-label="Profile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="8" r="4.2"/>
+        <path d="M12 14c-4.5 0-8.2 3-8.2 6.6 0 .8.6 1.4 1.4 1.4h13.6c.8 0 1.4-.6 1.4-1.4C20.2 17 16.5 14 12 14Z"/>
       </svg>
       <span>Profile</span>
     </button>

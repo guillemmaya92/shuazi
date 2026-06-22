@@ -98,14 +98,14 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tab {
   flex:1; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
-  gap:1px; padding:4px 0;
+  gap:2px; padding:5px 0;
   color:var(--faint);
   transition: color 180ms ease;
-  min-height:36px;
+  min-height:44px;
 }
 .tab.active { color:var(--blue); }
-.tab svg { width:16px; height:16px; }
-.tab span { font-size:.52rem; font-weight:600; letter-spacing:.02em; }
+.tab svg { width:26px; height:26px; }
+.tab span { font-size:.58rem; font-weight:600; letter-spacing:.02em; }
 
 /* ══════════════════════════════
    SCREEN 1 — FLASHCARDS
