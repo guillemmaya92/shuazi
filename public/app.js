@@ -4,6 +4,7 @@ import { loadUserPlan, syncUserProfile } from './js/auth.js';
 import { loadProgressFromSupabase } from './js/progress.js';
 import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
+import { initPwaInstall } from './js/pwa-install.js';
 
 // Paginated fetch — Supabase caps each request at 1000 rows, so page through.
 async function fetchAll(table, columns, orderBy = 'id') {
@@ -90,6 +91,7 @@ loadData().then(async () => {
   // Render immediately after data loads — don't block on auth for LCP
   init(state.CHARACTERS);
   renderGroups();
+  initPwaInstall();
 
   // Auth check in background: updates deck/progress once session is known
   window._supabaseReady.then(async () => {

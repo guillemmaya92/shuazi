@@ -3,7 +3,6 @@
 // cache name, and precaches the matching ?b= asset URLs the page requests.
 const BUILD = new URL(self.location.href).searchParams.get('b') || 'dev';
 const SHELL_CACHE = 'shuazi-shell-' + BUILD;
-const DATA_CACHE  = 'shuazi-data-v1';
 
 // Version only CSS/JS — must match exactly what fingerprint.mjs rewrites in the
 // page, so these precache keys line up with the actual network requests.
@@ -20,6 +19,7 @@ const SHELL_ASSETS = [
   '/js/state.js',
   '/js/ui.js',
   '/js/translator.js',
+  '/js/pwa-install.js',
   '/manifest.json',
 ].map(v);
 
@@ -36,7 +36,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== SHELL_CACHE && k !== DATA_CACHE).map(k => caches.delete(k))
+        keys.filter(k => k !== SHELL_CACHE).map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   );
@@ -49,12 +49,6 @@ self.addEventListener('fetch', event => {
   // External CDN (supabase, GA): network-only, no local caching
   if (url.origin !== self.location.origin) {
     event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // JSON data files: stale-while-revalidate (instant load + background refresh)
-  if (url.pathname.startsWith('/data/')) {
-    event.respondWith(staleWhileRevalidate(event.request, DATA_CACHE));
     return;
   }
 

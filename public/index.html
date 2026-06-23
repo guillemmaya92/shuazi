@@ -123,9 +123,7 @@
   <link rel="modulepreload" href="./js/cards.js"/>
   <link rel="modulepreload" href="./js/ui.js"/>
   <link rel="modulepreload" href="./js/translator.js"/>
-
-  <!-- Preload the biggest blocking data fetch -->
-  <link rel="preload" href="./data/characters.json" as="fetch" crossorigin/>
+  <link rel="modulepreload" href="./js/pwa-install.js"/>
 
   <!-- Early connection to Supabase so the first query has no DNS/TLS overhead -->
   <link rel="preconnect" href="https://coysmojauucqgdhhxyrz.supabase.co"/>

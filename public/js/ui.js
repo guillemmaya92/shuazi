@@ -163,10 +163,13 @@ export function renderGroups() {
     else if (state.gridSort === 'stroke')     sortedComponents.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
     else                                      sortedComponents.sort((a, b) => Number(a.id) - Number(b.id));
 
+    // Components present in component_char (i.e. used by at least one character).
+    const usedComponents = new Set(Object.keys(state.charsByComponent));
     function renderComponentTiles() {
       sortedComponents.forEach(comp => {
         const tile = document.createElement('button');
-        const isEmpty = !(state.charsByComponent[comp.id]?.size);
+        // Empty = this component's id never appears in component_char.
+        const isEmpty = !usedComponents.has(String(comp.id));
         tile.className = 'char-tile component-tile' + (comp.id === activeComponent ? ' active' : '') + (isEmpty ? ' empty' : '');
         tile.title = `${comp.meaning} · ${comp.stroke} stroke${comp.stroke === 1 || comp.stroke === '1' ? '' : 's'}`;
         tile.setAttribute('aria-label', `${comp.component}, ${comp.pinyin}, ${comp.meaning}`);
