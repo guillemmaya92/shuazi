@@ -36,6 +36,25 @@ export async function syncUserProfile() {
   }
 }
 
+// Permanently deletes the signed-in user's account and data. The actual deletion
+// runs server-side in the `delete-account` Edge Function (service-role), which
+// removes the auth user plus their rows; we just pass the session token.
+export async function deleteAccount() {
+  const { data: { session } } = await supa.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('Not signed in.');
+  const resp = await fetch(`${SUPA_URL}/functions/v1/delete-account`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  if (!resp.ok) {
+    let detail = '';
+    try { detail = (await resp.json())?.error || ''; } catch { /* ignore */ }
+    throw new Error(detail || `Delete failed (${resp.status})`);
+  }
+  await supa.auth.signOut();
+}
+
 export async function startCheckout() {
   if (!state.supaUser) { alert('Please sign in first to purchase.'); return; }
   try {

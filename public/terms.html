@@ -5,85 +5,193 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link rel="icon" href="./icons/favicon.ico" sizes="any"/>
   <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png"/>
   <link rel="stylesheet" href="./styles.css"/>
   <title>Terms of Service · shuazi</title>
   <meta name="description" content="Terms of Service for Shuazi (ShuaziApp), the Chinese learning app for Hanzi flashcards and character exploration."/>
   <link rel="canonical" href="https://shuaziapp.com/terms.html"/>
   <meta name="robots" content="index, follow"/>
   <style>
-    body { background: var(--bg); color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-    .page { max-width: 680px; margin: 0 auto; padding: 48px 24px 64px; }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
-    .logo { font-size: 1.8rem; }
-    .brand-name { font-size: 1.1rem; font-weight: 700; color: var(--txt); }
-    .brand-sub { font-size: .7rem; color: var(--muted); }
-    h1 { font-size: 1.4rem; font-weight: 800; color: var(--txt); margin: 0 0 6px; }
-    .updated { font-size: .72rem; color: var(--muted); margin-bottom: 32px; }
-    h2 { font-size: .88rem; font-weight: 700; color: var(--txt); margin: 28px 0 8px; }
-    p, li { font-size: .82rem; color: var(--muted); line-height: 1.7; margin: 0 0 10px; }
-    ul { padding-left: 20px; margin: 0 0 10px; }
+    * { box-sizing: border-box; }
+    /* Override the app's scroll lock (styles.css locks html,body for the SPA). */
+    html, body {
+      height: auto; min-height: 100%;
+      overflow: visible; overflow-y: auto;
+      overscroll-behavior: auto;
+    }
+    body {
+      background: var(--bg); color: var(--txt);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0; padding: 0;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* Top bar */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0; margin-bottom: 8px;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+    .logo {
+      width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px;
+      background: var(--red-bg); border: 1px solid var(--bdr);
+      display: grid; place-items: center; font-size: 15px; line-height: 1;
+      color: var(--red); font-weight: 700; letter-spacing: 1px;
+    }
+    .brand-name { font-size: 1.05rem; font-weight: 800; color: var(--txt); letter-spacing: -.01em; }
+    .brand-sub { font-size: .68rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+    .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .78rem; font-weight: 600; color: var(--muted);
+      text-decoration: none; padding: 8px 14px; border-radius: 999px;
+      border: 1px solid var(--bdr); transition: color .15s, border-color .15s;
+    }
+    .back:hover { color: var(--txt); border-color: var(--muted); }
+
+    /* Hero */
+    .hero { padding: 28px 0 26px; border-top: 1px solid var(--bdr); }
+    .eyebrow {
+      font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--red); margin-bottom: 12px;
+    }
+    h1 { font-size: 2rem; font-weight: 800; color: var(--txt); margin: 0 0 14px; letter-spacing: -.02em; }
+    .lead { font-size: .95rem; color: var(--muted); margin: 0 0 18px; max-width: 60ch; }
+    .meta {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: .72rem; font-weight: 600; color: var(--muted);
+      background: var(--surf); border: 1px solid var(--bdr);
+      padding: 5px 12px; border-radius: 999px;
+    }
+    .meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    /* Sections */
+    .content { counter-reset: sec; }
+    h2 {
+      counter-increment: sec; position: relative;
+      font-size: 1.02rem; font-weight: 700; color: var(--txt);
+      margin: 40px 0 12px; padding-top: 4px;
+    }
+    h2::before {
+      content: counter(sec); display: inline-grid; place-items: center;
+      width: 24px; height: 24px; margin-right: 11px; vertical-align: -5px;
+      font-size: .72rem; font-weight: 700; color: var(--muted);
+      background: var(--surf); border: 1px solid var(--bdr); border-radius: 8px;
+    }
+    p, li { font-size: .88rem; color: var(--muted); margin: 0 0 12px; }
+    ul { padding-left: 4px; margin: 0 0 12px; list-style: none; }
+    li { position: relative; padding-left: 22px; }
+    li::before {
+      content: ""; position: absolute; left: 4px; top: .62em;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--red); opacity: .5;
+    }
+    strong { color: var(--txt); font-weight: 600; }
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    hr { border: none; border-top: 1px solid var(--bdr); margin: 32px 0; }
-    .back { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); text-decoration: none; margin-bottom: 32px; }
-    .back:hover { color: var(--txt); }
+
+    /* Contact card */
+    .contact-card {
+      margin-top: 16px; padding: 20px 22px;
+      background: var(--surf); border: 1px solid var(--bdr); border-radius: 16px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .contact-card .ico {
+      width: 42px; height: 42px; flex-shrink: 0; border-radius: 11px;
+      background: var(--red-bg); display: grid; place-items: center; color: var(--red);
+    }
+    .contact-card .ct-title { font-size: .85rem; font-weight: 700; color: var(--txt); margin-bottom: 2px; }
+    .contact-card .ct-sub { font-size: .78rem; color: var(--muted); }
+
+    /* Footer */
+    footer { margin-top: 56px; padding-top: 26px; border-top: 1px solid var(--bdr); }
+    .foot-links { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+    .foot-links a { font-size: .8rem; font-weight: 600; color: var(--muted); }
+    .foot-links a:hover { color: var(--txt); text-decoration: none; }
+    .copyright { font-size: .72rem; color: var(--faint); }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.6rem; }
+      .topbar { flex-wrap: wrap; gap: 12px; }
+    }
   </style>
 </head>
 <body>
-<div class="page">
-  <div class="brand">
-    <div class="logo">刷字</div>
-    <div>
-      <div class="brand-name">shuazi</div>
-      <div class="brand-sub">HSK1-6</div>
-    </div>
+<div class="wrap">
+  <div class="topbar">
+    <a class="brand" href="./index.html" aria-label="shuazi home">
+      <div class="logo">刷字</div>
+      <div>
+        <div class="brand-name">shuazi</div>
+        <div class="brand-sub">HSK 1–6</div>
+      </div>
+    </a>
+    <a class="back" href="./index.html">← Back to app</a>
   </div>
 
-  <a class="back" href="./index.html">← Back to app</a>
+  <header class="hero">
+    <div class="eyebrow">Legal</div>
+    <h1>Terms of Service</h1>
+    <p class="lead">These Terms of Service govern your use of shuazi, a Chinese flashcard application for HSK vocabulary learning. By using the app, you agree to these terms.</p>
+    <span class="meta"><span class="dot"></span> Last updated June 15, 2025</span>
+  </header>
 
-  <h1>Terms of Service</h1>
-  <div class="updated">Last updated: June 15, 2025</div>
+  <main class="content">
+    <h2>Description of Service</h2>
+    <p>shuazi provides Chinese character flashcards for HSK levels 1 through 6. A free tier covers HSK 1–2; premium access unlocks all levels.</p>
 
-  <p>These Terms of Service govern your use of shuazi, a Chinese flashcard application for HSK vocabulary learning. By using the app, you agree to these terms.</p>
+    <h2>Accounts</h2>
+    <p>You may sign in using your Google account. You are responsible for maintaining the security of your account. We are not liable for any loss resulting from unauthorized use of your account.</p>
 
-  <h2>1. Description of Service</h2>
-  <p>shuazi provides Chinese character flashcards for HSK levels 1 through 6. A free tier covers HSK 1–2; premium access unlocks all levels.</p>
+    <h2>Premium Access</h2>
+    <ul>
+      <li>Premium access is available as a one-time purchase or recurring subscription via Stripe.</li>
+      <li>Payments are non-refundable unless required by applicable law.</li>
+      <li>We reserve the right to change pricing with reasonable notice.</li>
+    </ul>
 
-  <h2>2. Accounts</h2>
-  <p>You may sign in using your Google account. You are responsible for maintaining the security of your account. We are not liable for any loss resulting from unauthorized use of your account.</p>
+    <h2>Acceptable Use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Attempt to bypass or circumvent premium access restrictions.</li>
+      <li>Scrape, copy, or redistribute the app's content or data at scale.</li>
+      <li>Use the service for any unlawful purpose.</li>
+    </ul>
 
-  <h2>3. Premium Subscription</h2>
-  <ul>
-    <li>Premium access is available as a one-time purchase or recurring subscription via Stripe.</li>
-    <li>Payments are non-refundable unless required by applicable law.</li>
-    <li>We reserve the right to change pricing with reasonable notice.</li>
-  </ul>
+    <h2>Intellectual Property</h2>
+    <p>The shuazi app, its design, and vocabulary data are owned by us or licensed for use. HSK vocabulary lists are based on publicly available educational standards from the Chinese government.</p>
 
-  <h2>4. Acceptable Use</h2>
-  <p>You agree not to:</p>
-  <ul>
-    <li>Attempt to bypass or circumvent premium access restrictions</li>
-    <li>Scrape, copy, or redistribute the app's content or data at scale</li>
-    <li>Use the service for any unlawful purpose</li>
-  </ul>
+    <h2>Disclaimer of Warranties</h2>
+    <p>The service is provided "as is" without warranty of any kind. We do not guarantee uninterrupted access or error-free operation.</p>
 
-  <h2>5. Intellectual Property</h2>
-  <p>The shuazi app, its design, and vocabulary data are owned by us or licensed for use. HSK vocabulary lists are based on publicly available educational standards from the Chinese government.</p>
+    <h2>Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, we are not liable for any indirect, incidental, or consequential damages arising from your use of shuazi.</p>
 
-  <h2>6. Disclaimer of Warranties</h2>
-  <p>The service is provided "as is" without warranty of any kind. We do not guarantee uninterrupted access or error-free operation.</p>
+    <h2>Changes to These Terms</h2>
+    <p>We may update these terms from time to time. Continued use of the app after changes constitutes acceptance of the updated terms.</p>
 
-  <h2>7. Limitation of Liability</h2>
-  <p>To the maximum extent permitted by law, we are not liable for any indirect, incidental, or consequential damages arising from your use of shuazi.</p>
+    <h2>Contact</h2>
+    <p>Questions about these terms? We're happy to help.</p>
+    <div class="contact-card">
+      <div class="ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      </div>
+      <div>
+        <div class="ct-title">Get in touch</div>
+        <div class="ct-sub"><a href="mailto:contact@shuaziapp.com">contact@shuaziapp.com</a></div>
+      </div>
+    </div>
+  </main>
 
-  <h2>8. Changes to These Terms</h2>
-  <p>We may update these terms from time to time. Continued use of the app after changes constitutes acceptance of the updated terms.</p>
-
-  <h2>9. Contact</h2>
-  <p>Questions about these terms? Contact us at: <a href="mailto:guillem.maya92@gmail.com">guillem.maya92@gmail.com</a></p>
-
-  <hr/>
-  <p style="font-size:.7rem;color:var(--faint)">shuazi · Chinese HSK Flashcards</p>
+  <footer>
+    <div class="foot-links">
+      <a href="./privacy.html">Privacy Policy</a>
+      <a href="./terms.html">Terms of Service</a>
+      <a href="./index.html">Back to app</a>
+    </div>
+    <div class="copyright">© 2025 shuazi · Chinese HSK Flashcards</div>
+  </footer>
 </div>
 <script>
   const saved = localStorage.getItem('shuazi-v1');

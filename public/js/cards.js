@@ -108,6 +108,11 @@ function makeCard(card, isStack) {
   el.className = 'card ' + (isStack ? 'stack-under' : 'top');
   el.dataset.page = '0';
 
+  const radInfo = state.RADICALS?.find(r => r.radical === card.radical);
+  const radicalHTML = card.radical
+    ? `<span class="char-chip"><span class="cc-glyph">${card.radical}</span>${radInfo?.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</span>`
+    : '<span class="char-chip-empty">—</span>';
+
   el.innerHTML = `
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
@@ -137,9 +142,10 @@ function makeCard(card, isStack) {
         </div>
       </div>
       <div class="page info-page" style="padding-top:44px">
-        <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
           <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+          <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
         </div>
@@ -187,7 +193,8 @@ function makeCard(card, isStack) {
       el.dataset.answer = '1';
       tapHint.style.visibility = 'hidden';
       await fetchWordsForChar(card);
-      const w = (state.wordsByChar[card.char] || [])[0];
+      // Prefer a compound (2+ characters) so the example isn't just the card char itself.
+      const w = (state.wordsByChar[card.char] || []).find(x => [...(x.id || '')].length >= 2);
       const exHTML = w
         ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`
         : '—';

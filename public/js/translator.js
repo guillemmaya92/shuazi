@@ -82,10 +82,33 @@ async function translateToChinese(text) {
   return result;
 }
 
-// Persists a successful translation for the signed-in user (one row per source
-// phrase — re-translating updates it). No-op when logged out; never throws.
+// Guest history lives in localStorage so Pinned / Recents work without an account
+// (same shape as the Supabase rows). Capped to the latest 100 entries.
+const LOCAL_HIST_KEY = 'shuazi-tr-history';
+function localHistoryGet() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_HIST_KEY)) || []; } catch { return []; }
+}
+function localHistorySet(rows) {
+  try { localStorage.setItem(LOCAL_HIST_KEY, JSON.stringify(rows)); } catch { /* quota full */ }
+}
+function sortHistory(rows) {
+  return [...rows].sort((a, b) =>
+    (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
+    String(b.updated_at).localeCompare(String(a.updated_at)));
+}
+function localHistoryUpsert(source, translation, tokens) {
+  const rows = localHistoryGet();
+  const i = rows.findIndex(r => r.source_text === source);
+  const now = new Date().toISOString();
+  if (i >= 0) rows[i] = { ...rows[i], translation, tokens: tokens ?? null, updated_at: now };
+  else rows.unshift({ source_text: source, translation, tokens: tokens ?? null, pinned: false, updated_at: now });
+  localHistorySet(rows.slice(0, 100));
+}
+
+// Persists a successful translation. Signed-in users sync to Supabase; guests
+// fall back to localStorage. Never throws.
 async function saveTranslation(source, translation, tokens) {
-  if (!state.supaUser) return;
+  if (!state.supaUser) { localHistoryUpsert(source, translation, tokens); return; }
   try {
     await supa.from('translations').upsert({
       user_id:     state.supaUser.id,
@@ -467,6 +490,13 @@ export function initTranslator() {
     const row = menuRow;
     closeMenu();
     if (!row) return;
+    if (!state.supaUser) {
+      const rows = localHistoryGet();
+      const r = rows.find(x => x.source_text === row.source_text);
+      if (r) { r.pinned = !r.pinned; localHistorySet(rows); }
+      loadHistory();
+      return;
+    }
     try {
       await supa.from('translations')
         .update({ pinned: !row.pinned })
@@ -478,7 +508,11 @@ export function initTranslator() {
     const row = menuRow, item = menuItem;
     closeMenu();
     if (!row) return;
-    try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
+    if (!state.supaUser) {
+      localHistorySet(localHistoryGet().filter(x => x.source_text !== row.source_text));
+    } else {
+      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
+    }
     item?.remove();
     if (!historyList.querySelector('.tr-history-item')) renderHistory([]);
   });
@@ -514,7 +548,7 @@ export function initTranslator() {
   function closeHistory() { document.body.classList.remove('recents-open'); historyPanel.setAttribute('aria-hidden', 'true'); }
 
   async function loadHistory() {
-    if (!state.supaUser) { renderHistory(null); return; }
+    if (!state.supaUser) { renderHistory(sortHistory(localHistoryGet())); return; }
     try {
       const { data } = await supa
         .from('translations')
@@ -563,30 +597,27 @@ export function initTranslator() {
   }
 
   function renderHistory(rows) {
-    if (!rows) {
-      historyList.innerHTML = '<div class="tr-history-empty">Sign in to keep your translation history.</div>';
-      return;
-    }
-    if (!rows.length) {
-      historyList.innerHTML = '<div class="tr-history-empty">No translations yet.</div>';
-      return;
-    }
+    rows = rows || [];
     historyList.innerHTML = '';
     const pinned  = rows.filter(r => r.pinned);
     const recents = rows.filter(r => !r.pinned);
-    const group = label => {
+    const section = label => {
       const h = document.createElement('div');
-      h.className = 'tr-history-group';
+      h.className = 'tr-history-section';
       h.textContent = label;
       historyList.appendChild(h);
     };
-    if (pinned.length) {
-      group('Pinned');
-      pinned.forEach(r => historyList.appendChild(makeHistoryItem(r)));
-    }
+    // Pinned and Recents headers always show; the empty message lives in Recents.
+    section('Pinned');
+    pinned.forEach(r => historyList.appendChild(makeHistoryItem(r)));
+    section('Recents');
     if (recents.length) {
-      group('Recents');
       recents.forEach(r => historyList.appendChild(makeHistoryItem(r)));
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'tr-history-empty';
+      empty.textContent = 'No translations yet.';
+      historyList.appendChild(empty);
     }
   }
 

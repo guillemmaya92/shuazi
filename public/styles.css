@@ -298,6 +298,14 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .info-cell .lbl { font-size:.57rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
 .info-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
 .info-cell.full { grid-column:1/-1; }
+.char-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
+.char-chip { display:inline-flex; align-items:center; gap:5px; background:var(--surf2); border:1px solid var(--bdr); border-radius:10px; padding:3px 9px; }
+.char-chip .cc-glyph { font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; font-size:1.05rem; font-weight:600; color:var(--txt); line-height:1.2; }
+.char-chip .cc-py { font-size:.66rem; color:var(--muted); }
+.char-chips.stack .char-chip { flex-direction:column; gap:1px; padding:4px 8px; }
+.char-chips.stack .char-chip .cc-py { text-align:center; }
+.char-chip-empty { font-size:.85rem; color:var(--faint); }
+.cc-desc { font-weight:500; color:var(--muted); }
 .words-title { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
 .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
@@ -560,17 +568,35 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   animation:slideUp 220ms cubic-bezier(0.16,1,0.3,1);
 }
 .modal::-webkit-scrollbar { display:none; }
+#modal { overscroll-behavior:contain; }
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 
-#reset-backdrop {
+#reset-backdrop,
+#settings-backdrop,
+#account-backdrop,
+#delacct-backdrop {
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease;
 }
-#reset-backdrop.open {
+#reset-backdrop.open,
+#settings-backdrop.open,
+#account-backdrop.open,
+#delacct-backdrop.open {
   opacity: 1;
   pointer-events: all;
 }
+.settings-item {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:13px 14px; border-radius:14px;
+  background:var(--surf); border:1px solid var(--bdr);
+  color:var(--txt); font-size:.85rem; font-weight:600;
+  cursor:pointer; text-align:left; text-decoration:none;
+}
+.settings-item:active { background:var(--surf2); }
+.settings-item > span { flex:1; }
+.settings-item > svg:first-child { color:var(--muted); flex-shrink:0; }
+.settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
 .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
 .modal #modal-content .info-row { margin-top:-14px; }
 .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }
@@ -967,11 +993,11 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .tr-history-item.pressing { transform:scale(.97); background:var(--surf2); }
 .tr-history-item.selected { background:color-mix(in srgb, var(--txt) 12%, transparent); }
 /* Section headers separating Pinned / Recents. */
-.tr-history-group {
-  font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
-  color:var(--faint); padding:12px 10px 4px;
+.tr-history-section {
+  font-size:.95rem; font-weight:700; color:var(--txt);
+  padding:12px 10px 6px;
 }
-.tr-history-group:first-child { padding-top:2px; }
+.tr-history-section:first-child { padding-top:2px; }
 .tr-history-open {
   flex:1; min-width:0; text-align:left; padding:9px 10px;
   display:flex; flex-direction:column; gap:2px; border-radius:12px;
@@ -1004,9 +1030,10 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   padding:10px 12px;
   background:var(--surf2); border:1px solid var(--bdr); border-radius:16px;
   box-shadow:var(--sh);
-  opacity:0; transition:transform .32s cubic-bezier(.34,1.2,.4,1), opacity .25s ease;
+  opacity:0; pointer-events:none;
+  transition:transform .32s cubic-bezier(.34,1.2,.4,1), opacity .25s ease;
 }
-.pwa-banner.show { transform:translate(-50%, 0); opacity:1; }
+.pwa-banner.show { transform:translate(-50%, 0); opacity:1; pointer-events:auto; }
 .pwa-banner-icon {
   width:38px; height:38px; flex-shrink:0; border-radius:10px;
   background:var(--red-bg); color:var(--red);

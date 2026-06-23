@@ -73,7 +73,11 @@ export function initPwaInstall() {
     requestAnimationFrame(() => banner.classList.add('show'));
   }
   function hideBanner() {
-    banner?.classList.remove('show');
+    if (!banner) return;
+    const el = banner;
+    banner = null;                         // allow a future showBanner to rebuild
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 350);    // drop from the DOM after the transition
   }
 
   // ── Install action ──

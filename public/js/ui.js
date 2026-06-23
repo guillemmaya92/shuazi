@@ -1,7 +1,7 @@
 import { supa } from './config.js';
 import { state } from './state.js';
 import { saveState } from './progress.js';
-import { startCheckout } from './auth.js';
+import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
 import { initTranslator } from './translator.js';
 
@@ -415,12 +415,24 @@ export async function openModal(card) {
           </div>`;
       }).join('');
 
+  const radInfo = state.RADICALS.find(r => r.radical === card.radical);
+  const radicalHTML = card.radical
+    ? `<span class="char-chip"><span class="cc-glyph">${card.radical}</span>${radInfo?.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</span>`
+    : '<span class="char-chip-empty">—</span>';
+
+  const charComponents = state.COMPONENTS.filter(comp => state.charsByComponent[comp.id]?.has(card.id));
+  const componentsHTML = charComponents.length
+    ? charComponents.map(c => `<span class="char-chip"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</span>`).join('')
+    : '<span class="char-chip-empty">—</span>';
+
   modalContent.innerHTML = `
-    <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
       <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
       <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+      <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
-      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
+      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
+      <div class="info-cell full"><div class="lbl">Components</div><div class="char-chips stack">${componentsHTML}</div></div>
     </div>
     <div class="words-title">Compound words</div>
     <div class="words-list">${groupsHTML}</div>
@@ -507,7 +519,85 @@ function openComponentModal(comp) {
   backdrop.classList.add('open');
 }
 
-backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
+const modalSheet = document.getElementById('modal');
+const MODAL_EASE = 'cubic-bezier(0.32,0.72,0,1)';
+
+function closeModal() {
+  modalSheet.style.transition = `transform 300ms ${MODAL_EASE}`;
+  backdrop.style.transition   = 'background 300ms ease';
+  modalSheet.style.transform  = 'translateY(100%)';
+  backdrop.style.background    = 'rgba(0,0,0,0)';
+  modalSheet.addEventListener('transitionend', () => {
+    backdrop.classList.remove('open');
+    modalSheet.style.transition = ''; modalSheet.style.transform = ''; modalSheet.style.willChange = '';
+    backdrop.style.transition   = ''; backdrop.style.background = '';
+  }, { once: true });
+}
+
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+// Swipe-down-to-close. Only starts when the sheet is scrolled to the very top and
+// the finger moves down, so it never steals scrolling of long content. Pointer
+// capture + pointercancel keep it reliable on both iOS and Android.
+let mDragId = null, mStartY = 0, mDy = 0, mVel = 0, mLastY = 0, mLastT = 0, mCommitted = false, mRaf = null;
+
+function modalSetY(y) {
+  modalSheet.style.transform = `translateY(${y}px)`;
+  const h = modalSheet.offsetHeight || 1;
+  const p = Math.min(Math.max(y / (h * 0.8), 0), 1);
+  backdrop.style.background = `rgba(0,0,0,${0.5 * (1 - p * p * (3 - 2 * p))})`;
+}
+
+function modalEndDrag(decide) {
+  if (mRaf != null) { cancelAnimationFrame(mRaf); mRaf = null; }
+  const d = mDy, v = mVel, was = mCommitted;
+  mDragId = null; mCommitted = false; mDy = 0; mVel = 0;
+  if (!was) return;
+  if (decide && (d > 90 || v > 0.5)) {
+    modalSheet.style.transition = `transform 300ms ${MODAL_EASE}`;
+    backdrop.style.transition   = 'background 300ms ease';
+    closeModal();
+  } else if (d > 0) {
+    modalSheet.style.transition = `transform 300ms ${MODAL_EASE}`;
+    backdrop.style.transition   = 'background 300ms ease';
+    modalSheet.style.transform  = 'translateY(0)';
+    backdrop.style.background    = 'rgba(0,0,0,0.5)';
+    modalSheet.addEventListener('transitionend', () => {
+      modalSheet.style.transition = ''; modalSheet.style.transform = ''; modalSheet.style.willChange = '';
+      backdrop.style.transition = ''; backdrop.style.background = '';
+    }, { once: true });
+  }
+}
+
+modalSheet.addEventListener('pointerdown', e => {
+  if (mDragId !== null || modalSheet.scrollTop > 0) return;
+  mDragId = e.pointerId; mStartY = mLastY = e.clientY; mLastT = e.timeStamp;
+  mDy = 0; mVel = 0; mCommitted = false;
+});
+
+modalSheet.addEventListener('pointermove', e => {
+  if (e.pointerId !== mDragId) return;
+  mDy = e.clientY - mStartY;
+  if (!mCommitted) {
+    if (mDy > 6 && modalSheet.scrollTop <= 0) {         // downward at top → dismiss
+      mCommitted = true;
+      modalSheet.setPointerCapture(e.pointerId);
+      modalSheet.style.transition = 'none';
+      modalSheet.style.willChange = 'transform';
+      backdrop.style.transition   = 'none';
+    } else if (mDy < 0) { mDragId = null; return; }     // upward → let it scroll
+    else return;
+  }
+  if (mDy < 0) mDy = 0;
+  const dt = e.timeStamp - mLastT;
+  if (dt > 0) mVel = (e.clientY - mLastY) / dt;
+  mLastY = e.clientY; mLastT = e.timeStamp;
+  if (e.cancelable) e.preventDefault();
+  if (mRaf == null) mRaf = requestAnimationFrame(() => { mRaf = null; modalSetY(mDy); });
+});
+
+modalSheet.addEventListener('pointerup',     e => { if (e.pointerId === mDragId) modalEndDrag(true);  });
+modalSheet.addEventListener('pointercancel', e => { if (e.pointerId === mDragId) modalEndDrag(false); });
 
 /* ── TABS ── */
 const tabCards     = document.getElementById('tab-cards');
@@ -876,10 +966,6 @@ export function renderProfile() {
     </div>` : ''}
 
     ${accountHTML}
-
-    <div class="profile-section">
-      <button id="resetBtn" style="width:100%;padding:11px;border-radius:12px;background:rgba(186,13,31,.06);border:1px solid rgba(186,13,31,.12);color:var(--muted);font-size:.78rem;font-weight:600;cursor:pointer">Reset progress</button>
-    </div>
   `;
 
   if (state.userPlan !== 'pro') {
@@ -966,42 +1052,6 @@ export function renderProfile() {
       render();
       updateStats();
     });
-  });
-
-  container.querySelector('#resetBtn').addEventListener('click', () => {
-    const filtered = state.CHARACTERS.filter(c => isAvailable(c.hsk));
-    const knownN  = filtered.filter(c => state.known.has(c.char)).length;
-    const reviewN = filtered.filter(c => state.unknown.has(c.char)).length;
-    document.getElementById('reset-stats').innerHTML = `
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)">${knownN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Known</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)">${reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Review</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700">${knownN + reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Total</div></div>
-    `;
-    const rb = document.getElementById('reset-backdrop');
-    rb.style.display = 'flex';
-    requestAnimationFrame(() => rb.classList.add('open'));
-  });
-
-  document.getElementById('resetCancelBtn').onclick  = () => closeResetModal();
-  document.getElementById('resetConfirmBtn').onclick = () => {
-    state.known.clear(); state.unknown.clear();
-    state.deck = buildDeck(state.CHARACTERS);
-    render(); saveState();
-    closeResetModal();
-    setTimeout(() => renderProfile(), 200);
-  };
-
-  document.getElementById('reset-backdrop').onclick = e => {
-    if (e.target === document.getElementById('reset-backdrop')) closeResetModal();
-  };
-
-  const rm = document.getElementById('reset-modal');
-  let rsY = 0, rsDy = 0;
-  rm.addEventListener('pointerdown', e => { rsY = e.clientY; rsDy = 0; rm.style.transition = 'none'; });
-  rm.addEventListener('pointermove', e => { rsDy = e.clientY - rsY; if (rsDy > 0) rm.style.transform = `translateY(${rsDy}px)`; });
-  rm.addEventListener('pointerup', () => {
-    rm.style.transition = 'transform 300ms ease';
-    if (rsDy > 80) { closeResetModal(); } else { rm.style.transform = ''; }
   });
 }
 
@@ -1136,6 +1186,158 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
 ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
   document.getElementById(id).onclick = toggleTheme;
 });
+
+/* ── SETTINGS MENU ── */
+(() => {
+  const sb = document.getElementById('settings-backdrop');
+  const sm = document.getElementById('settings-modal');
+  if (!sb || !sm) return;
+
+  const open = () => { sb.style.display = 'flex'; requestAnimationFrame(() => sb.classList.add('open')); };
+  const close = () => {
+    sb.classList.remove('open');
+    sb.addEventListener('transitionend', () => { sb.style.display = 'none'; }, { once: true });
+    sm.style.transition = ''; sm.style.transform = '';
+  };
+
+  document.getElementById('settingsBtnP')?.addEventListener('click', open);
+  sb.addEventListener('click', e => { if (e.target === sb) close(); });
+
+  document.getElementById('settingsAccountBtn')?.addEventListener('click', () => {
+    close();
+    setTimeout(openAccountMenu, 220);
+  });
+
+  document.getElementById('settingsInviteBtn')?.addEventListener('click', async () => {
+    close();
+    const shareData = {
+      title: 'shuazi',
+      text: 'Learn Chinese characters with shuazi!',
+      url: window.location.origin
+    };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else { await navigator.clipboard.writeText(shareData.url); alert('Link copied to clipboard!'); }
+    } catch (e) { /* user dismissed the share sheet */ }
+  });
+
+  document.getElementById('settingsContactBtn')?.addEventListener('click', () => {
+    close();
+    window.location.href = 'mailto:contact@shuaziapp.com?subject=shuazi%20contact';
+  });
+
+  // Legal links navigate on their own (open in a new tab); just close the sheet.
+  document.getElementById('settingsTermsBtn')?.addEventListener('click', () => close());
+  document.getElementById('settingsPrivacyBtn')?.addEventListener('click', () => close());
+
+  // Swipe-down to dismiss, matching the reset sheet.
+  let sY = 0, sDy = 0;
+  sm.addEventListener('pointerdown', e => { sY = e.clientY; sDy = 0; sm.style.transition = 'none'; });
+  sm.addEventListener('pointermove', e => { sDy = e.clientY - sY; if (sDy > 0) sm.style.transform = `translateY(${sDy}px)`; });
+  sm.addEventListener('pointerup', () => {
+    sm.style.transition = 'transform 300ms ease';
+    if (sDy > 80) close(); else sm.style.transform = '';
+  });
+})();
+
+/* ── ACCOUNT MENU (Reset progress / Delete account) ── */
+function openAccountMenu() {
+  const ab = document.getElementById('account-backdrop');
+  // Delete account only makes sense while signed in.
+  document.getElementById('deleteAccountBtn').style.display = state.supaUser ? '' : 'none';
+  ab.style.display = 'flex';
+  requestAnimationFrame(() => ab.classList.add('open'));
+}
+
+(() => {
+  const ab = document.getElementById('account-backdrop');
+  const am = document.getElementById('account-modal');
+  if (!ab || !am) return;
+
+  const closeAccount = () => {
+    ab.classList.remove('open');
+    ab.addEventListener('transitionend', () => { ab.style.display = 'none'; }, { once: true });
+    am.style.transition = ''; am.style.transform = '';
+  };
+  ab.addEventListener('click', e => { if (e.target === ab) closeAccount(); });
+
+  // Swipe-down to dismiss, matching the other sheets.
+  let aY = 0, aDy = 0;
+  am.addEventListener('pointerdown', e => { aY = e.clientY; aDy = 0; am.style.transition = 'none'; });
+  am.addEventListener('pointermove', e => { aDy = e.clientY - aY; if (aDy > 0) am.style.transform = `translateY(${aDy}px)`; });
+  am.addEventListener('pointerup', () => {
+    am.style.transition = 'transform 300ms ease';
+    if (aDy > 80) closeAccount(); else am.style.transform = '';
+  });
+
+  // Reset progress → confirm sheet.
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    closeAccount();
+    const filtered = state.CHARACTERS.filter(c => isAvailable(c.hsk));
+    const knownN  = filtered.filter(c => state.known.has(c.char)).length;
+    const reviewN = filtered.filter(c => state.unknown.has(c.char)).length;
+    document.getElementById('reset-stats').innerHTML = `
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)">${knownN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Known</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)">${reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Review</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700">${knownN + reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Total</div></div>
+    `;
+    const rb = document.getElementById('reset-backdrop');
+    rb.style.display = 'flex';
+    requestAnimationFrame(() => rb.classList.add('open'));
+  });
+
+  document.getElementById('resetCancelBtn').onclick  = () => closeResetModal();
+  document.getElementById('resetConfirmBtn').onclick = () => {
+    state.known.clear(); state.unknown.clear();
+    state.deck = buildDeck(state.CHARACTERS);
+    render(); saveState();
+    closeResetModal();
+    setTimeout(() => renderProfile(), 200);
+  };
+  document.getElementById('reset-backdrop').onclick = e => {
+    if (e.target === document.getElementById('reset-backdrop')) closeResetModal();
+  };
+  const rm = document.getElementById('reset-modal');
+  let rsY = 0, rsDy = 0;
+  rm.addEventListener('pointerdown', e => { rsY = e.clientY; rsDy = 0; rm.style.transition = 'none'; });
+  rm.addEventListener('pointermove', e => { rsDy = e.clientY - rsY; if (rsDy > 0) rm.style.transform = `translateY(${rsDy}px)`; });
+  rm.addEventListener('pointerup', () => {
+    rm.style.transition = 'transform 300ms ease';
+    if (rsDy > 80) closeResetModal(); else rm.style.transform = '';
+  });
+
+  // Delete account → confirm sheet; deletion runs server-side.
+  const dab = document.getElementById('delacct-backdrop');
+  const closeDelacct = () => {
+    dab.classList.remove('open');
+    dab.addEventListener('transitionend', () => { dab.style.display = 'none'; }, { once: true });
+  };
+  document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+    closeAccount();
+    document.getElementById('delacct-error').textContent = '';
+    dab.style.display = 'flex';
+    requestAnimationFrame(() => dab.classList.add('open'));
+  });
+  document.getElementById('delacctCancelBtn').onclick = () => closeDelacct();
+  dab.onclick = e => { if (e.target === dab) closeDelacct(); };
+  document.getElementById('delacctConfirmBtn').onclick = async () => {
+    const btn = document.getElementById('delacctConfirmBtn');
+    const errEl = document.getElementById('delacct-error');
+    btn.disabled = true; btn.textContent = 'Deleting…'; errEl.textContent = '';
+    try {
+      await deleteAccount();
+      // Local progress is tied to this device — clear it so the next user starts clean.
+      state.known.clear(); state.unknown.clear();
+      state.deck = buildDeck(state.CHARACTERS);
+      render(); saveState();
+      closeDelacct();
+      setTimeout(() => renderProfile(), 200);
+    } catch (e) {
+      errEl.textContent = e.message || 'Could not delete account.';
+      btn.disabled = false; btn.textContent = 'Yes, delete my account';
+    }
+  };
+})();
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown', e => {
