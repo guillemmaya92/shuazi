@@ -950,18 +950,18 @@ export function renderProfile() {
 
     ${state.supaUser && state.userPlan !== 'pro' ? `
     <div class="profile-section">
-      <div class="words-title">shuazi Pro</div>
+      <div class="words-title">Get Pro</div>
       <div class="info-cell full" style="display:flex;flex-direction:column;gap:10px">
         <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="font-size:.78rem;color:var(--txt);font-weight:600">Unlock all 6 HSK levels</div>
-          <div style="font-size:.68rem;color:var(--faint);line-height:1.5">One-time payment. Study over 1,500 characters across all HSK levels.</div>
+          <div style="font-size:.78rem;color:var(--txt);font-weight:600">Support shuazi</div>
+          <div style="font-size:.68rem;color:var(--faint);line-height:1.5">A little thank-you that keeps shuazi going — and unlocks all 6 HSK levels (1,500+ characters) for good.</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;font-size:.68rem;color:var(--muted)">
           <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>HSK 1–6 complete (1,500+ characters)</div>
           <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>Progress sync across all devices</div>
           <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>One-time payment, no subscription</div>
         </div>
-        <button id="upgradeBannerBtn" style="padding:11px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.82rem;font-weight:700;cursor:pointer;width:100%">Upgrade to Pro · €1.99</button>
+        <button id="upgradeBannerBtn" style="padding:11px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.82rem;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px"><span>Buy me a bubbletea</span><img src="./images/bubbletea.png" alt="€1.99" style="height:30px;width:auto;display:block;margin:-8px 0"/></button>
       </div>
     </div>` : ''}
 
