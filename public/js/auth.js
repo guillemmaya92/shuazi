@@ -7,6 +7,35 @@ export async function loadUserPlan() {
   state.userPlan = data?.plan ?? 'free';
 }
 
+// Sends the browser-derived hints to the profile-sync Edge Function, which adds
+// the server-resolved country and upserts the row. Country is resolved on the
+// server so the client never calls a geo service or leaks the IP from here.
+export async function syncUserProfile() {
+  if (!state.supaUser) return;
+
+  let timezone = null;
+  try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* ignore */ }
+  const hints = {
+    locale:    navigator.language ?? null,
+    languages: (navigator.languages || []).join(',') || null,
+    timezone,
+    platform:  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+  };
+
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
+    await fetch(`${SUPA_URL}/functions/v1/profile_sync`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(hints),
+    });
+  } catch (e) {
+    console.warn('Profile sync failed:', e);
+  }
+}
+
 export async function startCheckout() {
   if (!state.supaUser) { alert('Please sign in first to purchase.'); return; }
   try {

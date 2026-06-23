@@ -8,9 +8,13 @@ create table if not exists translations (
   source_text text not null,
   translation text not null,
   tokens      jsonb,
+  pinned      boolean not null default false,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- If the table already existed, add the pin flag.
+alter table translations add column if not exists pinned boolean not null default false;
 
 -- One stored row per (user, source phrase); re-translating updates it.
 create unique index if not exists translations_user_source_uidx

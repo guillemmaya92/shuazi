@@ -291,8 +291,9 @@ export function initTranslator() {
   const emptyEl     = document.getElementById('trEmpty');
   const zhLineEl    = document.getElementById('trZh');
   const speakBtn    = document.getElementById('trSpeak');
-  const clearBtn    = document.getElementById('trClear');
   const countEl      = document.getElementById('trCount');
+  const originalSection = document.getElementById('trOriginalSection');
+  const originalEl   = document.getElementById('trOriginal');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
   const eyeBtn       = document.getElementById('trEye');
@@ -336,6 +337,7 @@ export function initTranslator() {
   }
 
   function hideSections() {
+    originalSection.style.display = 'none';
     zhSection.style.display = 'none';
     tokensSection.style.display = 'none';
     if (speakBtn) {
@@ -346,15 +348,16 @@ export function initTranslator() {
     if ('speechSynthesis' in window) speechSynthesis.cancel();
   }
 
-  // Renders an already-resolved translation into the result sections.
-  function showResult(zh, tokens) {
+  // Renders an already-resolved translation: original text, hanzi, tokens.
+  function showResult(original, zh, tokens) {
+    originalEl.textContent = original;
+    originalSection.style.display = original ? '' : 'none';
     zhLineEl.textContent = zh;
     renderTokens(zh, tokens, resultEl);
     syncEye();
     zhSection.style.display = '';
     tokensSection.style.display = '';
     if (canSpeak) speakBtn.style.display = '';
-    syncClear();
   }
 
   async function handleSubmit() {
@@ -371,10 +374,13 @@ export function initTranslator() {
     emptyEl.style.display = 'none';
     button.disabled = true;
     button.classList.add('tr-loading');
+    // Clear the box right after sending (chat-style); the original shows above.
+    input.value = '';
+    autoGrow(); syncCount();
     try {
       await ensureLibs();
       const { translation: zh, tokens } = await translateToChinese(text);
-      showResult(zh, tokens);
+      showResult(text, zh, tokens);
       // Persist for the signed-in user, then refresh the history if it's open.
       saveTranslation(text, zh, tokens).then(() => {
         if (document.body.classList.contains('recents-open')) loadHistory();
@@ -410,33 +416,14 @@ export function initTranslator() {
     const sb = Math.max(0, input.offsetWidth - input.clientWidth - 2);
     inputField.style.setProperty('--sb', sb + 'px');
   };
-  // Show the clear button only when there's a translation shown below.
-  const syncClear = () => {
-    if (!clearBtn) return;
-    const hasResult = zhSection.style.display !== 'none';
-    clearBtn.style.display = hasResult ? '' : 'none';
-  };
   // Keep the (optional) character counter in sync with the input.
   const syncCount = () => {
     if (countEl) countEl.textContent = input.value.length;
   };
-  input.addEventListener('input', () => { autoGrow(); syncClear(); syncCount(); });
+  input.addEventListener('input', () => { autoGrow(); syncCount(); });
   syncCount();
 
-  // Clear only the translation, leaving the written text untouched.
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      resultEl.innerHTML = '';
-      zhLineEl.textContent = '';
-      hideSections();
-      emptyEl.textContent = '';
-      emptyEl.style.display = 'none';
-      syncClear();
-      input.focus();
-    });
-  }
-
-  wireMic(input, () => { autoGrow(); syncClear(); syncCount(); });
+  wireMic(input, () => { autoGrow(); syncCount(); });
 
   // ── HISTORY DRAWER ──
   const historyBtn      = document.getElementById('trHistoryBtn');
@@ -445,8 +432,85 @@ export function initTranslator() {
   const historyBackdrop = document.getElementById('trHistoryBackdrop');
   const historyList     = document.getElementById('trHistoryList');
 
+  // Context menu (ChatGPT-style): a little popup with a red Delete action.
+  const menu = document.createElement('div');
+  menu.className = 'tr-menu';
+  menu.innerHTML =
+    `<button class="tr-menu-pin" type="button">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+       <span class="tr-menu-pin-label">Pin</span>
+     </button>
+     <button class="tr-menu-del" type="button">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+       <span>Delete</span>
+     </button>`;
+  document.body.appendChild(menu);
+  const pinLabel = menu.querySelector('.tr-menu-pin-label');
+  let menuRow = null, menuItem = null;
+
+  function openMenu(x, y, row, item) {
+    menuRow = row; menuItem = item;
+    pinLabel.textContent = row.pinned ? 'Unpin' : 'Pin';
+    item.classList.add('selected');
+    menu.style.left = '0px'; menu.style.top = '0px';
+    menu.classList.add('open');
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.min(x, window.innerWidth  - w - 8) + 'px';
+    menu.style.top  = Math.min(y, window.innerHeight - h - 8) + 'px';
+  }
+  function closeMenu() {
+    menu.classList.remove('open');
+    if (menuItem) menuItem.classList.remove('selected');
+    menuItem = null; menuRow = null;
+  }
+  menu.querySelector('.tr-menu-pin').addEventListener('click', async () => {
+    const row = menuRow;
+    closeMenu();
+    if (!row) return;
+    try {
+      await supa.from('translations')
+        .update({ pinned: !row.pinned })
+        .eq('user_id', state.supaUser.id).eq('source_text', row.source_text);
+    } catch {}
+    loadHistory();   // reorder (pinned first)
+  });
+  menu.querySelector('.tr-menu-del').addEventListener('click', async () => {
+    const row = menuRow, item = menuItem;
+    closeMenu();
+    if (!row) return;
+    try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
+    item?.remove();
+    if (!historyList.querySelector('.tr-history-item')) renderHistory([]);
+  });
+  document.addEventListener('pointerdown', e => {
+    if (menu.classList.contains('open') && !menu.contains(e.target)) closeMenu();
+  }, true);
+  historyList.addEventListener('scroll', () => { if (menu.classList.contains('open')) closeMenu(); });
+
   const isOpen = () => document.body.classList.contains('recents-open');
-  function openHistory()  { document.body.classList.add('recents-open');    historyPanel.setAttribute('aria-hidden', 'false'); loadHistory(); }
+
+  // Haptics: the Web Vibration API on Android/Chrome; on iOS Safari (which has
+  // no Vibration API) fall back to toggling a hidden <input switch>, which fires
+  // the system haptic (iOS 17.4+). Intensity isn't controllable on iOS.
+  let _hapticEl = null;
+  const buzz = (ms = 15) => {
+    if (navigator.vibrate?.(ms)) return;          // Android / Chrome
+    try {
+      if (!_hapticEl) {
+        const label = document.createElement('label');
+        label.setAttribute('aria-hidden', 'true');
+        label.style.cssText = 'position:absolute;width:0;height:0;opacity:0;overflow:hidden;pointer-events:none';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.setAttribute('switch', '');         // Safari-only haptic switch
+        label.appendChild(input);
+        document.body.appendChild(label);
+        _hapticEl = label;
+      }
+      _hapticEl.click();                           // toggling fires the iOS haptic
+    } catch { /* no haptics available */ }
+  };
+  function openHistory()  { if (!isOpen()) buzz(); document.body.classList.add('recents-open'); historyPanel.setAttribute('aria-hidden', 'false'); loadHistory(); }
   function closeHistory() { document.body.classList.remove('recents-open'); historyPanel.setAttribute('aria-hidden', 'true'); }
 
   async function loadHistory() {
@@ -454,8 +518,9 @@ export function initTranslator() {
     try {
       const { data } = await supa
         .from('translations')
-        .select('source_text, translation, tokens, updated_at')
+        .select('source_text, translation, tokens, pinned, updated_at')
         .eq('user_id', state.supaUser.id)
+        .order('pinned', { ascending: false })
         .order('updated_at', { ascending: false })
         .limit(100);
       renderHistory(data || []);
@@ -463,6 +528,38 @@ export function initTranslator() {
       console.warn('Translator: could not load history:', e);
       renderHistory([]);
     }
+  }
+
+  function makeHistoryItem(row) {
+    const item = document.createElement('div');
+    item.className = 'tr-history-item' + (row.pinned ? ' pinned' : '');
+    item.innerHTML =
+      `<button class="tr-history-open" type="button">
+         <span class="tr-history-src">${row.pinned ? '<svg class="tr-history-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3a1 1 0 0 1 0 2 1 1 0 0 0-1 1v4.76a4 4 0 0 0 2.21 3.58l1.79.9V16H5v-.76l1.79-.9A4 4 0 0 0 9 10.76V6a1 1 0 0 0-1-1 1 1 0 0 1 0-2z"/></svg>' : ''}${escapeHtml(row.source_text)}</span>
+         <span class="tr-history-zh">${escapeHtml(row.translation)}</span>
+       </button>`;
+    const openBtn = item.querySelector('.tr-history-open');
+
+    // Long-press to reveal the context menu (Pin / Delete).
+    let lpTimer = null, longPressed = false;
+    const clearLP = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } item.classList.remove('pressing'); };
+    openBtn.addEventListener('pointerdown', e => {
+      longPressed = false;
+      item.classList.add('pressing');
+      const px = e.clientX, py = e.clientY;
+      lpTimer = setTimeout(() => {
+        longPressed = true;
+        item.classList.remove('pressing');
+        buzz(30);
+        openMenu(px, py, row, item);
+      }, 450);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(ev => openBtn.addEventListener(ev, clearLP));
+    openBtn.addEventListener('click', e => {
+      if (longPressed) { e.preventDefault(); longPressed = false; return; }   // long-press → don't open
+      openFromHistory(row);
+    });
+    return item;
   }
 
   function renderHistory(rows) {
@@ -475,34 +572,29 @@ export function initTranslator() {
       return;
     }
     historyList.innerHTML = '';
-    for (const row of rows) {
-      const item = document.createElement('div');
-      item.className = 'tr-history-item';
-      item.innerHTML =
-        `<button class="tr-history-open" type="button">
-           <span class="tr-history-src">${escapeHtml(row.source_text)}</span>
-           <span class="tr-history-zh">${escapeHtml(row.translation)}</span>
-         </button>
-         <button class="tr-history-del" type="button" aria-label="Delete">
-           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-         </button>`;
-      item.querySelector('.tr-history-open').addEventListener('click', () => openFromHistory(row));
-      item.querySelector('.tr-history-del').addEventListener('click', async () => {
-        try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
-        item.remove();
-        if (!historyList.querySelector('.tr-history-item')) renderHistory([]);
-      });
-      historyList.appendChild(item);
+    const pinned  = rows.filter(r => r.pinned);
+    const recents = rows.filter(r => !r.pinned);
+    const group = label => {
+      const h = document.createElement('div');
+      h.className = 'tr-history-group';
+      h.textContent = label;
+      historyList.appendChild(h);
+    };
+    if (pinned.length) {
+      group('Pinned');
+      pinned.forEach(r => historyList.appendChild(makeHistoryItem(r)));
+    }
+    if (recents.length) {
+      group('Recents');
+      recents.forEach(r => historyList.appendChild(makeHistoryItem(r)));
     }
   }
 
   async function openFromHistory(row) {
-    input.value = row.source_text;
-    autoGrow(); syncCount();
     emptyEl.textContent = ''; emptyEl.className = 'tr-empty'; emptyEl.style.display = 'none';
     closeHistory();
     await ensureLibs();
-    showResult(row.translation, row.tokens);
+    showResult(row.source_text, row.translation, row.tokens);
   }
 
   historyBtn?.addEventListener('click', openHistory);
@@ -521,6 +613,7 @@ export function initTranslator() {
     rootEl.style.transform = `translateX(${px}px)`;
   };
   const settle = open => {
+    if (open && !isOpen()) buzz();          // mini-buzz when it opens
     document.body.classList.remove('recents-dragging');
     document.body.classList.toggle('recents-open', open);
     historyPanel.setAttribute('aria-hidden', open ? 'false' : 'true');

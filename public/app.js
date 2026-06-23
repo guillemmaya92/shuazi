@@ -1,6 +1,6 @@
 import { supa } from './js/config.js';
 import { state } from './js/state.js';
-import { loadUserPlan } from './js/auth.js';
+import { loadUserPlan, syncUserProfile } from './js/auth.js';
 import { loadProgressFromSupabase } from './js/progress.js';
 import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
@@ -96,6 +96,7 @@ loadData().then(async () => {
     const { data: { session } } = await supa.auth.getSession();
     if (session) {
       state.supaUser = session.user;
+      syncUserProfile();
       await loadUserPlan();
       await loadProgressFromSupabase();
       state.deck = buildDeck(state.CHARACTERS);
@@ -109,6 +110,7 @@ loadData().then(async () => {
   supa.auth.onAuthStateChange(async (event, session) => {
     state.supaUser = session?.user ?? null;
     if (event === 'SIGNED_IN') {
+      syncUserProfile();
       await loadUserPlan();
       await loadProgressFromSupabase();
       state.deck = buildDeck(state.CHARACTERS);

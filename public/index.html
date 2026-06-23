@@ -256,15 +256,16 @@
         </div>
       </header>
       <div class="translator-scroll">
+        <div id="trOriginalSection" class="tr-section" style="display:none">
+          <div class="words-title">Original text</div>
+          <div id="trOriginal" class="tr-original-line"></div>
+        </div>
         <div id="trZhSection" class="tr-section" style="display:none">
           <div class="words-title tr-zh-head">
             <span>Hanzi translation</span>
             <div class="tr-zh-actions">
               <button id="trSpeak" class="tr-btn tr-speak" aria-label="Listen" type="button" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-              </button>
-              <button id="trClear" class="tr-btn tr-clear" aria-label="Clear" type="button" style="display:none">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             </div>
           </div>
