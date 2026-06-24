@@ -572,20 +572,67 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 
 #reset-backdrop,
-#settings-backdrop,
-#account-backdrop,
 #delacct-backdrop {
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease;
 }
 #reset-backdrop.open,
-#settings-backdrop.open,
-#account-backdrop.open,
 #delacct-backdrop.open {
   opacity: 1;
   pointer-events: all;
 }
+/* ── SETTINGS & ACCOUNT PANELS (right-side push drawers, mirror the recents drawer) ── */
+:root { --settings-w: min(85%, 320px); }
+
+body.settings-open .root,
+body.account-open .root {
+  transform: translateX(calc(-1 * var(--settings-w)));
+  border-radius: 22px;
+  overflow: hidden;
+}
+body.settings-dragging .root,
+body.account-dragging .root { transition: none; }
+body.settings-dragging .root, body.settings-open .root,
+body.account-dragging .root, body.account-open .root { border-radius: 22px; overflow: hidden; }
+
+.settings-panel,
+.account-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 1;
+  width: calc(var(--settings-w) + 30px);
+  display: flex; flex-direction: column;
+  background: var(--surf);
+  padding-top: max(14px, var(--safe-t));
+  padding-right: max(10px, var(--safe-r));
+  padding-bottom: max(10px, var(--safe-b));
+  padding-left: 44px;
+  visibility: hidden;
+}
+body.settings-open .settings-panel,
+body.settings-dragging .settings-panel { visibility: visible; }
+body.account-open .account-panel,
+body.account-dragging .account-panel { visibility: visible; }
+
+.settings-scrim,
+.account-scrim {
+  position: fixed; top: 0; bottom: 0; left: 0; right: var(--settings-w);
+  z-index: 3; pointer-events: none;
+}
+body.settings-open .settings-scrim { pointer-events: auto; }
+body.account-open .account-scrim { pointer-events: auto; }
+
+.settings-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0 16px;
+  font-size: .95rem; font-weight: 700; color: var(--txt);
+}
+.settings-panel-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  scrollbar-width: none;
+}
+.settings-panel-body::-webkit-scrollbar { display: none; }
+
 .settings-item {
   display:flex; align-items:center; gap:12px;
   width:100%; padding:13px 14px; border-radius:14px;

@@ -1236,29 +1236,32 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
   document.getElementById(id).onclick = toggleTheme;
 });
 
-/* ── SETTINGS MENU ── */
+/* ── SETTINGS PANEL ── */
 (() => {
-  const sb = document.getElementById('settings-backdrop');
-  const sm = document.getElementById('settings-modal');
-  if (!sb || !sm) return;
+  const panel = document.getElementById('settingsPanel');
+  const scrim = document.getElementById('settingsScrim');
+  if (!panel || !scrim) return;
 
-  const open = () => { sb.style.display = 'flex'; requestAnimationFrame(() => sb.classList.add('open')); };
-  const close = () => {
-    sb.classList.remove('open');
-    sb.addEventListener('transitionend', () => { sb.style.display = 'none'; }, { once: true });
-    sm.style.transition = ''; sm.style.transform = '';
+  const openSettings = () => {
+    document.body.classList.add('settings-open');
+    panel.setAttribute('aria-hidden', 'false');
+  };
+  const closeSettings = () => {
+    document.body.classList.remove('settings-open');
+    panel.setAttribute('aria-hidden', 'true');
   };
 
-  document.getElementById('settingsBtnP')?.addEventListener('click', open);
-  sb.addEventListener('click', e => { if (e.target === sb) close(); });
+  document.getElementById('settingsBtnP')?.addEventListener('click', openSettings);
+  scrim.addEventListener('click', closeSettings);
+  document.getElementById('settingsPanelClose')?.addEventListener('click', closeSettings);
 
   document.getElementById('settingsAccountBtn')?.addEventListener('click', () => {
-    close();
-    setTimeout(openAccountMenu, 220);
+    closeSettings();
+    openAccountMenu();
   });
 
   document.getElementById('settingsInviteBtn')?.addEventListener('click', async () => {
-    close();
+    closeSettings();
     const shareData = {
       title: 'shuazi',
       text: 'Learn Chinese characters with shuazi!',
@@ -1271,55 +1274,100 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
   });
 
   document.getElementById('settingsContactBtn')?.addEventListener('click', () => {
-    close();
+    closeSettings();
     window.location.href = 'mailto:contact@shuaziapp.com?subject=shuazi%20contact';
   });
 
-  // Legal links navigate on their own (open in a new tab); just close the sheet.
-  document.getElementById('settingsTermsBtn')?.addEventListener('click', () => close());
-  document.getElementById('settingsPrivacyBtn')?.addEventListener('click', () => close());
+  document.getElementById('settingsTermsBtn')?.addEventListener('click', () => closeSettings());
+  document.getElementById('settingsPrivacyBtn')?.addEventListener('click', () => closeSettings());
 
-  // Swipe-down to dismiss, matching the reset sheet.
-  let sY = 0, sDy = 0, sDragging = false;
-  sm.addEventListener('pointerdown', e => { sY = e.clientY; sDy = 0; sDragging = true; sm.style.transition = 'none'; });
-  sm.addEventListener('pointermove', e => { if (!sDragging) return; sDy = e.clientY - sY; if (sDy > 0) sm.style.transform = `translateY(${sDy}px)`; });
-  sm.addEventListener('pointerup', () => {
-    if (!sDragging) return; sDragging = false;
-    sm.style.transition = 'transform 300ms ease';
-    if (sDy > 80) close(); else sm.style.transform = '';
-  });
+  // iPhone-style interactive drag: swipe LEFT on profile to reveal settings;
+  // swipe RIGHT while open to push it back. Mirrors the translator history gesture.
+  const profileScreen = document.getElementById('screen-profile');
+  const rootEl = document.querySelector('.root');
+  let stStartX = 0, stStartY = 0, stWidth = 280, stActive = false, stLocked = false, stMode = null, stOpened = false;
+
+  const stSetDrag = px => {
+    document.body.classList.add('settings-dragging');
+    rootEl.style.transform = `translateX(${-px}px)`;
+  };
+  const stSettle = open => {
+    document.body.classList.remove('settings-dragging');
+    document.body.classList.toggle('settings-open', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    rootEl.style.transform = '';
+  };
+
+  document.addEventListener('touchstart', e => {
+    stOpened = document.body.classList.contains('settings-open');
+    if (e.touches.length !== 1 || (!stOpened && !profileScreen.classList.contains('active'))) { stActive = false; return; }
+    if (e.target.closest('.tabbar')) { stActive = false; return; }
+    stStartX = e.touches[0].clientX; stStartY = e.touches[0].clientY;
+    stWidth = (panel.offsetWidth || 310) - 30;
+    stActive = true; stLocked = false; stMode = null;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!stActive) return;
+    const dx = e.touches[0].clientX - stStartX, dy = e.touches[0].clientY - stStartY;
+    if (!stLocked) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx)) { stActive = false; return; }
+      if (stOpened) { stMode = 'close'; }
+      else { if (dx >= 0) { stActive = false; return; } stMode = 'open'; }
+      stLocked = true;
+    }
+    const base = stOpened ? stWidth : 0;
+    stSetDrag(Math.max(0, Math.min(stWidth, base - dx)));
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!stActive || !stLocked) { stActive = false; return; }
+    stActive = false;
+    const dx = e.changedTouches[0].clientX - stStartX;
+    if (stMode === 'open') stSettle(-dx > stWidth * 0.35);
+    else                   stSettle(dx < stWidth * 0.35);
+  }, { passive: true });
 })();
 
-/* ── ACCOUNT MENU (Reset progress / Delete account) ── */
+/* ── ACCOUNT PANEL (Reset progress / Delete account) ── */
 function openAccountMenu() {
-  const ab = document.getElementById('account-backdrop');
-  // Delete account only makes sense while signed in.
   document.getElementById('deleteAccountBtn').style.display = state.supaUser ? '' : 'none';
-  ab.style.display = 'flex';
-  requestAnimationFrame(() => ab.classList.add('open'));
+
+  const section = document.getElementById('accountUserSection');
+  if (section) {
+    if (state.supaUser) {
+      section.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 14px 14px;border-bottom:1px solid var(--bdr);margin-bottom:6px">
+          <div>
+            <div class="lbl">Signed in as</div>
+            <div class="val" style="font-size:.78rem;margin-top:2px;word-break:break-all">${state.supaUser.email}</div>
+          </div>
+          <button id="accountSignOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Sign out</button>
+        </div>`;
+      section.querySelector('#accountSignOutBtn').addEventListener('click', async () => {
+        await supa.auth.signOut();
+      });
+    } else {
+      section.innerHTML = '';
+    }
+  }
+
+  document.body.classList.add('account-open');
+  document.getElementById('accountPanel').setAttribute('aria-hidden', 'false');
 }
 
 (() => {
-  const ab = document.getElementById('account-backdrop');
-  const am = document.getElementById('account-modal');
-  if (!ab || !am) return;
+  const scrim = document.getElementById('accountScrim');
+  if (!scrim) return;
 
   const closeAccount = () => {
-    ab.classList.remove('open');
-    ab.addEventListener('transitionend', () => { ab.style.display = 'none'; }, { once: true });
-    am.style.transition = ''; am.style.transform = '';
+    document.body.classList.remove('account-open');
+    document.getElementById('accountPanel').setAttribute('aria-hidden', 'true');
   };
-  ab.addEventListener('click', e => { if (e.target === ab) closeAccount(); });
 
-  // Swipe-down to dismiss, matching the other sheets.
-  let aY = 0, aDy = 0, aDragging = false;
-  am.addEventListener('pointerdown', e => { aY = e.clientY; aDy = 0; aDragging = true; am.style.transition = 'none'; });
-  am.addEventListener('pointermove', e => { if (!aDragging) return; aDy = e.clientY - aY; if (aDy > 0) am.style.transform = `translateY(${aDy}px)`; });
-  am.addEventListener('pointerup', () => {
-    if (!aDragging) return; aDragging = false;
-    am.style.transition = 'transform 300ms ease';
-    if (aDy > 80) closeAccount(); else am.style.transform = '';
-  });
+  scrim.addEventListener('click', closeAccount);
+  document.getElementById('accountPanelClose')?.addEventListener('click', closeAccount);
 
   // Reset progress → confirm sheet.
   document.getElementById('resetBtn').addEventListener('click', () => {
@@ -1378,7 +1426,6 @@ function openAccountMenu() {
     btn.disabled = true; btn.textContent = 'Deleting…'; errEl.textContent = '';
     try {
       await deleteAccount();
-      // Local progress is tied to this device — clear it so the next user starts clean.
       state.known.clear(); state.unknown.clear();
       state.deck = buildDeck(state.CHARACTERS);
       render(); saveState();
