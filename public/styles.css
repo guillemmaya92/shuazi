@@ -1090,6 +1090,31 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   font-size:.85rem; font-weight:700; cursor:pointer;
 }
 
+/* ── SUPPORT BUTTON FILL EFFECT ── */
+#upgradeBannerBtn {
+  position:relative;
+  overflow:hidden;
+  background:transparent;
+  border:2px solid var(--green);
+  color:var(--green); -webkit-text-fill-color:var(--green);
+  transition:color .4s ease, -webkit-text-fill-color .4s ease;
+}
+#upgradeBannerBtn::before {
+  content:'';
+  position:absolute; inset:0;
+  background-image:url('./images/fill-splash.png');
+  background-repeat:repeat-x;
+  background-position:0 -100%;
+  transition:background-position 1.5s ease;
+  filter:hue-rotate(280deg);
+  z-index:0;
+}
+#upgradeBannerBtn:hover::before,
+#upgradeBannerBtn:active::before { background-position:center; }
+#upgradeBannerBtn:hover,
+#upgradeBannerBtn:active { color:#fff; -webkit-text-fill-color:#fff; }
+#upgradeBannerBtn #bubbleCTAText { position:relative; z-index:1; }
+
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
 }

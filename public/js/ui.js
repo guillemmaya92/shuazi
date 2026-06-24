@@ -971,7 +971,7 @@ export function renderProfile() {
             <button class="bmc-qty" data-qty="3" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0">3</button>
             <input id="bubbleQtyCustom" type="number" min="1" max="100" value="1" style="width:52px;height:36px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;text-align:center;padding:0;outline:none;-moz-appearance:textfield;flex-shrink:0"/>
           </div>
-          <button id="upgradeBannerBtn" style="padding:13px;border-radius:12px;background:var(--green);border:none;color:#fff;font-size:.88rem;font-weight:800;cursor:pointer;width:100%;letter-spacing:-.01em">
+          <button id="upgradeBannerBtn" style="padding:13px;border-radius:12px;font-size:.88rem;font-weight:800;cursor:pointer;width:100%;letter-spacing:-.01em">
             <span id="bubbleCTAText">Support · €2</span>
           </button>
         </div>
