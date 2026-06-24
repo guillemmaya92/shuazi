@@ -1231,10 +1231,11 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
   document.getElementById('settingsPrivacyBtn')?.addEventListener('click', () => close());
 
   // Swipe-down to dismiss, matching the reset sheet.
-  let sY = 0, sDy = 0;
-  sm.addEventListener('pointerdown', e => { sY = e.clientY; sDy = 0; sm.style.transition = 'none'; });
-  sm.addEventListener('pointermove', e => { sDy = e.clientY - sY; if (sDy > 0) sm.style.transform = `translateY(${sDy}px)`; });
+  let sY = 0, sDy = 0, sDragging = false;
+  sm.addEventListener('pointerdown', e => { sY = e.clientY; sDy = 0; sDragging = true; sm.style.transition = 'none'; });
+  sm.addEventListener('pointermove', e => { if (!sDragging) return; sDy = e.clientY - sY; if (sDy > 0) sm.style.transform = `translateY(${sDy}px)`; });
   sm.addEventListener('pointerup', () => {
+    if (!sDragging) return; sDragging = false;
     sm.style.transition = 'transform 300ms ease';
     if (sDy > 80) close(); else sm.style.transform = '';
   });
@@ -1262,10 +1263,11 @@ function openAccountMenu() {
   ab.addEventListener('click', e => { if (e.target === ab) closeAccount(); });
 
   // Swipe-down to dismiss, matching the other sheets.
-  let aY = 0, aDy = 0;
-  am.addEventListener('pointerdown', e => { aY = e.clientY; aDy = 0; am.style.transition = 'none'; });
-  am.addEventListener('pointermove', e => { aDy = e.clientY - aY; if (aDy > 0) am.style.transform = `translateY(${aDy}px)`; });
+  let aY = 0, aDy = 0, aDragging = false;
+  am.addEventListener('pointerdown', e => { aY = e.clientY; aDy = 0; aDragging = true; am.style.transition = 'none'; });
+  am.addEventListener('pointermove', e => { if (!aDragging) return; aDy = e.clientY - aY; if (aDy > 0) am.style.transform = `translateY(${aDy}px)`; });
   am.addEventListener('pointerup', () => {
+    if (!aDragging) return; aDragging = false;
     am.style.transition = 'transform 300ms ease';
     if (aDy > 80) closeAccount(); else am.style.transform = '';
   });
@@ -1298,10 +1300,11 @@ function openAccountMenu() {
     if (e.target === document.getElementById('reset-backdrop')) closeResetModal();
   };
   const rm = document.getElementById('reset-modal');
-  let rsY = 0, rsDy = 0;
-  rm.addEventListener('pointerdown', e => { rsY = e.clientY; rsDy = 0; rm.style.transition = 'none'; });
-  rm.addEventListener('pointermove', e => { rsDy = e.clientY - rsY; if (rsDy > 0) rm.style.transform = `translateY(${rsDy}px)`; });
+  let rsY = 0, rsDy = 0, rsDragging = false;
+  rm.addEventListener('pointerdown', e => { rsY = e.clientY; rsDy = 0; rsDragging = true; rm.style.transition = 'none'; });
+  rm.addEventListener('pointermove', e => { if (!rsDragging) return; rsDy = e.clientY - rsY; if (rsDy > 0) rm.style.transform = `translateY(${rsDy}px)`; });
   rm.addEventListener('pointerup', () => {
+    if (!rsDragging) return; rsDragging = false;
     rm.style.transition = 'transform 300ms ease';
     if (rsDy > 80) closeResetModal(); else rm.style.transform = '';
   });

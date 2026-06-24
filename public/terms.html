@@ -18,6 +18,7 @@
       height: auto; min-height: 100%;
       overflow: visible; overflow-y: auto;
       overscroll-behavior: auto;
+      touch-action: auto;
     }
     body {
       background: var(--bg); color: var(--txt);
@@ -71,7 +72,7 @@
     h2 {
       counter-increment: sec; position: relative;
       font-size: 1.02rem; font-weight: 700; color: var(--txt);
-      margin: 40px 0 12px; padding-top: 4px;
+      margin: 28px 0 8px; padding-top: 4px;
     }
     h2::before {
       content: counter(sec); display: inline-grid; place-items: center;
@@ -79,8 +80,8 @@
       font-size: .72rem; font-weight: 700; color: var(--muted);
       background: var(--surf); border: 1px solid var(--bdr); border-radius: 8px;
     }
-    p, li { font-size: .88rem; color: var(--muted); margin: 0 0 12px; }
-    ul { padding-left: 4px; margin: 0 0 12px; list-style: none; }
+    p, li { font-size: .88rem; color: var(--muted); margin: 0 0 7px; }
+    ul { padding-left: 4px; margin: 0 0 7px; list-style: none; }
     li { position: relative; padding-left: 22px; }
     li::before {
       content: ""; position: absolute; left: 4px; top: .62em;
