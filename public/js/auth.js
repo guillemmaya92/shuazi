@@ -55,7 +55,7 @@ export async function deleteAccount() {
   await supa.auth.signOut();
 }
 
-export async function startCheckout() {
+export async function startCheckout(quantity = 1) {
   if (!state.supaUser) { alert('Please sign in first to purchase.'); return; }
   try {
     const { data: { session: authSession } } = await supa.auth.getSession();
@@ -67,6 +67,7 @@ export async function startCheckout() {
       },
       body: JSON.stringify({
         price_id:    STRIPE_PRICE,
+        quantity,
         user_id:     state.supaUser.id,
         success_url: window.location.origin + window.location.pathname + '?upgraded=1',
         cancel_url:  window.location.origin + window.location.pathname

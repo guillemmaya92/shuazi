@@ -950,18 +950,31 @@ export function renderProfile() {
 
     ${state.supaUser && state.userPlan !== 'pro' ? `
     <div class="profile-section">
-      <div class="words-title">Get Pro</div>
-      <div class="info-cell full" style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="font-size:.78rem;color:var(--txt);font-weight:600">Support shuazi</div>
-          <div style="font-size:.68rem;color:var(--faint);line-height:1.5">A little thank-you that keeps shuazi going — and unlocks all 6 HSK levels (1,500+ characters) for good.</div>
+      <div class="words-title">Shuazi Pro</div>
+      <div class="info-cell full" style="padding:0;overflow:hidden">
+        <div style="background:var(--green-bg);padding:10px 18px;border-bottom:1px solid rgba(104,191,138,.18)">
+          <div style="font-size:.92rem;font-weight:800;color:var(--green);letter-spacing:-.01em">Grab me a bubble tea</div>
+          <div style="font-size:.68rem;color:var(--green);opacity:.75;margin-top:3px">Unlocks HSK 1–6</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;font-size:.68rem;color:var(--muted)">
-          <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>HSK 1–6 complete (1,500+ characters)</div>
-          <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>Progress sync across all devices</div>
-          <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>One-time payment, no subscription</div>
+        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:14px">
+          <p style="font-size:.75rem;color:var(--muted);line-height:1.55;margin:0 0 8px">Help keep Shuazi alive (and me awake 😅) — grab us a sweet bubble tea and unlock:</p>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted)">
+            <div>• HSK 1–6 — all 1,500+ characters, forever</div>
+            <div>• Cross-device sync — pick up where you left off</div>
+            <div>• Built-in translator with word segmentation — understand real sentence structure</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <img src="./images/bubbletea-brown.png" alt="" style="height:36px;width:auto;flex-shrink:0"/>
+            <span style="font-size:.8rem;font-weight:700;color:var(--muted);flex-shrink:0">×</span>
+            <button class="bmc-qty bmc-qty-active" data-qty="1" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--green);background:var(--green-bg);color:var(--green);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0">1</button>
+            <button class="bmc-qty" data-qty="2" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0">2</button>
+            <button class="bmc-qty" data-qty="3" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0">3</button>
+            <input id="bubbleQtyCustom" type="number" min="1" max="100" value="1" style="width:52px;height:36px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;text-align:center;padding:0;outline:none;-moz-appearance:textfield;flex-shrink:0"/>
+          </div>
+          <button id="upgradeBannerBtn" style="padding:13px;border-radius:12px;background:var(--green);border:none;color:#fff;font-size:.88rem;font-weight:800;cursor:pointer;width:100%;letter-spacing:-.01em">
+            <span id="bubbleCTAText">Support · €2</span>
+          </button>
         </div>
-        <button id="upgradeBannerBtn" style="padding:11px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.82rem;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px"><span>Buy me a bubbletea</span><img src="./images/bubbletea.png" alt="€1.99" style="height:30px;width:auto;display:block;margin:-8px 0"/></button>
       </div>
     </div>` : ''}
 
@@ -969,10 +982,46 @@ export function renderProfile() {
   `;
 
   if (state.userPlan !== 'pro') {
+    let bubbleQty = 1;
+    const PRICE = 2;
+    const ctaEl       = container.querySelector('#bubbleCTAText');
+    const qtyBtns     = container.querySelectorAll('.bmc-qty');
+    const customInput = container.querySelector('#bubbleQtyCustom');
+
+    const updateBubbleQty = (qty, fromCustom = false) => {
+      bubbleQty = qty;
+      const total = qty * PRICE;
+      if (ctaEl) ctaEl.textContent = `Support · €${total}`;
+      qtyBtns.forEach(b => {
+        const active = !fromCustom && Number(b.dataset.qty) === qty;
+        b.style.border     = active ? '1.5px solid var(--green)' : '1.5px solid var(--bdr)';
+        b.style.background = active ? 'var(--green-bg)' : 'var(--surf)';
+        b.style.color      = active ? 'var(--green)' : 'var(--muted)';
+      });
+      if (customInput) {
+        customInput.style.border     = fromCustom ? '1.5px solid var(--green)' : '1.5px solid var(--bdr)';
+        customInput.style.background = fromCustom ? 'var(--green-bg)' : 'var(--surf)';
+        customInput.style.color      = fromCustom ? 'var(--green)' : 'var(--muted)';
+      }
+    };
+
+    qtyBtns.forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      if (customInput) customInput.value = b.dataset.qty;
+      updateBubbleQty(Number(b.dataset.qty), false);
+    }));
+
+    customInput?.addEventListener('input', () => {
+      let v = parseInt(customInput.value, 10);
+      if (isNaN(v)) return;
+      if (v > 100) { v = 100; customInput.value = 100; }
+      if (v >= 1) updateBubbleQty(v, true);
+    });
+
     container.querySelector('#upgradeBannerBtn')?.addEventListener('click', () => {
       if (!state.supaUser) { container.querySelector('#authEmail')?.focus(); return; }
       gtag('event', 'upgrade_to_pro_click');
-      startCheckout();
+      startCheckout(bubbleQty);
     });
   }
 
