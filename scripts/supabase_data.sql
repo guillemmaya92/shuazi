@@ -147,3 +147,34 @@ create table word_phrase (
     id_phrase  int not null references phrases(id),
     primary key (id_word, id_phrase)
 );
+
+CREATE TABLE pos_tags (
+    pos VARCHAR(5) PRIMARY KEY,
+    description VARCHAR(100) NOT NULL
+);
+
+INSERT INTO pos_tags (pos, description) VALUES
+('u',  'Interjection'),
+('y',  'Conjunction'),
+('r',  'Adverb'),
+('v',  'Verb'),
+('p',  'Pronoun'),
+('d',  'Determiner'),
+('q',  'Quantifier'),
+('cc', 'Coordinating Conjunction'),
+('n',  'Noun'),
+('a',  'Adjective'),
+('m',  'Numeral'),
+('f',  'Punctuation'),
+('qt', 'Temporal Quantifier'),
+('t',  'Particle'),
+('vn', 'Nominalized Verb'),
+('mq', 'Quantitative Modifier'),
+('b',  'Relative Determiner'),
+('g',  'Symbol or Letter'),
+('ad', 'Adverb/Adjective'),
+('k',  'Abbreviation'),
+('s',  'Preposition'),
+('tg', 'Temporal Marker'),
+('ns', 'Place Name'),
+('nz', 'Proper Name');

@@ -17,6 +17,7 @@ export const state = {
   activeStatuses:  new Set(['left', 'know', 'review']),
   gridSort:      'pinyin',
   gridSearch:    '',
+  groupsContent: 'characters',
   slangDeck:     [],
   syncTimer:     null,
 };

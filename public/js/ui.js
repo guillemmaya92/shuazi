@@ -2,7 +2,7 @@ import { supa } from './config.js';
 import { state } from './state.js';
 import { saveState } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
-import { buildDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
+import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
 import { initTranslator } from './translator.js';
 
 /* ── GROUPS ── */
@@ -11,6 +11,7 @@ let radicalsCollapsed = true;
 let activeRadical = null;
 let componentsCollapsed = true;
 let activeComponent = null; // component id
+const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6]);
 
 export function renderGroups() {
   const container = document.getElementById('groups-scroll');
@@ -34,15 +35,14 @@ export function renderGroups() {
   if (state.RADICALS?.length) {
     let sortedRadicals = [...state.RADICALS];
     if (q) {
-      const exact = q.startsWith('"') && q.endsWith('"') && q.length > 2;
-      const term = exact ? q.slice(1, -1) : q;
-      sortedRadicals = sortedRadicals.filter(r =>
-        r.radical.includes(term) ||
-        (exact
-          ? normalizePinyin(r.pinyin) === normalizePinyin(term)
-          : normalizePinyin(r.pinyin).includes(normalizePinyin(term)) || r.meaning.toLowerCase().includes(term.toLowerCase())
-        )
-      );
+      const exact    = q.startsWith('"') && q.endsWith('"') && q.length > 2;
+      const term     = exact ? q.slice(1, -1) : q;
+      const normTerm = normalizePinyin(term).replace(/\s+/g, '');
+      sortedRadicals = sortedRadicals.filter(r => {
+        const normPinyin = normalizePinyin(r.pinyin ?? '').replace(/\s+/g, '');
+        if (exact) return r.radical === term || normPinyin === normTerm;
+        return r.radical.includes(term) || normPinyin.includes(normTerm);
+      });
     }
 
     const radDiv = document.createElement('div');
@@ -123,15 +123,14 @@ export function renderGroups() {
   if (state.COMPONENTS?.length) {
     let sortedComponents = [...state.COMPONENTS];
     if (q) {
-      const exact = q.startsWith('"') && q.endsWith('"') && q.length > 2;
-      const term = exact ? q.slice(1, -1) : q;
-      sortedComponents = sortedComponents.filter(c =>
-        c.component.includes(term) ||
-        (exact
-          ? normalizePinyin(c.pinyin) === normalizePinyin(term)
-          : normalizePinyin(c.pinyin).includes(normalizePinyin(term)) || c.meaning.toLowerCase().includes(term.toLowerCase())
-        )
-      );
+      const exact    = q.startsWith('"') && q.endsWith('"') && q.length > 2;
+      const term     = exact ? q.slice(1, -1) : q;
+      const normTerm = normalizePinyin(term).replace(/\s+/g, '');
+      sortedComponents = sortedComponents.filter(c => {
+        const normPinyin = normalizePinyin(c.pinyin ?? '').replace(/\s+/g, '');
+        if (exact) return c.component === term || normPinyin === normTerm;
+        return c.component.includes(term) || normPinyin.includes(normTerm);
+      });
     }
 
     const compDiv = document.createElement('div');
@@ -211,13 +210,178 @@ export function renderGroups() {
     if (!compClosed) renderComponentTiles();
   }
 
-  if (state.CHARACTERS?.length) sectionTitle('Characters', 'long-press to mark known / review',
+  if (state.WORDS?.length && state.groupsContent === 'words') sectionTitle('Words', 'long-press to mark known / review',
     `<div class="groups-legend">
        <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
      </div>`);
 
-  levels.forEach(hsk => {
+  if (state.groupsContent === 'words') levels.forEach(hsk => {
+    let wgroup = state.WORDS.filter(w => w.hsk === hsk);
+    if (!wgroup.length) return;
+    if (!state.activeHskLevels.has(hsk)) return;
+    if (q) {
+      const exact    = q.startsWith('"') && q.endsWith('"') && q.length > 2;
+      const term     = exact ? q.slice(1, -1) : q;
+      const normTerm = normalizePinyin(term).replace(/\s+/g, '');
+      wgroup = wgroup.filter(w => {
+        const normPinyin = normalizePinyin(w.pinyin ?? '').replace(/\s+/g, '');
+        if (exact) return w.word === term || normPinyin === normTerm;
+        return w.word.includes(term) || normPinyin.includes(normTerm);
+      });
+    }
+    if (activeRadical) {
+      const radChars = new Set(state.CHARACTERS.filter(c => c.radical === activeRadical).map(c => c.char));
+      wgroup = wgroup.filter(w => [...w.word].some(ch => radChars.has(ch)));
+    }
+    if (activeComponent) {
+      const compSet = state.charsByComponent[activeComponent];
+      if (!compSet) { wgroup = []; }
+      else {
+        const compChars = new Set(state.CHARACTERS.filter(c => compSet.has(c.id)).map(c => c.char));
+        wgroup = wgroup.filter(w => [...w.word].some(ch => compChars.has(ch)));
+      }
+    }
+    if (!wgroup.length) return;
+    if      (state.gridSort === 'pinyin')     wgroup = [...wgroup].sort((a, b) => (a.pinyin ?? '').localeCompare(b.pinyin ?? ''));
+    else if (state.gridSort === 'productive') wgroup = [...wgroup].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
+    else if (state.gridSort === 'coverage')   wgroup = [...wgroup].sort((a, b) => (b.coverage   ?? 0) - (a.coverage   ?? 0));
+    else if (state.gridSort === 'stroke')     wgroup = [...wgroup].sort((a, b) => (a.stroke      ?? 0) - (b.stroke      ?? 0));
+    else                                      wgroup = [...wgroup].sort((a, b) => a.id - b.id);
+
+    const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
+    const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill' };
+    const isLocked    = state.userPlan === 'free' && !isAvailable(hsk);
+    const isWCollapsed = (q || activeRadical || activeComponent) ? false : collapsedWordGroups.has(hsk);
+    const wKnownCount = wgroup.filter(w => state.known.has(w.word)).length;
+    const wPct = wgroup.length ? Math.round(wKnownCount / wgroup.length * 100) : 0;
+
+    const wdiv = document.createElement('div');
+    wdiv.className = 'hsk-group';
+    wdiv.innerHTML = `
+      <div class="hsk-group-header" ${isLocked ? 'style="opacity:.5;pointer-events:none"' : ''}>
+        <div class="hsk-group-label">
+          <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
+          ${isLocked
+            ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : 'Sign up'}</span>`
+            : `<span class="count">${wKnownCount}/${wgroup.length} known</span>`
+          }
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="hsk-prog-bar"><div class="hsk-prog-fill ${fillClass[hsk]}" style="width:${wPct}%"></div></div>
+          <svg class="chevron ${isWCollapsed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="char-grid-wrap ${isWCollapsed ? 'collapsed' : ''}"><div class="char-grid" id="wgrid-${hsk}"></div></div>
+    `;
+    container.appendChild(wdiv);
+
+    const wheader = wdiv.querySelector('.hsk-group-header');
+    const wwrap   = wdiv.querySelector('.char-grid-wrap');
+    const wgrid   = wdiv.querySelector(`#wgrid-${hsk}`);
+    const wchev   = wdiv.querySelector('.chevron');
+
+    function renderWordTiles() {
+      if (isLocked) {
+        wgrid.innerHTML = `
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">HSK ${hsk} is available with shuazi Pro</p>
+          </div>`;
+        return;
+      }
+      wgroup.forEach(word => {
+        const tile = document.createElement('button');
+        const len = [...(word.word || '')].length;
+        const fs = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.68rem';
+        const isKnown  = state.known.has(word.word);
+        const isRepaso = state.unknown.has(word.word);
+        tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
+        tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
+        tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp">${word.pinyin ?? ''}</div>
+          <div class="toggle-btn">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="2,6 5,9 10,3"/>
+            </svg>
+          </div>`;
+
+        let pressTimer = null;
+        function startPress() {
+          pressTimer = setTimeout(() => {
+            pressTimer = null;
+            if (state.unknown.has(word.word)) {
+              state.unknown.delete(word.word);
+              tile.classList.remove('repaso');
+              if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
+            } else if (state.known.has(word.word)) {
+              state.known.delete(word.word);
+              state.unknown.add(word.word);
+              tile.classList.remove('known');
+              tile.classList.add('repaso');
+              if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
+            } else {
+              state.known.add(word.word);
+              tile.classList.add('known');
+              state.deck = state.deck.filter(c => c.char !== word.word);
+            }
+            saveState();
+            const newKnownCount = wgroup.filter(w => state.known.has(w.word)).length;
+            const newPct = wgroup.length ? Math.round(newKnownCount / wgroup.length * 100) : 0;
+            wdiv.querySelector('.count').textContent = `${newKnownCount}/${wgroup.length} known`;
+            wdiv.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+            const _f = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
+            const _k = _f.filter(w => state.known.has(w.word)).length;
+            const _r = _f.filter(w => state.unknown.has(w.word)).length;
+            document.getElementById('vKnown').textContent  = _k;
+            document.getElementById('vRepaso').textContent = _r;
+            document.getElementById('vRest').textContent   = _f.length - _k - _r;
+            const pKnown = document.getElementById('p-known');
+            if (pKnown) {
+              const total = _f.length;
+              const pct2 = total ? Math.min(100, Math.round(_k / total * 100)) : 0;
+              pKnown.textContent = _k;
+              document.getElementById('p-review').textContent = _r;
+              document.getElementById('p-left').textContent   = total - _k - _r;
+              document.getElementById('p-pct').textContent    = pct2 + '%';
+              document.getElementById('p-bar').style.width    = pct2 + '%';
+            }
+            if (navigator.vibrate) navigator.vibrate(30);
+          }, 450);
+        }
+        function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+
+        tile.addEventListener('pointerdown',   e => { e.stopPropagation(); startPress(); });
+        tile.addEventListener('pointerup',     () => { if (pressTimer) { cancelPress(); openWordModal(word); } });
+        tile.addEventListener('pointercancel', cancelPress);
+        tile.addEventListener('pointermove',   e => { if (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6) cancelPress(); });
+        tile.addEventListener('contextmenu',   e => e.preventDefault());
+        wgrid.appendChild(tile);
+      });
+    }
+
+    wheader.addEventListener('click', () => {
+      if (collapsedWordGroups.has(hsk)) {
+        collapsedWordGroups.delete(hsk);
+        wwrap.classList.remove('collapsed');
+        wchev.classList.add('open');
+        if (!wgrid.childElementCount) renderWordTiles();
+      } else {
+        collapsedWordGroups.add(hsk);
+        wwrap.classList.add('collapsed');
+        wchev.classList.remove('open');
+      }
+    });
+
+    if (!isWCollapsed) renderWordTiles();
+  });
+
+  if (state.groupsContent === 'characters' && state.CHARACTERS?.length) sectionTitle('Characters', 'long-press to mark known / review',
+    `<div class="groups-legend">
+       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
+     </div>`);
+
+  if (state.groupsContent === 'characters') levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
     if (!state.activeHskLevels.has(hsk)) return;
@@ -517,6 +681,32 @@ function openComponentModal(comp) {
     <div class="words-list">${charsHTML}</div>
   `;
   backdrop.classList.add('open');
+}
+
+async function openWordModal(word) {
+  const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
+
+  modalContent.innerHTML = `
+    <div class="info-row" style="grid-template-columns:1fr 1fr">
+      <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
+      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">HSK ${word.hsk ?? '?'}</span></div></div>
+      <div class="info-cell full"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div>
+      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
+    </div>
+    <div class="words-title">Phrases</div>
+    <div class="words-list" id="wm-phrases"><div class="word-item" style="color:var(--faint)">Loading…</div></div>
+  `;
+  backdrop.classList.add('open');
+
+  await fetchPhrasesForWord(word.id);
+  const phrasesEl = modalContent.querySelector('#wm-phrases');
+  if (!phrasesEl) return;
+  const phrases = state.phrasesByWord[word.id] || [];
+  phrasesEl.innerHTML = phrases.length === 0
+    ? '<div class="phrase-item" style="color:var(--faint)">No phrases found</div>'
+    : phrases.map(p =>
+        `<div class="phrase-item"><span class="wp-hanzi">${p.phrase}</span><span class="wp-pinyin">${p.pinyin ?? ''}</span><span class="wp-meaning">${p.meaning ?? ''}</span></div>`
+      ).join('');
 }
 
 const modalSheet = document.getElementById('modal');
@@ -827,14 +1017,21 @@ export function renderProfile() {
   const levels = [1, 2, 3, 4, 5, 6];
 
   function computeStats() {
+    if (state.groupsContent === 'words') {
+      const filtered = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
+      const total   = filtered.length;
+      const knownN  = filtered.filter(w => state.known.has(w.word)).length;
+      const reviewN = filtered.filter(w => state.unknown.has(w.word)).length;
+      const leftN   = total - knownN - reviewN;
+      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.coverage ?? 0), 0);
+      const pct      = Math.min(100, Math.round(knownCov * 100));
+      return { total, knownN, reviewN, leftN, pct };
+    }
     const filtered = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
     const total    = filtered.length;
     const knownN   = filtered.filter(c => state.known.has(c.char)).length;
     const reviewN  = filtered.filter(c => state.unknown.has(c.char)).length;
     const leftN    = total - knownN - reviewN;
-    // coverage is each char's absolute share of typical Chinese text, so the
-    // overall progress is simply the summed coverage of known chars (× 100).
-    // It reflects all known chars regardless of the active HSK filter.
     const knownCov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
     const pct = Math.min(100, Math.round(knownCov * 100));
     return { total, knownN, reviewN, leftN, pct };
@@ -847,6 +1044,9 @@ export function renderProfile() {
     container.querySelector('#p-left').textContent   = leftN;
     container.querySelector('#p-pct').textContent    = pct + '%';
     container.querySelector('#p-bar').style.width    = pct + '%';
+    container.querySelector('#p-hint').textContent   = state.groupsContent === 'words'
+      ? 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.'
+      : 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.';
   }
 
   const { knownN, reviewN, leftN, pct } = computeStats();
@@ -859,6 +1059,12 @@ export function renderProfile() {
   const statusPills = STATUS_CONFIG.map(({ key, label, cls }) => {
     const active = state.activeStatuses.has(key);
     return `<button class="status-filter-pill ${cls} ${active ? 'active' : ''}" data-status="${key}">${label}</button>`;
+  }).join('');
+
+  const groupsPills = ['characters', 'words'].map(key => {
+    const active = state.groupsContent === key;
+    const label  = key === 'characters' ? 'Characters' : 'Words';
+    return `<button class="status-filter-pill groups-pill ${active ? 'active' : ''}" data-groups="${key}">${label}</button>`;
   }).join('');
 
   const filterPills = levels.map(hsk => {
@@ -915,6 +1121,12 @@ export function renderProfile() {
 
   container.innerHTML = `
     <div class="profile-section">
+      <div class="words-title">Game</div>
+      <div class="groups-filter-row">${groupsPills}</div>
+      <p class="filter-hint">Select what to show in the Groups tab.</p>
+    </div>
+
+    <div class="profile-section">
       <div class="words-title">Progress</div>
       <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="info-cell" style="text-align:center">
@@ -936,7 +1148,10 @@ export function renderProfile() {
           <div class="lbl" id="p-pct">${pct}%</div>
         </div>
         <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
-        <p style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.</p>
+        <p id="p-hint" style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">${state.groupsContent === 'words'
+          ? 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.'
+          : 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.'
+        }</p>
       </div>
     </div>
 
@@ -961,7 +1176,7 @@ export function renderProfile() {
           <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted)">
             <div>• HSK 1–6 — all 1,500+ characters, forever</div>
             <div>• Cross-device sync — pick up where you left off</div>
-            <div>• Built-in translator with word segmentation — understand real sentence structure</div>
+            <div>• Built-in translator — with word segmentation</div>
           </div>
           <div style="display:flex;align-items:center;gap:7px">
             <img src="./images/bubbletea-brown.png" alt="" style="height:36px;width:auto;flex-shrink:0"/>
@@ -1075,6 +1290,12 @@ export function renderProfile() {
     });
   }
 
+  const rebuildDeck = () => {
+    state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
+    render();
+    updateStats();
+  };
+
   container.querySelectorAll('.hsk-filter-pill:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => {
       const hsk = +btn.dataset.hsk;
@@ -1083,13 +1304,11 @@ export function renderProfile() {
       } else {
         state.activeHskLevels.add(hsk); btn.classList.add('active');
       }
-      state.deck = buildDeck(state.CHARACTERS);
-      render();
-      updateStats();
+      rebuildDeck();
     });
   });
 
-  container.querySelectorAll('.status-filter-pill').forEach(btn => {
+  container.querySelectorAll('[data-status]').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.status;
       if (state.activeStatuses.has(key)) {
@@ -1097,9 +1316,19 @@ export function renderProfile() {
       } else {
         state.activeStatuses.add(key); btn.classList.add('active');
       }
-      state.deck = buildDeck(state.CHARACTERS);
+      rebuildDeck();
+    });
+  });
+
+  container.querySelectorAll('[data-groups]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.groupsContent === btn.dataset.groups) return;
+      state.groupsContent = btn.dataset.groups;
+      container.querySelectorAll('[data-groups]').forEach(b => b.classList.toggle('active', b.dataset.groups === state.groupsContent));
+      state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
       render();
       updateStats();
+      renderGroups();
     });
   });
 }
@@ -1197,11 +1426,12 @@ function attachPhraseSwipe(cardEl, phrase) {
 }
 
 /* ── SORT & SEARCH ── */
+const SORT_CYCLE  = ['pinyin', 'productive', 'coverage', 'stroke'];
+const SORT_LABELS = { pinyin: 'Pinyin', productive: 'Productive', coverage: 'Coverage', stroke: 'Stroke' };
+
 document.getElementById('sortBtn').onclick = () => {
-  const cycle  = ['pinyin', 'productive', 'coverage', 'stroke'];
-  const labels = { pinyin: 'Pinyin', productive: 'Productive', coverage: 'Coverage', stroke: 'Stroke' };
-  state.gridSort = cycle[(cycle.indexOf(state.gridSort) + 1) % cycle.length];
-  document.getElementById('sortLabel').textContent = labels[state.gridSort];
+  state.gridSort = SORT_CYCLE[(SORT_CYCLE.indexOf(state.gridSort) + 1) % SORT_CYCLE.length];
+  document.getElementById('sortLabel').textContent = SORT_LABELS[state.gridSort];
   renderGroups();
 };
 

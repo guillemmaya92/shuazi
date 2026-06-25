@@ -26,12 +26,14 @@ async function fetchAll(table, columns, orderBy = 'id') {
 
 async function loadData() {
   await window._supabaseReady;
-  const [chars, radicals, slang] = await Promise.all([
+  const [chars, radicals, slang, words] = await Promise.all([
     fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency'),
     fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, coverage'),
-    fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image')
+    fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image'),
+    fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke')
   ]);
   state.CHARACTERS = chars;
+  state.WORDS      = words;
   // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
   state.PHRASES    = slang.map(s => ({
     id:      s.slang,

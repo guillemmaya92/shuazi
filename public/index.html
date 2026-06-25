@@ -255,7 +255,10 @@
       </header>
       <div class="translator-scroll">
         <div id="trOriginalSection" class="tr-section" style="display:none">
-          <div class="words-title">Original text</div>
+          <div class="words-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Original text</span>
+            <button id="trClear" class="tr-section-clear" type="button">Clear</button>
+          </div>
           <div id="trOriginal" class="tr-original-line"></div>
         </div>
         <div id="trZhSection" class="tr-section" style="display:none">

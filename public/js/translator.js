@@ -317,6 +317,7 @@ export function initTranslator() {
   const countEl      = document.getElementById('trCount');
   const originalSection = document.getElementById('trOriginalSection');
   const originalEl   = document.getElementById('trOriginal');
+  const clearBtn     = document.getElementById('trClear');
   const zhSection    = document.getElementById('trZhSection');
   const tokensSection = document.getElementById('trTokensSection');
   const eyeBtn       = document.getElementById('trEye');
@@ -332,6 +333,26 @@ export function initTranslator() {
 
   if (wired) return;
   wired = true;
+
+  let currentSourceText = null;
+
+  // Clear the current result from the screen and remove it from history.
+  clearBtn?.addEventListener('click', async () => {
+    const src = currentSourceText;
+    currentSourceText = null;
+    stopPlayback();
+    hideSections();
+    zhLineEl.textContent   = '';
+    resultEl.innerHTML     = '';
+    originalEl.textContent = '';
+    emptyEl.style.display  = 'none';
+    if (!src) return;
+    if (!state.supaUser) {
+      localHistorySet(localHistoryGet().filter(r => r.source_text !== src));
+    } else {
+      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', src); } catch {}
+    }
+  });
 
   // Listen to the full Chinese sentence.
   if (canSpeak) {
@@ -373,6 +394,7 @@ export function initTranslator() {
 
   // Renders an already-resolved translation: original text, hanzi, tokens.
   function showResult(original, zh, tokens) {
+    currentSourceText = original;
     originalEl.textContent = original;
     originalSection.style.display = original ? '' : 'none';
     zhLineEl.textContent = zh;
@@ -596,21 +618,47 @@ export function initTranslator() {
     return item;
   }
 
+  async function clearPinned() {
+    if (!state.supaUser) {
+      localHistorySet(localHistoryGet().filter(r => !r.pinned));
+    } else {
+      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('pinned', true); } catch {}
+    }
+    loadHistory();
+  }
+
+  async function clearRecents() {
+    if (!state.supaUser) {
+      localHistorySet(localHistoryGet().filter(r => r.pinned));
+    } else {
+      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('pinned', false); } catch {}
+    }
+    loadHistory();
+  }
+
   function renderHistory(rows) {
     rows = rows || [];
     historyList.innerHTML = '';
     const pinned  = rows.filter(r => r.pinned);
     const recents = rows.filter(r => !r.pinned);
-    const section = label => {
+    const section = (label, onClear) => {
       const h = document.createElement('div');
       h.className = 'tr-history-section';
-      h.textContent = label;
+      h.innerHTML = `<span>${label}</span>`;
+      if (onClear) {
+        const btn = document.createElement('button');
+        btn.className = 'tr-section-clear';
+        btn.type = 'button';
+        btn.textContent = 'Clear';
+        btn.addEventListener('click', onClear);
+        h.appendChild(btn);
+      }
       historyList.appendChild(h);
     };
     // Pinned and Recents headers always show; the empty message lives in Recents.
-    section('Pinned');
+    section('Pinned', pinned.length ? clearPinned : null);
     pinned.forEach(r => historyList.appendChild(makeHistoryItem(r)));
-    section('Recents');
+    section('Recents', recents.length ? clearRecents : null);
     if (recents.length) {
       recents.forEach(r => historyList.appendChild(makeHistoryItem(r)));
     } else {

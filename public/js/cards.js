@@ -47,9 +47,9 @@ export function fetchPhrasesForWord(wordId) {
     // 2) fetch those phrases
     const { data } = await supa
       .from('phrases')
-      .select('phrase, pinyin, meaning, count')
+      .select('phrase, pinyin, meaning')
       .in('id', ids)
-      .order('count', { ascending: false });
+      .order('id', { ascending: true });
     state.phrasesByWord[wordId] = (data || []).map(p => ({
       phrase:  p.phrase,
       pinyin:  p.pinyin,
@@ -85,18 +85,62 @@ export function buildDeck(src) {
   return cards;
 }
 
+export function buildWordDeck() {
+  const filtered = state.WORDS
+    .filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk))
+    .map(w => ({ ...w, char: w.word, isWord: true }));
+  const cards = filtered.filter(c => {
+    if (state.known.has(c.char))   return state.activeStatuses.has('know');
+    if (state.unknown.has(c.char)) return state.activeStatuses.has('review');
+    return state.activeStatuses.has('left');
+  });
+  shuffle(cards);
+  return cards;
+}
+
 const deckEl  = document.getElementById('deck');
 const vRest   = document.getElementById('vRest');
 const vKnown  = document.getElementById('vKnown');
 const vRepaso = document.getElementById('vRepaso');
 
 export function stats() {
-  const filtered = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
-  const knownN   = filtered.filter(c => state.known.has(c.char)).length;
-  const reviewN  = filtered.filter(c => state.unknown.has(c.char)).length;
-  vRest.textContent   = filtered.length - knownN - reviewN;
-  vKnown.textContent  = knownN;
-  vRepaso.textContent = reviewN;
+  if (state.groupsContent === 'words') {
+    const filtered = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
+    const knownN   = filtered.filter(w => state.known.has(w.word)).length;
+    const reviewN  = filtered.filter(w => state.unknown.has(w.word)).length;
+    const leftN    = filtered.length - knownN - reviewN;
+    vRest.textContent   = leftN;
+    vKnown.textContent  = knownN;
+    vRepaso.textContent = reviewN;
+    const pKnown = document.getElementById('p-known');
+    if (pKnown) {
+      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.coverage ?? 0), 0);
+      const pct = Math.min(100, Math.round(knownCov * 100));
+      pKnown.textContent = knownN;
+      document.getElementById('p-review').textContent = reviewN;
+      document.getElementById('p-left').textContent   = leftN;
+      document.getElementById('p-pct').textContent    = pct + '%';
+      document.getElementById('p-bar').style.width    = pct + '%';
+    }
+  } else {
+    const filtered = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
+    const knownN   = filtered.filter(c => state.known.has(c.char)).length;
+    const reviewN  = filtered.filter(c => state.unknown.has(c.char)).length;
+    const leftN    = filtered.length - knownN - reviewN;
+    vRest.textContent   = leftN;
+    vKnown.textContent  = knownN;
+    vRepaso.textContent = reviewN;
+    const pKnown = document.getElementById('p-known');
+    if (pKnown) {
+      const cov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
+      const pct = Math.min(100, Math.round(cov * 100));
+      pKnown.textContent = knownN;
+      document.getElementById('p-review').textContent = reviewN;
+      document.getElementById('p-left').textContent   = leftN;
+      document.getElementById('p-pct').textContent    = pct + '%';
+      document.getElementById('p-bar').style.width    = pct + '%';
+    }
+  }
   saveState();
   renderGroups();
 }
@@ -211,14 +255,128 @@ function makeCard(card, isStack) {
   return el;
 }
 
+function makeWordCard(card, isStack) {
+  const el = document.createElement('article');
+  el.className = 'card ' + (isStack ? 'stack-under' : 'top');
+  el.dataset.page = '0';
+
+  const wordLen  = [...card.char].length;
+  const fontSize = wordLen === 1 ? null : wordLen === 2 ? '100px' : wordLen === 3 ? '76px' : '58px';
+
+  const wordCharsHTML = [...card.char].map(ch => {
+    const c = state.CHARACTERS.find(x => x.char === ch);
+    return c
+      ? `<span class="char-chip"><span class="cc-glyph">${ch}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</span>`
+      : `<span class="char-chip"><span class="cc-glyph">${ch}</span></span>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="tint tint-l"></div>
+    <div class="tint tint-r"></div>
+    <div class="tint tint-u"></div>
+    <div class="chip chip-l">Left</div>
+    <div class="chip chip-r">Known</div>
+    <div class="chip chip-u">Review</div>
+    <div class="story-bar">
+      <div class="seg active" data-i="0"></div>
+      <div class="seg"        data-i="1"></div>
+    </div>
+    <div class="tap-zones">
+      <button class="tz tz-left"   tabindex="-1" aria-label="Mark as left"></button>
+      <button class="tz tz-center" tabindex="-1" aria-label="Reveal answer"></button>
+      <button class="tz tz-right"  tabindex="-1" aria-label="More info"></button>
+    </div>
+    <div class="pages" id="pages">
+      <div class="page" style="justify-content:space-between;">
+        <div class="card-top"><span class="prog"></span></div>
+        <div class="hanzi-wrap"><div class="hanzi" ${fontSize ? `style="font-size:${fontSize}"` : ''}>${card.char}</div></div>
+        <div class="answer-area" id="aa"></div>
+        <div class="card-bottom">
+          <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+          </div>
+        </div>
+      </div>
+      <div class="page info-page" style="padding-top:44px">
+        <div class="info-row" style="grid-template-columns:1fr 1fr">
+          <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+          <div class="info-cell full"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
+          <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning ?? '—'}</div></div>
+          <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const pages = el.querySelector('#pages');
+  const segs  = el.querySelectorAll('.seg');
+  const tzL   = el.querySelector('.tz-left');
+  const tzC   = el.querySelector('.tz-center');
+  const tzR   = el.querySelector('.tz-right');
+  const aa    = el.querySelector('#aa');
+
+  const phrasesEl = el.querySelector('.word-phrases-list');
+
+  function renderPhrases() {
+    const cached = state.phrasesByWord[card.id];
+    if (cached === undefined) {
+      phrasesEl.innerHTML = '<span style="color:var(--faint);font-size:.75rem">Loading…</span>';
+      fetchPhrasesForWord(card.id).then(renderPhrases);
+      return;
+    }
+    const top3 = cached.slice(0, 3);
+    phrasesEl.innerHTML = top3.length
+      ? top3.map(p => `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-top:1px solid var(--bdr)"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span></div>`).join('')
+      : '<span style="color:var(--faint);font-size:.75rem">No phrases found</span>';
+  }
+
+  function goPage(n) {
+    el.dataset.page = String(n);
+    pages.style.transform = `translateX(-${n * 100}%)`;
+    segs.forEach((s, i) => s.classList.toggle('active', i === n));
+    if (n === 1) renderPhrases();
+  }
+
+  tzL.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
+  tzR.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c < PAGES - 1) goPage(c + 1); });
+  tzC.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (+el.dataset.page !== 0) return;
+    const tapHint = el.querySelector('#tap-hint');
+    if (el.dataset.answer === '1') {
+      el.dataset.answer = '0'; aa.innerHTML = '';
+      tapHint.style.visibility = 'visible';
+    } else {
+      el.dataset.answer = '1';
+      tapHint.style.visibility = 'hidden';
+      await fetchPhrasesForWord(card.id);
+      const phrase = (state.phrasesByWord[card.id] || [])[0];
+      const exHTML = phrase
+        ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${phrase.phrase}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${phrase.pinyin ?? ''}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${phrase.meaning ?? ''}</span>`
+        : '—';
+      aa.innerHTML = `<div class="answer-block">
+        <div class="ans-pinyin">${card.pinyin ?? ''}</div>
+        <div class="ans-meaning">${card.meaning ?? ''}</div>
+        <div class="ans-example"><span>Example</span>${exHTML}</div>
+        <div class="ans-hint">Tap right → for more info</div>
+      </div>`;
+    }
+  });
+
+  if (!isStack) attachDrag(el);
+  return el;
+}
+
 export function render() {
   deckEl.innerHTML = ''; stats();
   if (state.deck.length === 0) { showDone(); return; }
-  if (state.deck.length > 1) deckEl.appendChild(makeCard(state.deck[1], true));
-  deckEl.appendChild(makeCard(state.deck[0], false));
-  // Warm the cache for the visible cards so reveal/info feels instant
-  if (state.deck[0]) fetchWordsForChar(state.deck[0]);
-  if (state.deck[1]) fetchWordsForChar(state.deck[1]);
+  const factory = (c, stack) => c.isWord ? makeWordCard(c, stack) : makeCard(c, stack);
+  if (state.deck.length > 1) deckEl.appendChild(factory(state.deck[1], true));
+  deckEl.appendChild(factory(state.deck[0], false));
+  if (state.deck[0]) state.deck[0].isWord ? fetchPhrasesForWord(state.deck[0].id) : fetchWordsForChar(state.deck[0]);
+  if (state.deck[1]) state.deck[1].isWord ? fetchPhrasesForWord(state.deck[1].id) : fetchWordsForChar(state.deck[1]);
 }
 
 export function classifyKnown() {
@@ -269,8 +427,8 @@ function showDone() {
       <button class="pill" id="pA">Reset all</button>
     </div>`;
   deckEl.appendChild(el);
-  el.querySelector('#pW').onclick = () => { state.deck = buildDeck(state.CHARACTERS); render(); };
-  el.querySelector('#pA').onclick = () => init(state.CHARACTERS, true);
+  el.querySelector('#pW').onclick = () => { state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS); render(); };
+  el.querySelector('#pA').onclick = () => state.groupsContent === 'words' ? (state.deck = buildWordDeck(), render()) : init(state.CHARACTERS, true);
 }
 
 function attachDrag(cardEl) {
