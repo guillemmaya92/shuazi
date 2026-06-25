@@ -6,9 +6,29 @@ import { buildDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
 
-// Paginated fetch — Supabase caps each request at 1000 rows, so page through.
+// Paginated fetch — Supabase caps each request at 1000 rows. Grab the row count
+// first, then fire every page in parallel (≈2 round-trips instead of N
+// sequential ones). Falls back to sequential paging if the count is unavailable.
 async function fetchAll(table, columns, orderBy = 'id') {
   const pageSize = 1000;
+
+  const { count, error: cErr } = await supa
+    .from(table)
+    .select('*', { count: 'exact', head: true });
+
+  if (!cErr && count != null) {
+    const pages = Math.max(1, Math.ceil(count / pageSize));
+    const results = await Promise.all(
+      Array.from({ length: pages }, (_, p) =>
+        supa.from(table).select(columns).order(orderBy).range(p * pageSize, (p + 1) * pageSize - 1)
+      )
+    );
+    const all = [];
+    for (const r of results) { if (r.error) throw r.error; all.push(...r.data); }
+    return all;
+  }
+
+  // Fallback: sequential paging when no count header is returned.
   let from = 0, all = [];
   for (;;) {
     const { data, error } = await supa
@@ -24,18 +44,26 @@ async function fetchAll(table, columns, orderBy = 'id') {
   return all;
 }
 
-async function loadData() {
+// Critical path for first paint: just the characters. The first card only needs
+// CHARACTERS, so nothing else is allowed to block it.
+async function loadChars() {
   await window._supabaseReady;
-  const [chars, radicals, slang, words] = await Promise.all([
-    fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency'),
+  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency');
+  state.CHARACTERS = chars;
+  state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
+}
+
+// Everything else (radicals, slang, words, components) streams in behind the
+// first card and only matters for the Groups grid / card info pages.
+async function loadRest() {
+  const [radicals, slang, words] = await Promise.all([
     fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, coverage'),
     fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image'),
     fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke')
   ]);
-  state.CHARACTERS = chars;
-  state.WORDS      = words;
+  state.WORDS   = words;
   // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
-  state.PHRASES    = slang.map(s => ({
+  state.PHRASES = slang.map(s => ({
     id:      s.slang,
     pinyin:  s.pinyin,
     literal: s.literal,
@@ -43,8 +71,7 @@ async function loadData() {
     origin:  s.origin,
     image:   s.image,
   }));
-  state.RADICALS   = radicals;
-  state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
+  state.RADICALS = radicals;
 
   // Components are optional — a failure here must never block chars/cards.
   try {
@@ -89,13 +116,23 @@ if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
   }, 2000);
 }
 
-loadData().then(async () => {
-  // Render immediately after data loads — don't block on auth for LCP
+loadChars().then(() => {
+  // Paint the first card the instant characters are available — nothing else
+  // is on the critical path.
   init(state.CHARACTERS);
-  renderGroups();
   initPwaInstall();
 
-  // Auth check in background: updates deck/progress once session is known
+  // Radicals / slang / words / components stream in behind the first paint.
+  const restReady = loadRest().then(() => {
+    renderGroups();
+    // Refresh the card so the radical pinyin on its info page populates — but
+    // only while the user is in a neutral state, so we never interrupt a swipe
+    // or a revealed answer.
+    const top = document.querySelector('#deck .card.top');
+    if (top && top.dataset.page === '0' && top.dataset.answer !== '1') render();
+  });
+
+  // Auth check in background: updates deck/progress once session is known.
   window._supabaseReady.then(async () => {
     const { data: { session } } = await supa.auth.getSession();
     if (session) {
@@ -103,6 +140,7 @@ loadData().then(async () => {
       syncUserProfile();
       await loadUserPlan();
       await loadProgressFromSupabase();
+      await restReady;
       state.deck = buildDeck(state.CHARACTERS);
       render();
       renderGroups();
@@ -110,28 +148,30 @@ loadData().then(async () => {
     }
   });
 
-  await window._supabaseReady;
-  supa.auth.onAuthStateChange(async (event, session) => {
-    state.supaUser = session?.user ?? null;
-    if (event === 'SIGNED_IN') {
-      syncUserProfile();
-      await loadUserPlan();
-      await loadProgressFromSupabase();
-      state.deck = buildDeck(state.CHARACTERS);
-      render();
-      stats();
-      renderGroups();
-      renderProfile();
-    }
-    if (event === 'SIGNED_OUT') {
-      state.userPlan = 'free';
-      state.known.clear(); state.unknown.clear();
-      state.deck = buildDeck(state.CHARACTERS);
-      render();
-      stats();
-      renderGroups();
-      renderProfile();
-    }
+  window._supabaseReady.then(() => {
+    supa.auth.onAuthStateChange(async (event, session) => {
+      state.supaUser = session?.user ?? null;
+      if (event === 'SIGNED_IN') {
+        syncUserProfile();
+        await loadUserPlan();
+        await loadProgressFromSupabase();
+        await restReady;
+        state.deck = buildDeck(state.CHARACTERS);
+        render();
+        stats();
+        renderGroups();
+        renderProfile();
+      }
+      if (event === 'SIGNED_OUT') {
+        state.userPlan = 'free';
+        state.known.clear(); state.unknown.clear();
+        state.deck = buildDeck(state.CHARACTERS);
+        render();
+        stats();
+        renderGroups();
+        renderProfile();
+      }
+    });
   });
 }).catch(err => {
   console.error('Failed to load data:', err);
