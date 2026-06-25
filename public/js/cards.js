@@ -190,7 +190,7 @@ function makeCard(card, isStack) {
           <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
           <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
-          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.54rem">HSK ${card.hsk}</span></div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
           <div class="info-cell full"><div class="lbl">Compound words</div><div class="word-phrases-list"></div></div>
         </div>

@@ -112,6 +112,18 @@
 
   <!-- Supabase ready-gate: resolves when the async SDK finishes loading -->
   <script>window._supabaseReady=new Promise(function(r){window._supabaseResolve=r;})</script>
+
+  <!-- Capture the install prompt as early as possible. Chrome (Android/desktop)
+       fires beforeinstallprompt very early in page load — before our ES modules
+       finish downloading — so we stash it here and the PWA module reads it later. -->
+  <script>
+    window._deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window._deferredInstallPrompt = e;
+      window.dispatchEvent(new Event('pwa-prompt-ready'));
+    });
+  </script>
   <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"/>
 
   <!-- Parallelise JS module fetching: browser downloads all modules at once instead of waterfall -->

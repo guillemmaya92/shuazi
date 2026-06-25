@@ -1,5 +1,4 @@
 import http.server
-import socketserver
 import socket
 import ssl
 import os
@@ -54,7 +53,7 @@ def ensure_cert(ip):
 ip = get_local_ip()
 https = ensure_cert(ip)
 
-with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
+with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler) as httpd:
     scheme = 'http'
     if https:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

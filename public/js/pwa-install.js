@@ -13,6 +13,11 @@
 const DISMISS_KEY = 'pwa-install-dismissed';
 const DISMISS_DAYS = 7;
 
+// Dev preview: add ?pwa=test (or ?pwa=ios / ?pwa=android) to the URL to force the
+// banner and instruction sheets in any environment — even on localhost or after
+// it's been dismissed — purely for visual testing.
+const DEBUG = new URLSearchParams(location.search).get('pwa');
+
 const isStandalone = () =>
   window.matchMedia?.('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
@@ -21,6 +26,8 @@ const isIOS = () =>
   /iphone|ipad|ipod/i.test(navigator.userAgent) ||
   // iPadOS 13+ reports as desktop Safari but is touch-capable.
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+const isAndroid = () => /android/i.test(navigator.userAgent);
 
 const isInStandaloneCapableIOSBrowser = () =>
   isIOS() && 'standalone' in window.navigator; // Safari (Chrome/Firefox iOS lack it)
@@ -36,7 +43,7 @@ function rememberDismiss() {
 }
 
 export function initPwaInstall() {
-  if (isStandalone()) return;            // already installed — nothing to do
+  if (isStandalone() && !DEBUG) return;  // already installed — nothing to do
 
   let deferredPrompt = null;
   let banner = null;
@@ -68,7 +75,7 @@ export function initPwaInstall() {
     return banner;
   }
   function showBanner() {
-    if (recentlyDismissed()) return;
+    if (recentlyDismissed() && !DEBUG) return;
     buildBanner();
     requestAnimationFrame(() => banner.classList.add('show'));
   }
@@ -82,6 +89,8 @@ export function initPwaInstall() {
 
   // ── Install action ──
   async function triggerInstall() {
+    if (DEBUG === 'ios')     { showIOSSheet();     return; }   // preview only
+    if (DEBUG === 'android') { showAndroidSheet(); return; }   // preview only
     if (deferredPrompt) {                 // Android / Desktop Chromium
       deferredPrompt.prompt();
       try { await deferredPrompt.userChoice; } catch { /* ignore */ }
@@ -89,27 +98,18 @@ export function initPwaInstall() {
       hideBanner();
       return;
     }
-    if (isIOS()) { showIOSSheet(); return; }  // iOS: manual steps
-    hideBanner();                          // fallback
+    if (isIOS()) { showIOSSheet(); return; }   // iOS: manual steps
+    showAndroidSheet();                         // Android / other: manual steps
   }
 
-  // ── iOS instructions sheet ──
-  function showIOSSheet() {
-    const inSafari = isInStandaloneCapableIOSBrowser();
+  // ── Manual instructions sheet (shared shell) ──
+  function buildSheet(bodyHTML) {
     const backdrop = document.createElement('div');
     backdrop.className = 'pwa-sheet-backdrop';
     backdrop.innerHTML = `
       <div class="pwa-sheet" role="dialog" aria-label="Install instructions">
         <div class="pwa-sheet-title">Install Shuazi</div>
-        ${inSafari ? `
-        <ol class="pwa-sheet-steps">
-          <li><span>Tap the Share button</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg></li>
-          <li><span>Choose “Add to Home Screen”</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></li>
-          <li><span>Tap “Add” to finish</span></li>
-        </ol>` : `
-        <p class="pwa-sheet-note">Open this page in <strong>Safari</strong>, then tap Share → “Add to Home Screen”.</p>`}
+        ${bodyHTML}
         <button class="pwa-sheet-ok" type="button">Got it</button>
       </div>`;
     document.body.appendChild(backdrop);
@@ -119,18 +119,69 @@ export function initPwaInstall() {
     backdrop.querySelector('.pwa-sheet-ok').addEventListener('click', close);
   }
 
+  // iOS / iPadOS: no install event — explain the Share → Add to Home Screen flow.
+  function showIOSSheet() {
+    const inSafari = isInStandaloneCapableIOSBrowser();
+    buildSheet(inSafari ? `
+        <ol class="pwa-sheet-steps">
+          <li><span>Tap the Share button</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg></li>
+          <li><span>Choose “Add to Home Screen”</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></li>
+          <li><span>Tap “Add” to finish</span></li>
+        </ol>` : `
+        <p class="pwa-sheet-note">Open this page in <strong>Safari</strong>, then tap Share → “Add to Home Screen”.</p>`);
+  }
+
+  // Android / other browsers: shown only when the native install event never
+  // arrives — point the user at the browser menu's install option.
+  function showAndroidSheet() {
+    buildSheet(`
+        <ol class="pwa-sheet-steps">
+          <li><span>Open the browser menu</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></li>
+          <li><span>Tap “Install app” / “Add to Home screen”</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></li>
+          <li><span>Confirm to finish</span></li>
+        </ol>`);
+  }
+
   // ── Wire platform events ──
+  // The install event often fires before this module finishes loading, so the
+  // inline script in index.html captures it first. Pick it up if it's waiting.
+  if (window._deferredInstallPrompt) {
+    deferredPrompt = window._deferredInstallPrompt;
+    showBanner();
+  }
+  // …and react to it if it's relayed a moment later.
+  window.addEventListener('pwa-prompt-ready', () => {
+    deferredPrompt = window._deferredInstallPrompt;
+    showBanner();
+  });
+  // Direct listener too, in case this module did load before the event.
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();                   // stop the mini-infobar
     deferredPrompt = e;
+    window._deferredInstallPrompt = e;
     showBanner();
   });
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
+    window._deferredInstallPrompt = null;
     hideBanner();
     rememberDismiss();
   });
 
-  // iOS never fires beforeinstallprompt — show the banner proactively.
-  if (isIOS() && !isStandalone()) showBanner();
+  if (DEBUG) {
+    // Dev preview — force the banner regardless of platform/installability.
+    showBanner();
+  } else if (isIOS()) {
+    // iOS never fires beforeinstallprompt — show the banner proactively.
+    showBanner();
+  } else if (isAndroid()) {
+    // Android: if Chrome never sends the install event (engagement heuristics,
+    // a non-Chromium browser, etc.), still surface a manual-steps banner after a
+    // short grace period so installing is always discoverable.
+    setTimeout(() => { if (!deferredPrompt && !isStandalone()) showBanner(); }, 3500);
+  }
 }
