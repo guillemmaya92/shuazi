@@ -1,4 +1,4 @@
-import { supa, STORE_KEY } from './config.js';
+import { supa, STORE_KEY, SETTINGS_KEY } from './config.js';
 import { state } from './state.js';
 
 export async function syncProgressToSupabase() {
@@ -90,4 +90,55 @@ export function loadState() {
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) { return null; }
+}
+
+// ── User settings (game mode + active filters) ──────────────────────────────
+// Persisted locally for instant restore and, when signed in, mirrored to the
+// `user_settings` table so the config follows the account across devices.
+
+function settingsPayload() {
+  return {
+    game:     state.groupsContent,
+    hsk:      [...state.activeHskLevels],
+    statuses: [...state.activeStatuses],
+  };
+}
+
+export async function syncSettingsToSupabase() {
+  if (!state.supaUser) return;
+  await supa.from('user_settings').upsert({
+    user_id:    state.supaUser.id,
+    game:       state.groupsContent,
+    hsk_levels: [...state.activeHskLevels],
+    statuses:   [...state.activeStatuses],
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+}
+
+// Call whenever the user changes the game mode or a filter. Writes localStorage
+// immediately and debounces the Supabase write.
+export function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsPayload())); } catch (e) {}
+  if (!state.supaUser) return;
+  clearTimeout(state.settingsTimer);
+  state.settingsTimer = setTimeout(syncSettingsToSupabase, 1500);
+}
+
+export async function loadSettingsFromSupabase() {
+  if (!state.supaUser) return;
+  const { data } = await supa
+    .from('user_settings')
+    .select('game, hsk_levels, statuses')
+    .eq('user_id', state.supaUser.id)
+    .maybeSingle();
+  if (!data) {
+    // First sign-in on this account: seed the row from the device's settings.
+    syncSettingsToSupabase();
+    return;
+  }
+  if (data.game === 'words' || data.game === 'characters') state.groupsContent = data.game;
+  if (Array.isArray(data.hsk_levels) && data.hsk_levels.length) state.activeHskLevels = new Set(data.hsk_levels);
+  if (Array.isArray(data.statuses) && data.statuses.length)     state.activeStatuses  = new Set(data.statuses);
+  // Mirror back to localStorage so the next synchronous boot already has them.
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsPayload())); } catch (e) {}
 }

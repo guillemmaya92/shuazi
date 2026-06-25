@@ -1,7 +1,16 @@
-// Restore the last-used game mode synchronously so the boot sequence can put the
-// matching data (chars vs words) on the critical path for the first card.
-let _initialMode = 'characters';
-try { if (localStorage.getItem('shuazi-mode') === 'words') _initialMode = 'words'; } catch (e) {}
+// Restore the saved user settings (game mode + active filters) synchronously so
+// the boot sequence can put the matching data on the critical path and build the
+// first deck with the right filters. For signed-in users these are refreshed from
+// Supabase on login (see loadSettingsFromSupabase).
+let _initialMode     = 'characters';
+let _initialHsk      = [1, 2, 3, 4, 5, 6];
+let _initialStatuses = ['left', 'know', 'review'];
+try {
+  const s = JSON.parse(localStorage.getItem('shuazi-settings') || '{}');
+  if (s.game === 'words' || s.game === 'characters') _initialMode = s.game;
+  if (Array.isArray(s.hsk) && s.hsk.length)          _initialHsk = s.hsk;
+  if (Array.isArray(s.statuses) && s.statuses.length) _initialStatuses = s.statuses;
+} catch (e) {}
 
 export const state = {
   CHARACTERS:    [],
@@ -18,11 +27,12 @@ export const state = {
   unknown:       new Set(),
   supaUser:      null,
   userPlan:      'free',
-  activeHskLevels: new Set([1, 2, 3, 4, 5, 6]),
-  activeStatuses:  new Set(['left', 'know', 'review']),
+  activeHskLevels: new Set(_initialHsk),
+  activeStatuses:  new Set(_initialStatuses),
   gridSort:      'pinyin',
   gridSearch:    '',
   groupsContent: _initialMode,
   slangDeck:     [],
   syncTimer:     null,
+  settingsTimer: null,
 };

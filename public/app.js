@@ -1,7 +1,7 @@
 import { supa } from './js/config.js';
 import { state } from './js/state.js';
 import { loadUserPlan, syncUserProfile } from './js/auth.js';
-import { loadProgressFromSupabase, loadState } from './js/progress.js';
+import { loadProgressFromSupabase, loadSettingsFromSupabase, loadState } from './js/progress.js';
 import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
@@ -174,6 +174,7 @@ loadCritical(bootMode).then(() => {
       syncUserProfile();
       await loadUserPlan();
       await loadProgressFromSupabase();
+      await loadSettingsFromSupabase();
       await restReady;
       state.deck = rebuildDeck();
       render();
@@ -189,6 +190,7 @@ loadCritical(bootMode).then(() => {
         syncUserProfile();
         await loadUserPlan();
         await loadProgressFromSupabase();
+        await loadSettingsFromSupabase();
         await restReady;
         state.deck = rebuildDeck();
         render();

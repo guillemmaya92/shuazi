@@ -1,6 +1,6 @@
-import { supa, MODE_KEY } from './config.js';
+import { supa } from './config.js';
 import { state } from './state.js';
-import { saveState } from './progress.js';
+import { saveState, saveSettings } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
 import { initTranslator } from './translator.js';
@@ -272,6 +272,7 @@ export function renderGroups() {
           <svg class="chevron ${isWCollapsed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
+      <div class="hsk-full-bar"><div class="hsk-full-bar-fill ${fillClass[hsk]}" style="width:${wPct}%"></div></div>
       <div class="char-grid-wrap ${isWCollapsed ? 'collapsed' : ''}"><div class="char-grid" id="wgrid-${hsk}"></div></div>
     `;
     container.appendChild(wdiv);
@@ -329,6 +330,7 @@ export function renderGroups() {
             const newPct = wgroup.length ? Math.round(newKnownCount / wgroup.length * 100) : 0;
             wdiv.querySelector('.count').textContent = `${newKnownCount}/${wgroup.length} known`;
             wdiv.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+            wdiv.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
             const _f = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
             const _k = _f.filter(w => state.known.has(w.word)).length;
             const _r = _f.filter(w => state.unknown.has(w.word)).length;
@@ -490,6 +492,7 @@ export function renderGroups() {
             const newPct = group.length ? Math.round(newKnownCount / group.length * 100) : 0;
             div.querySelector('.count').textContent = `${newKnownCount}/${group.length} known`;
             div.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+            div.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
             const _f = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
             const _k = _f.filter(c => state.known.has(c.char)).length;
             const _r = _f.filter(c => state.unknown.has(c.char)).length;
@@ -1304,6 +1307,7 @@ export function renderProfile() {
       } else {
         state.activeHskLevels.add(hsk); btn.classList.add('active');
       }
+      saveSettings();
       rebuildDeck();
     });
   });
@@ -1316,6 +1320,7 @@ export function renderProfile() {
       } else {
         state.activeStatuses.add(key); btn.classList.add('active');
       }
+      saveSettings();
       rebuildDeck();
     });
   });
@@ -1324,7 +1329,7 @@ export function renderProfile() {
     btn.addEventListener('click', () => {
       if (state.groupsContent === btn.dataset.groups) return;
       state.groupsContent = btn.dataset.groups;
-      try { localStorage.setItem(MODE_KEY, state.groupsContent); } catch (e) {}
+      saveSettings();
       container.querySelectorAll('[data-groups]').forEach(b => b.classList.toggle('active', b.dataset.groups === state.groupsContent));
       state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
       render();
