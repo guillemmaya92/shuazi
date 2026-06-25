@@ -53,7 +53,18 @@ async function loadChars() {
 }
 
 async function loadWords() {
-  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke');
+  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke, pos');
+}
+
+// Small lookup table: part-of-speech code → human-readable description.
+// Shown on the word card's info page, so it's never on the critical path.
+async function loadPosTags() {
+  try {
+    const tags = await fetchAll('pos_tags', 'pos, description', 'pos');
+    state.POS_TAGS = Object.fromEntries(tags.map(t => [t.pos, t.description]));
+  } catch (e) {
+    console.error('pos_tags failed to load (cards unaffected):', e);
+  }
 }
 
 async function loadRadicalsAndSlang() {
@@ -109,6 +120,7 @@ async function loadRest(mode) {
   await Promise.all([
     loadRadicalsAndSlang(),
     loadComponents(),
+    loadPosTags(),
     mode === 'words' ? loadChars() : loadWords(),
   ]);
 }

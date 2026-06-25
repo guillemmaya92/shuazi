@@ -270,6 +270,11 @@ function makeWordCard(card, isStack) {
       : `<span class="char-chip"><span class="cc-glyph">${ch}</span></span>`;
   }).join('');
 
+  const posDesc = state.POS_TAGS?.[card.pos];
+  const posHTML = posDesc
+    ? `<span class="char-chip"><span class="cc-glyph" style="font-size:.82rem">${posDesc}</span></span>`
+    : '<span class="char-chip-empty">—</span>';
+
   el.innerHTML = `
     <div class="tint tint-l"></div>
     <div class="tint tint-r"></div>
@@ -302,7 +307,8 @@ function makeWordCard(card, isStack) {
         <div class="info-row" style="grid-template-columns:1fr 1fr">
           <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
-          <div class="info-cell full"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
+          <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
+          <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning ?? '—'}</div></div>
           <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list"></div></div>
         </div>

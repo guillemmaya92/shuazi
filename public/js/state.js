@@ -18,6 +18,7 @@ export const state = {
   PHRASES:       [],
   RADICALS:      [],
   COMPONENTS:    [],
+  POS_TAGS:      {},
   charsByComponent: {},
   charById:      {},
   wordsByChar:   {},
