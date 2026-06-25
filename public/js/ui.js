@@ -1597,7 +1597,11 @@ function openAccountMenu() {
   };
 
   scrim.addEventListener('click', closeAccount);
-  document.getElementById('accountPanelClose')?.addEventListener('click', closeAccount);
+  document.getElementById('accountPanelClose')?.addEventListener('click', () => {
+    closeAccount();
+    document.body.classList.add('settings-open');
+    document.getElementById('settingsPanel')?.setAttribute('aria-hidden', 'false');
+  });
 
   // Reset progress → confirm sheet.
   document.getElementById('resetBtn').addEventListener('click', () => {
