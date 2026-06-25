@@ -506,6 +506,9 @@ export function init(src, forceNew) {
     state.deck    = saved.deckChars.map(ch => charMap[ch]).filter(Boolean).filter(c => isAvailable(c.hsk));
     state.known   = new Set(saved.known   || []);
     state.unknown = new Set(saved.unknown || []);
+    // A saved deck made entirely of word strings (e.g. left over from words mode)
+    // maps to nothing here — fall back to a fresh build so we never show an empty deck.
+    if (!state.deck.length) state.deck = buildDeck(src);
   } else {
     state.deck = buildDeck(src);
   }

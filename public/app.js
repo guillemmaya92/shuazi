@@ -1,8 +1,8 @@
 import { supa } from './js/config.js';
 import { state } from './js/state.js';
 import { loadUserPlan, syncUserProfile } from './js/auth.js';
-import { loadProgressFromSupabase } from './js/progress.js';
-import { buildDeck, render, init, stats } from './js/cards.js';
+import { loadProgressFromSupabase, loadState } from './js/progress.js';
+import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
 
@@ -44,26 +44,26 @@ async function fetchAll(table, columns, orderBy = 'id') {
   return all;
 }
 
-// Critical path for first paint: just the characters. The first card only needs
-// CHARACTERS, so nothing else is allowed to block it.
+// Granular loaders so the boot sequence can put exactly the right table on the
+// critical path: CHARACTERS for "characters" mode, WORDS for "words" mode.
 async function loadChars() {
-  await window._supabaseReady;
   const chars = await fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency');
   state.CHARACTERS = chars;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
 }
 
-// Everything else (radicals, slang, words, components) streams in behind the
-// first card and only matters for the Groups grid / card info pages.
-async function loadRest() {
-  const [radicals, slang, words] = await Promise.all([
+async function loadWords() {
+  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke');
+}
+
+async function loadRadicalsAndSlang() {
+  const [radicals, slang] = await Promise.all([
     fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, coverage'),
     fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image'),
-    fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke')
   ]);
-  state.WORDS   = words;
+  state.RADICALS = radicals;
   // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
-  state.PHRASES = slang.map(s => ({
+  state.PHRASES  = slang.map(s => ({
     id:      s.slang,
     pinyin:  s.pinyin,
     literal: s.literal,
@@ -71,9 +71,10 @@ async function loadRest() {
     origin:  s.origin,
     image:   s.image,
   }));
-  state.RADICALS = radicals;
+}
 
-  // Components are optional — a failure here must never block chars/cards.
+// Components are optional — a failure here must never block chars/cards.
+async function loadComponents() {
   try {
     const [components, compChar] = await Promise.all([
       fetchAll('components', 'id, component, pinyin, meaning, stroke, productive, coverage'),
@@ -97,6 +98,25 @@ async function loadRest() {
   }
 }
 
+// Critical path for first paint: only the table the active mode's first card
+// needs. Everything else streams in behind it via loadRest().
+async function loadCritical(mode) {
+  await window._supabaseReady;
+  await (mode === 'words' ? loadWords() : loadChars());
+}
+
+async function loadRest(mode) {
+  await Promise.all([
+    loadRadicalsAndSlang(),
+    loadComponents(),
+    mode === 'words' ? loadChars() : loadWords(),
+  ]);
+}
+
+// Build the deck for whichever mode is active — words or characters.
+const rebuildDeck = () =>
+  state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
+
 // Restore theme before first paint
 try {
   const t = localStorage.getItem('shuazi-theme');
@@ -109,25 +129,39 @@ if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
   setTimeout(async () => {
     await window._supabaseReady;
     await loadUserPlan();
-    state.deck = buildDeck(state.CHARACTERS);
+    state.deck = rebuildDeck();
     render();
     renderGroups();
     renderProfile();
   }, 2000);
 }
 
-loadChars().then(() => {
-  // Paint the first card the instant characters are available — nothing else
-  // is on the critical path.
-  init(state.CHARACTERS);
+const bootMode = state.groupsContent;
+
+loadCritical(bootMode).then(() => {
+  // Paint the first card the instant its table is available — nothing else is
+  // on the critical path.
+  if (bootMode === 'words') {
+    // No init() here: that path restores a *character* deck. Restore the shared
+    // known/review marks from localStorage, then build a fresh word deck.
+    const saved = loadState();
+    if (saved) {
+      state.known   = new Set(saved.known   || []);
+      state.unknown = new Set(saved.unknown || []);
+    }
+    state.deck = buildWordDeck();
+    render();
+  } else {
+    init(state.CHARACTERS);
+  }
   initPwaInstall();
 
-  // Radicals / slang / words / components stream in behind the first paint.
-  const restReady = loadRest().then(() => {
+  // The remaining tables stream in behind the first paint.
+  const restReady = loadRest(bootMode).then(() => {
     renderGroups();
-    // Refresh the card so the radical pinyin on its info page populates — but
-    // only while the user is in a neutral state, so we never interrupt a swipe
-    // or a revealed answer.
+    // Refresh the card so its info page fills in (radical pinyin in chars mode,
+    // per-character chips in words mode) — but only while the user is in a
+    // neutral state, so we never interrupt a swipe or a revealed answer.
     const top = document.querySelector('#deck .card.top');
     if (top && top.dataset.page === '0' && top.dataset.answer !== '1') render();
   });
@@ -141,7 +175,7 @@ loadChars().then(() => {
       await loadUserPlan();
       await loadProgressFromSupabase();
       await restReady;
-      state.deck = buildDeck(state.CHARACTERS);
+      state.deck = rebuildDeck();
       render();
       renderGroups();
       renderProfile();
@@ -156,7 +190,7 @@ loadChars().then(() => {
         await loadUserPlan();
         await loadProgressFromSupabase();
         await restReady;
-        state.deck = buildDeck(state.CHARACTERS);
+        state.deck = rebuildDeck();
         render();
         stats();
         renderGroups();
@@ -165,7 +199,7 @@ loadChars().then(() => {
       if (event === 'SIGNED_OUT') {
         state.userPlan = 'free';
         state.known.clear(); state.unknown.clear();
-        state.deck = buildDeck(state.CHARACTERS);
+        state.deck = rebuildDeck();
         render();
         stats();
         renderGroups();

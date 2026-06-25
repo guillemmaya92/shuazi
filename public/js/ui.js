@@ -1,4 +1,4 @@
-import { supa } from './config.js';
+import { supa, MODE_KEY } from './config.js';
 import { state } from './state.js';
 import { saveState } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
@@ -1324,6 +1324,7 @@ export function renderProfile() {
     btn.addEventListener('click', () => {
       if (state.groupsContent === btn.dataset.groups) return;
       state.groupsContent = btn.dataset.groups;
+      try { localStorage.setItem(MODE_KEY, state.groupsContent); } catch (e) {}
       container.querySelectorAll('[data-groups]').forEach(b => b.classList.toggle('active', b.dataset.groups === state.groupsContent));
       state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
       render();

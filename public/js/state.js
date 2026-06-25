@@ -1,3 +1,8 @@
+// Restore the last-used game mode synchronously so the boot sequence can put the
+// matching data (chars vs words) on the critical path for the first card.
+let _initialMode = 'characters';
+try { if (localStorage.getItem('shuazi-mode') === 'words') _initialMode = 'words'; } catch (e) {}
+
 export const state = {
   CHARACTERS:    [],
   WORDS:         [],
@@ -17,7 +22,7 @@ export const state = {
   activeStatuses:  new Set(['left', 'know', 'review']),
   gridSort:      'pinyin',
   gridSearch:    '',
-  groupsContent: 'characters',
+  groupsContent: _initialMode,
   slangDeck:     [],
   syncTimer:     null,
 };

@@ -3,6 +3,7 @@ export const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 export const STRIPE_PRICE = 'price_1TlomiBbC7zMbLYpULYnfvr1';
 export const FREE_HSK    = new Set([1, 2]);
 export const STORE_KEY   = 'shuazi-v1';
+export const MODE_KEY    = 'shuazi-mode';
 
 // Lazy client: created on first property access, after supabase.js has loaded async.
 // All consumers (auth.js, ui.js, progress.js) only call supa inside async functions
