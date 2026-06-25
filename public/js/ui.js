@@ -689,15 +689,20 @@ function openComponentModal(comp) {
 async function openWordModal(word) {
   const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
 
+  const posDesc = state.POS_TAGS?.[word.pos];
+  const posHTML = posDesc
+    ? `<span class="char-chip"><span class="cc-glyph" style="font-size:.72rem">${posDesc}</span></span>`
+    : '<span class="char-chip-empty">—</span>';
+
   modalContent.innerHTML = `
     <div class="info-row" style="grid-template-columns:1fr 1fr">
       <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">HSK ${word.hsk ?? '?'}</span></div></div>
-      <div class="info-cell full"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div>
+      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div>
+      <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
+      <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list" id="wm-phrases"><span style="color:var(--faint);font-size:.75rem">Loading…</span></div></div>
     </div>
-    <div class="words-title">Phrases</div>
-    <div class="words-list" id="wm-phrases"><div class="word-item" style="color:var(--faint)">Loading…</div></div>
   `;
   backdrop.classList.add('open');
 
@@ -705,10 +710,13 @@ async function openWordModal(word) {
   const phrasesEl = modalContent.querySelector('#wm-phrases');
   if (!phrasesEl) return;
   const phrases = state.phrasesByWord[word.id] || [];
+  phrasesEl.style.display       = 'flex';
+  phrasesEl.style.flexDirection = 'column';
+  phrasesEl.style.gap           = '6px';
   phrasesEl.innerHTML = phrases.length === 0
-    ? '<div class="phrase-item" style="color:var(--faint)">No phrases found</div>'
+    ? '<span style="color:var(--faint);font-size:.75rem">No phrases found</span>'
     : phrases.map(p =>
-        `<div class="phrase-item"><span class="wp-hanzi">${p.phrase}</span><span class="wp-pinyin">${p.pinyin ?? ''}</span><span class="wp-meaning">${p.meaning ?? ''}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span></div>`
       ).join('');
 }
 

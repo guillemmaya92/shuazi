@@ -185,16 +185,15 @@ function makeCard(card, isStack) {
           </div>
         </div>
       </div>
-      <div class="page info-page" style="padding-top:44px">
+      <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
           <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
           <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
+          <div class="info-cell full"><div class="lbl">Compound words</div><div class="word-phrases-list"></div></div>
         </div>
-        <div class="words-title">Compound words</div>
-        <div class="words-list"></div>
       </div>
     </div>
   `;
@@ -205,7 +204,7 @@ function makeCard(card, isStack) {
   const tzC      = el.querySelector('.tz-center');
   const tzR      = el.querySelector('.tz-right');
   const aa       = el.querySelector('#aa');
-  const wordsList = el.querySelector('.words-list');
+  const wordsList = el.querySelector('.word-phrases-list');
 
   function goPage(n) {
     el.dataset.page = String(n);
@@ -218,10 +217,15 @@ function makeCard(card, isStack) {
     if (wordsList.dataset.loaded) return;
     await fetchWordsForChar(card);
     wordsList.dataset.loaded = '1';
-    const cardWords = (state.wordsByChar[card.char] || []).slice(0, 4);
-    wordsList.innerHTML = cardWords.map(w =>
-      `<div class="word-item"><strong>${w.id}</strong>${w.pinyin ? `<span class="word-pinyin">${w.pinyin}</span>` : ''}<span class="word-meaning">${w.meaning}</span></div>`
-    ).join('') || '<div style="color:var(--faint);font-size:.8rem">No words found</div>';
+    const cardWords = (state.wordsByChar[card.char] || []).slice(0, 3);
+    wordsList.style.display       = 'flex';
+    wordsList.style.flexDirection = 'column';
+    wordsList.style.gap           = '6px';
+    wordsList.innerHTML = cardWords.length
+      ? cardWords.map(w =>
+          `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${w.id}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${w.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${w.meaning ?? ''}</span></div>`
+        ).join('')
+      : '<span style="color:var(--faint);font-size:.75rem">No words found</span>';
   }
 
   tzL.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
@@ -272,7 +276,7 @@ function makeWordCard(card, isStack) {
 
   const posDesc = state.POS_TAGS?.[card.pos];
   const posHTML = posDesc
-    ? `<span class="char-chip"><span class="cc-glyph" style="font-size:.82rem">${posDesc}</span></span>`
+    ? `<span class="char-chip"><span class="cc-glyph" style="font-size:.72rem">${posDesc}</span></span>`
     : '<span class="char-chip-empty">—</span>';
 
   el.innerHTML = `
@@ -303,7 +307,7 @@ function makeWordCard(card, isStack) {
           </div>
         </div>
       </div>
-      <div class="page info-page" style="padding-top:44px">
+      <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:1fr 1fr">
           <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
@@ -333,8 +337,11 @@ function makeWordCard(card, isStack) {
       return;
     }
     const top3 = cached.slice(0, 3);
+    phrasesEl.style.display       = 'flex';
+    phrasesEl.style.flexDirection = 'column';
+    phrasesEl.style.gap           = '6px';
     phrasesEl.innerHTML = top3.length
-      ? top3.map(p => `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-top:1px solid var(--bdr)"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span></div>`).join('')
+      ? top3.map(p => `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span></div>`).join('')
       : '<span style="color:var(--faint);font-size:.75rem">No phrases found</span>';
   }
 
