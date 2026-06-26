@@ -187,6 +187,7 @@ loadCritical(bootMode).then(() => {
       await loadUserPlan();
       await loadProgressFromSupabase();
       await loadSettingsFromSupabase();
+      setTheme(state.theme);   // apply the account's saved theme
       await restReady;
       state.deck = rebuildDeck();
       render();
@@ -203,6 +204,7 @@ loadCritical(bootMode).then(() => {
         await loadUserPlan();
         await loadProgressFromSupabase();
         await loadSettingsFromSupabase();
+        setTheme(state.theme);   // apply the account's saved theme
         await restReady;
         state.deck = rebuildDeck();
         render();

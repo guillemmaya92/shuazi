@@ -1,6 +1,6 @@
 import { supa, FREE_HSK } from './config.js';
 import { state } from './state.js';
-import { saveState, loadState } from './progress.js';
+import { saveState, loadState, saveSettings } from './progress.js';
 import { renderGroups } from './ui.js';
 
 // Cache in-flight promises so prefetch + on-demand callers share one request
@@ -430,18 +430,27 @@ export function classifyReview() {
 }
 
 function showDone() {
+  // "Full deck" = finished with every status filter on (Left + Know + Review).
+  // Only then do we celebrate; a filtered run just nudges you to keep going.
+  const fullDeck = ['left', 'know', 'review'].every(s => state.activeStatuses.has(s));
   const el = document.createElement('div'); el.className = 'done';
   el.innerHTML = `
-    <div class="done-emoji">🇨🇳</div>
-    <h2>你这中文太顶了吧！</h2>
+    <div class="done-emoji">${fullDeck ? '🇨🇳' : '🤓'}</div>
+    <h2>${fullDeck ? '你这中文太顶了吧！' : '继续学习'}</h2>
     <p>Known: <strong style="color:var(--green)">${state.known.size}</strong> &nbsp;·&nbsp; Review: <strong style="color:var(--blue)">${state.unknown.size}</strong></p>
     <div class="done-pills">
-      <button class="pill" id="pW">Review hard ones</button>
-      <button class="pill" id="pA">Reset all</button>
+      <button class="pill" id="pReset">Reset deck</button>
     </div>`;
   deckEl.appendChild(el);
-  el.querySelector('#pW').onclick = () => { state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS); render(); };
-  el.querySelector('#pA').onclick = () => state.groupsContent === 'words' ? (state.deck = buildWordDeck(), render()) : init(state.CHARACTERS, true);
+  // Reset deck: re-enable every status filter (Left / Know / Review) and rebuild
+  // a fresh deck — but keep the user's progress (known / review marks).
+  el.querySelector('#pReset').onclick = () => {
+    state.activeStatuses = new Set(['left', 'know', 'review']);
+    saveSettings();
+    state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
+    render();
+    renderGroups();
+  };
 }
 
 function attachDrag(cardEl) {

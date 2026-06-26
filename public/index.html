@@ -2,6 +2,8 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
+  <!-- Apply the saved theme before first paint (shared with the dictionary site) -->
+  <script>(function(){try{var t=localStorage.getItem('shuazi-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){}})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -157,7 +159,7 @@
 <header style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">
   <h1>刷字 ShuaziApp — Learn Chinese Hanzi with Flashcards</h1>
   <p>Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. Build vocabulary and improve character recognition through an interactive flashcard system covering HSK 1–6, and explore an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system.</p>
-  <p><a href="/dictionary/">Browse the Chinese dictionary: HSK 1–6 characters, words and radicals</a></p>
+  <p><a href="/characters/">Browse HSK 1–6 Chinese characters</a> and <a href="/words/">vocabulary</a>.</p>
 </header>
 <noscript>
   <h2>刷字 ShuaziApp</h2>

@@ -101,6 +101,7 @@ function settingsPayload() {
     game:     state.groupsContent,
     hsk:      [...state.activeHskLevels],
     statuses: [...state.activeStatuses],
+    theme:    state.theme,
   };
 }
 
@@ -111,6 +112,7 @@ export async function syncSettingsToSupabase() {
     game:       state.groupsContent,
     hsk_levels: [...state.activeHskLevels],
     statuses:   [...state.activeStatuses],
+    theme:      state.theme,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
 }
@@ -128,7 +130,7 @@ export async function loadSettingsFromSupabase() {
   if (!state.supaUser) return;
   const { data } = await supa
     .from('user_settings')
-    .select('game, hsk_levels, statuses')
+    .select('game, hsk_levels, statuses, theme')
     .eq('user_id', state.supaUser.id)
     .maybeSingle();
   if (!data) {
@@ -139,6 +141,9 @@ export async function loadSettingsFromSupabase() {
   if (data.game === 'words' || data.game === 'characters') state.groupsContent = data.game;
   if (Array.isArray(data.hsk_levels) && data.hsk_levels.length) state.activeHskLevels = new Set(data.hsk_levels);
   if (Array.isArray(data.statuses) && data.statuses.length)     state.activeStatuses  = new Set(data.statuses);
-  // Mirror back to localStorage so the next synchronous boot already has them.
+  if (data.theme === 'dark' || data.theme === 'light')          state.theme = data.theme;
+  // Mirror back to localStorage so the next synchronous boot already has them
+  // (settings + the standalone theme key the inline boot script reads).
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsPayload())); } catch (e) {}
+  try { localStorage.setItem('shuazi-theme', state.theme); } catch (e) {}
 }

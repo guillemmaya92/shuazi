@@ -583,7 +583,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   pointer-events: all;
 }
 /* ── SETTINGS & ACCOUNT PANELS (right-side push drawers, mirror the recents drawer) ── */
-:root { --settings-w: min(85%, 320px); }
+/* --app-gutter is the empty space beside the centred .root (max-width 860px) on
+   wide/desktop screens, so the drawers hug the app's right edge instead of the
+   far edge of the window. On phones the gutter is 0 (unchanged behaviour). */
+:root { --settings-w: min(85%, 320px); --app-gutter: max(0px, calc((100vw - 860px) / 2)); }
 
 body.settings-open .root,
 body.account-open .root {
@@ -598,7 +601,7 @@ body.account-dragging .root, body.account-open .root { border-radius: 22px; over
 
 .settings-panel,
 .account-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; z-index: 1;
+  position: fixed; top: 0; right: var(--app-gutter); bottom: 0; z-index: 1;
   width: calc(var(--settings-w) + 30px);
   display: flex; flex-direction: column;
   background: var(--surf);
@@ -615,7 +618,7 @@ body.account-dragging .account-panel { visibility: visible; }
 
 .settings-scrim,
 .account-scrim {
-  position: fixed; top: 0; bottom: 0; left: 0; right: var(--settings-w);
+  position: fixed; top: 0; bottom: 0; left: 0; right: calc(var(--settings-w) + var(--app-gutter));
   z-index: 3; pointer-events: none;
 }
 body.settings-open .settings-scrim { pointer-events: auto; }
@@ -980,7 +983,7 @@ body.recents-open .root { border-radius:22px; overflow:hidden; }
 
 /* Flat panel pinned to the left, sitting behind the content. */
 .tr-history-panel {
-  position:fixed; top:0; left:0; bottom:0; z-index:1;
+  position:fixed; top:0; left:var(--app-gutter); bottom:0; z-index:1;
   /* +30px underlaps the content's rounded corners so no gap shows behind them */
   width:calc(var(--recents-w) + 30px);
   display:flex; flex-direction:column;
@@ -993,7 +996,7 @@ body.recents-open .tr-history-panel,
 body.recents-dragging .tr-history-panel { visibility:visible; }
 /* Transparent catcher over the shifted content — tap to close. */
 .tr-history-scrim {
-  position:fixed; top:0; bottom:0; right:0; left:var(--recents-w);
+  position:fixed; top:0; bottom:0; right:0; left:calc(var(--recents-w) + var(--app-gutter));
   z-index:3; pointer-events:none;
 }
 body.recents-open .tr-history-scrim { pointer-events:auto; }

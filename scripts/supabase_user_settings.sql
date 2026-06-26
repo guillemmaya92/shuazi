@@ -1,6 +1,6 @@
 -- =============================================================
--- Per-user app settings: game mode and the active filters
--- (HSK levels + status: left / know / review).
+-- Per-user app settings: game mode, active filters
+-- (HSK levels + status: left / know / review) and theme (dark/light).
 -- Run in the Supabase SQL Editor.
 -- =============================================================
 
@@ -9,8 +9,12 @@ create table if not exists user_settings (
   game       text   not null default 'characters',
   hsk_levels int[]  not null default '{1,2,3,4,5,6}',
   statuses   text[] not null default '{left,know,review}',
+  theme      text   not null default 'light',
   updated_at timestamptz not null default now()
 );
+
+-- Migration for tables created before the theme column existed:
+alter table user_settings add column if not exists theme text not null default 'light';
 
 -- Row Level Security: each user only ever sees/edits their own row.
 alter table user_settings enable row level security;
