@@ -1,52 +1,152 @@
-/* Styling for the static SEO/dictionary pages (scripts/build/seo-pages.mjs). */
+/* ───────────────────────────────────────────────────────────────────────────
+   Styling for the static SEO/dictionary pages (scripts/build/seo-pages.mjs).
+   Matches the Shuazi app's warm-paper palette and HSK level colours.
+─────────────────────────────────────────────────────────────────────────── */
 :root{
-  --bg:#f0ebe4;--surf:#faf6f1;--surf2:#fff;--bdr:rgba(0,0,0,.10);
-  --txt:#1c1510;--muted:#6b5e54;--faint:#8a7c70;--red:#b04030;--blue:#2560b0;
+  --bg:#f0ebe4; --surf:#faf6f1; --surf2:#fff; --bdr:rgba(28,21,16,.10);
+  --txt:#1c1510; --muted:#6b5e54; --faint:#8a7c70;
+  --red:#b04030; --red-bg:rgba(176,64,48,.10); --blue:#2560b0;
+  --shadow:0 1px 2px rgba(28,21,16,.04), 0 8px 30px rgba(28,21,16,.06);
+  --serif:'Noto Serif SC','PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',serif;
+  /* HSK level colours (same hues as the app) */
+  --hsk1:#c79320; --hsk2:#2f8497; --hsk3:#c8612a; --hsk4:#c04050; --hsk5:#3f6fb0; --hsk6:#9e6e9c;
 }
-@media(prefers-color-scheme:dark){
-  :root{--bg:#0e1215;--surf:#161c21;--surf2:#1d252c;--bdr:rgba(255,255,255,.10);
-    --txt:#e8f0f4;--muted:#9fb1bd;--faint:#7a8b96;--red:#d9705a;--blue:#64a0e6;}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1215; --surf:#161c21; --surf2:#1d252c; --bdr:rgba(255,255,255,.10);
+    --txt:#e8f0f4; --muted:#9fb1bd; --faint:#7a8b96;
+    --red:#d9705a; --red-bg:rgba(217,112,90,.15); --blue:#64a0e6;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.4);
+    --hsk1:#d89e32; --hsk2:#3a9aaf; --hsk3:#d2702a; --hsk4:#d9697a; --hsk5:#6890c8; --hsk6:#b487b2;
+  }
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  background:var(--bg);color:var(--txt);line-height:1.6;-webkit-font-smoothing:antialiased}
-.wrap{max-width:760px;margin:0 auto;padding:24px 20px 60px}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--txt);line-height:1.6;-webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility}
 a{color:var(--blue);text-decoration:none}
 a:hover{text-decoration:underline}
+
+/* ── Site header ── */
+.site{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:11px clamp(16px,4vw,28px);
+  background:var(--surf);
+  background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);
+  border-bottom:1px solid var(--bdr)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--txt)}
+.brand:hover{text-decoration:none}
+.brand-logo{font-family:var(--serif);font-weight:700;font-size:1.15rem;line-height:1;color:#fff;
+  background:var(--red);border-radius:9px;padding:6px 8px}
+.brand-name{font-weight:600;font-size:.95rem;letter-spacing:-.01em}
+.brand-name b{font-weight:700}
+.site-nav{display:flex;align-items:center;gap:6px}
+.site-nav a{color:var(--muted);font-size:.85rem;font-weight:600;padding:6px 10px;border-radius:8px}
+.site-nav a:hover{color:var(--txt);background:var(--surf);text-decoration:none}
+.site-nav .open-app{color:#fff;background:var(--red)}
+.site-nav .open-app:hover{color:#fff;opacity:.92}
+
+/* ── Layout ── */
+.wrap{max-width:780px;margin:0 auto;padding:26px clamp(16px,4vw,28px) 40px}
 
 .bc{font-size:.8rem;color:var(--faint);margin-bottom:18px}
 .bc a{color:var(--muted)}
 .bc span{color:var(--txt)}
 
-h1{font-size:1.7rem;font-weight:700;line-height:1.2;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
-h1 .glyph{font-size:3rem;font-weight:600;line-height:1;
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif}
-h1 .py{font-size:1.2rem;color:var(--muted);font-weight:400}
-h2{font-size:1.05rem;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
-.lead{font-size:1.05rem;color:var(--txt);margin-bottom:18px}
+h1{font-size:clamp(1.4rem,4vw,1.85rem);font-weight:700;line-height:1.15;letter-spacing:-.02em}
+h1 .py{font-family:var(--serif);font-weight:400;color:var(--muted);font-size:.7em}
+h2{font-size:1.05rem;font-weight:700;margin:30px 0 13px;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--bdr)}
+.lead{font-size:1.05rem;color:var(--muted);margin-top:6px}
 .empty{color:var(--faint)}
 
-.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;
-  background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:14px 18px;margin:4px 0}
-.facts dt{color:var(--faint);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-.facts dd{color:var(--txt)}
+/* ── Hero (character / word / radical) ── */
+.hero{display:flex;gap:20px;align-items:stretch;
+  background:var(--surf2);border:1px solid var(--bdr);border-radius:20px;
+  padding:22px;box-shadow:var(--shadow)}
+.hero-glyph{flex-shrink:0;display:grid;place-items:center;width:128px;
+  font-family:var(--serif);font-weight:600;font-size:5rem;line-height:1;color:var(--txt);
+  background:linear-gradient(160deg,var(--surf),var(--bg));
+  border:1px solid var(--bdr);border-radius:16px}
+.hero-glyph.word{font-size:3.1rem;letter-spacing:2px;padding:0 12px}
+.hero-info{display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}
+.hero-info h1{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 
-.entries{list-style:none;display:flex;flex-direction:column;gap:8px}
-.entries li{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px}
-.entries b{font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-weight:600}
-.entries span{color:var(--muted);font-size:.85rem;margin-left:4px}
+.pill,.hsk-badge{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;
+  letter-spacing:.02em;padding:5px 11px;border-radius:999px;border:1px solid var(--bdr);
+  background:var(--surf);color:var(--muted);white-space:nowrap}
+a.pill:hover{text-decoration:none;border-color:var(--blue);color:var(--txt)}
 
-.chips{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
-.chips li a{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;
-  background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:7px 9px;color:var(--txt)}
-.chips li a:hover{border-color:var(--blue);text-decoration:none}
-.chips b{font-size:1.3rem;font-weight:600;line-height:1.1;
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif}
+/* HSK badge colours */
+.hsk-badge{text-transform:uppercase}
+.hsk-1{--c:var(--hsk1)} .hsk-2{--c:var(--hsk2)} .hsk-3{--c:var(--hsk3)}
+.hsk-4{--c:var(--hsk4)} .hsk-5{--c:var(--hsk5)} .hsk-6{--c:var(--hsk6)}
+.hsk-badge.hsk-1,.hsk-badge.hsk-2,.hsk-badge.hsk-3,
+.hsk-badge.hsk-4,.hsk-badge.hsk-5,.hsk-badge.hsk-6{
+  color:var(--c);border-color:color-mix(in srgb,var(--c) 40%,transparent);
+  background:color-mix(in srgb,var(--c) 13%,transparent)}
+a:has(>.hsk-badge):hover{text-decoration:none}
+
+/* ── Page heads (HSK / hub) ── */
+.page-head{padding:22px;border:1px solid var(--bdr);border-radius:20px;
+  background:var(--surf2);box-shadow:var(--shadow)}
+.hub-head{background:linear-gradient(150deg,var(--red-bg),var(--surf2))}
+.hsk-head{border-left:5px solid var(--c,var(--red))}
+
+/* ── HSK level grid (hub) ── */
+.level-grid{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.level-card{display:flex;flex-direction:column;gap:2px;padding:16px;border-radius:16px;
+  background:var(--surf2);border:1px solid var(--bdr);
+  border-top:4px solid var(--c,var(--red));color:var(--txt);box-shadow:var(--shadow)}
+.level-card:hover{text-decoration:none;transform:translateY(-2px);transition:transform .12s}
+.level-card .lvl{font-weight:800;font-size:1.05rem;color:var(--c,var(--txt))}
+.level-card .lvl-sub{font-size:.78rem;color:var(--faint)}
+
+/* ── Chips (character grids) ── */
+.chips{list-style:none;display:flex;flex-wrap:wrap;gap:9px}
+.chips li a{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:54px;
+  background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:8px 10px;
+  color:var(--txt);transition:transform .1s,border-color .1s}
+.chips li a:hover{border-color:var(--blue);transform:translateY(-2px);text-decoration:none}
+.chips b{font-family:var(--serif);font-size:1.45rem;font-weight:600;line-height:1.05}
 .chips span{font-size:.66rem;color:var(--muted)}
-.chips.big li a{min-width:90px;padding:12px 16px}
+.chips.big li a{min-width:auto;flex-direction:row;padding:11px 16px;font-weight:600}
 .chips.big b{font-size:1rem}
 
-footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--bdr)}
-.cta{display:inline-block;background:var(--red);color:#fff;font-weight:600;
-  padding:11px 18px;border-radius:12px}
-.cta:hover{text-decoration:none;opacity:.92}
+/* ── Entry lists (words / phrases) ── */
+.entries{list-style:none;display:flex;flex-direction:column;gap:8px}
+.entries li{background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:11px 14px;
+  box-shadow:var(--shadow)}
+.entries li a{display:block;color:var(--txt)}
+.entries li a:hover{text-decoration:none}
+.entries b{font-family:var(--serif);font-weight:600;font-size:1.05rem}
+.entries span{color:var(--muted);font-size:.85rem;margin-left:5px}
+
+/* ── Facts (radical) ── */
+.facts{display:grid;grid-template-columns:auto 1fr;gap:7px 18px;
+  background:var(--surf2);border:1px solid var(--bdr);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.facts dt{color:var(--faint);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.facts dd{color:var(--txt)}
+
+/* ── Footer ── */
+.site-foot{max-width:780px;margin:0 auto;padding:30px clamp(16px,4vw,28px) 60px;
+  border-top:1px solid var(--bdr);margin-top:20px;text-align:center}
+.cta{display:inline-block;background:var(--red);color:#fff;font-weight:700;font-size:.95rem;
+  padding:13px 22px;border-radius:14px;box-shadow:var(--shadow)}
+.cta:hover{text-decoration:none;opacity:.93}
+.foot-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:22px 0 14px}
+.foot-links a{color:var(--muted);font-size:.82rem;font-weight:600}
+.foot-note{color:var(--faint);font-size:.78rem;font-family:var(--serif)}
+
+/* ── Mobile ── */
+@media (max-width:560px){
+  .hero{flex-direction:column;gap:14px;padding:18px;align-items:center;text-align:center}
+  .hero-glyph{width:100%;height:120px;font-size:4.2rem}
+  .hero-info{align-items:center}
+  .hero-info h1{justify-content:center}
+  .meta{justify-content:center}
+  .brand-name{display:none}
+}
