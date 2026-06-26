@@ -26,6 +26,10 @@ jobs:
       # without purging — see scripts/build/fingerprint.mjs.
       - name: Fingerprint assets
         run: node scripts/build/fingerprint.mjs ${{ github.sha }}
+      # Generate the static SEO/dictionary pages (one per character, word and
+      # radical + HSK listings) into public/ so search engines can index them.
+      - name: Generate SEO pages
+        run: node scripts/build/seo-pages.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
