@@ -292,7 +292,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .page.info-page::-webkit-scrollbar { display:none; }
 .info-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; width:100%; }
 .info-cell { background:var(--surf); border:1px solid var(--bdr); border-radius:14px; padding:9px 12px; }
-.info-cell .lbl { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+.info-cell .lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
 .info-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
 .info-cell.full { grid-column:1/-1; }
 .char-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }

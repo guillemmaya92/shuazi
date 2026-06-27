@@ -49,9 +49,11 @@
     .deck{position:absolute;inset:0}
   </style>
 
-  <!-- Full CSS loaded non-blocking; noscript fallback for crawlers/no-JS -->
-  <link rel="preload" href="./styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
-  <noscript><link rel="stylesheet" href="./styles.css"/></noscript>
+  <!-- Full CSS. Loaded as a normal stylesheet: the inline critical CSS above
+       already unblocks first paint, and a single render-blocking request avoids
+       the FOUC/flash the old preload+swap hack caused (it triggered a second
+       fetch that could fail with ERR_TOO_MANY_RETRIES and not apply in time). -->
+  <link rel="stylesheet" href="./styles.css"/>
   <title>刷字 ShuaziApp</title>
   <meta name="description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
   <link rel="canonical" href="https://shuaziapp.com/"/>
