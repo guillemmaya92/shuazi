@@ -1111,7 +1111,7 @@ export function renderProfile() {
             <svg width="15" height="15" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.1-9.9 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.5 42.5 14.6 48 24 48z"/></svg>
             Continue with Google
           </button>
-          <div style="display:flex;align-items:center;gap:8px;color:var(--faint);font-size:.62rem">
+          <div style="display:flex;align-items:center;gap:8px;color:var(--faint);font-size:.68rem">
             <div style="flex:1;height:1px;background:var(--bdr)"></div>or<div style="flex:1;height:1px;background:var(--bdr)"></div>
           </div>
           <input id="authEmail" type="email" placeholder="Email" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
@@ -1122,7 +1122,7 @@ export function renderProfile() {
               <svg id="eyeOff" width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/></svg>
             </button>
           </div>
-          <div id="authError" style="font-size:.62rem;color:#c04050;min-height:.8rem;margin-top:-4px"></div>
+          <div id="authError" style="font-size:.68rem;color:#c04050;min-height:.8rem;margin-top:-4px"></div>
           <div style="display:flex;gap:8px">
             <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">Sign in</button>
             <button id="signUpBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer">Register</button>
@@ -1159,7 +1159,7 @@ export function renderProfile() {
           <div class="lbl" id="p-pct">${pct}%</div>
         </div>
         <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
-        <p id="p-hint" style="font-size:.6rem;color:var(--faint);line-height:1.5;margin:0">${state.groupsContent === 'words'
+        <p id="p-hint" style="font-size:.66rem;color:var(--faint);line-height:1.5;margin:0">${state.groupsContent === 'words'
           ? 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.'
           : 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.'
         }</p>

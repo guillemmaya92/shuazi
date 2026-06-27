@@ -156,7 +156,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .tab.active { color:var(--blue); }
 .tab svg { width:26px; height:26px; }
-.tab span { font-size:.62rem; font-weight:600; letter-spacing:.02em; }
+.tab span { font-size:.68rem; font-weight:600; letter-spacing:.02em; }
 /* Outline icon when idle, filled icon when active. */
 .tab .ic-fill { display:none; }
 .tab.active .ic-line { display:none; }
@@ -175,11 +175,11 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   filter:brightness(1.18); opacity:.5;
 }
 .title   { font-size:.95rem; font-weight:700; line-height:1.1; }
-.sub     { font-size:.62rem; color:var(--faint); margin-top:0px; }
+.sub     { font-size:.68rem; color:var(--faint); margin-top:0px; }
 .hdr-stats { display:flex; gap:14px; align-items:center; }
 .st { text-align:center; }
 .st .v { font-size:.92rem; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
-.st .l { font-size:.6rem; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); }
+.st .l { font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); }
 #sKnown .v  { color:var(--green); }
 #sRepaso .v { color:var(--blue); }
 .icon-btn {
@@ -216,7 +216,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tint-l { background:rgba(143,164,176,.2); }
 .tint-r { background:var(--green-bg); }
 .tint-u { background:var(--blue-bg); }
-.chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.62rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
+.chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
 .chip-l { left:16px;  background:rgba(143,164,176,.25); color:var(--muted); }
 .chip-r { right:16px; background:var(--green-bg); color:var(--green); }
 .chip-u { left:50%; transform:translateX(-50%); top:18px; background:var(--blue-bg); color:var(--blue); }
@@ -237,10 +237,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   padding:10px 20px 18px; overflow:hidden;
 }
 .card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
-.prog { font-size:.62rem; color:var(--faint); }
+.prog { font-size:.68rem; color:var(--faint); }
 
 /* HSK pills */
-.hsk-pill { padding:4px 11px; border-radius:999px; font-size:.6rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.hsk-pill { padding:4px 11px; border-radius:999px; font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
 .hsk-1 { background:rgba(220,158,40,.14);  color:#d89e32; border:1px solid rgba(220,158,40,.28); }
 .hsk-2 { background:rgba(42,118,136,.16);  color:#3a9aaf; border:1px solid rgba(42,118,136,.30); }
 .radical { background:rgba(138,123,168,.14); color:#8a7ba8; border:1px solid rgba(138,123,168,.28); }
@@ -274,11 +274,11 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   border-radius:14px; padding:9px 14px;
   font-size:.78rem; text-align:center; line-height:1.4; width:100%;
 }
-.ans-example span { display:block; font-size:.62rem; font-weight:700; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+.ans-example span { display:block; font-size:.68rem; font-weight:700; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
 .ans-example strong { color:var(--txt); }
 .ans-example em { color:var(--faint); font-style:italic; }
-.ans-hint { font-size:.62rem; color:var(--faint); margin-top:2px; }
-.tap-hint { font-size:.62rem; color:var(--faint); text-align:center; }
+.ans-hint { font-size:.68rem; color:var(--faint); margin-top:2px; }
+.tap-hint { font-size:.68rem; color:var(--faint); text-align:center; }
 
 /* card bottom */
 .card-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
@@ -292,7 +292,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .page.info-page::-webkit-scrollbar { display:none; }
 .info-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; width:100%; }
 .info-cell { background:var(--surf); border:1px solid var(--bdr); border-radius:14px; padding:9px 12px; }
-.info-cell .lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
+.info-cell .lbl { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); margin-bottom:2px; }
 .info-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
 .info-cell.full { grid-column:1/-1; }
 .char-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
@@ -303,7 +303,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chips.stack .char-chip .cc-py { text-align:center; }
 .char-chip-empty { font-size:.85rem; color:var(--faint); }
 .cc-desc { font-weight:500; color:var(--muted); }
-.words-title { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
+.words-title { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
 .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
 .word-item:last-child { border-bottom:none; }
@@ -320,7 +320,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .word-group-header span:first-child { flex:1; }
 .word-group-count {
-  font-size:.6rem; background:var(--bdr); color:var(--faint);
+  font-size:.66rem; background:var(--bdr); color:var(--faint);
   border-radius:999px; padding:1px 7px; font-weight:600;
 }
 .word-group-chev { transition:transform 200ms ease; flex-shrink:0; }
@@ -403,7 +403,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   padding-bottom:4px;
 }
 .groups-legend { display:flex; gap:14px; padding:0 2px 4px; }
-.groups-legend-item { display:flex; align-items:center; gap:5px; font-size:.6rem; color:var(--faint); }
+.groups-legend-item { display:flex; align-items:center; gap:5px; font-size:.66rem; color:var(--faint); }
 .groups-legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .known-dot  { background:var(--green); }
 .review-dot { background:var(--blue); }
@@ -506,7 +506,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   font-size:26px; line-height:1; color:var(--txt);
   -webkit-text-fill-color:var(--txt);
 }
-.char-tile .tp { font-size:.62rem; color:var(--faint); margin-top:2px; }
+.char-tile .tp { font-size:.68rem; color:var(--faint); margin-top:2px; }
 .char-tile.known {
   background:var(--green-bg); border-color:rgba(104,191,138,.3);
 }
@@ -520,7 +520,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-tile .toggle-btn { display:none; }
 .groups-section-title {
   display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
-  font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
   color:var(--faint); margin:16px 2px 3px;
 }
 .groups-section-title .groups-legend { padding:0; flex-shrink:0; }
@@ -530,7 +530,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .groups-section-title .groups-legend-dot { opacity:.45; }
 .groups-section-title:first-child { margin-top:2px; }
 .groups-section-sub {
-  display:block; font-size:.58rem; font-weight:400; letter-spacing:0;
+  display:block; font-size:.64rem; font-weight:400; letter-spacing:0;
   text-transform:none; color:var(--faint); opacity:.7; margin-top:2px;
 }
 .char-tile.empty { opacity:.4; }
@@ -666,19 +666,21 @@ body.account-open .account-scrim { pointer-events: auto; }
 .modal #modal-content .words-list { margin-top:6px; }
 
 /* HSK filter pills */
-.hsk-filter-row { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+.hsk-filter-row { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
 .hsk-filter-pill {
-  padding:6px 4px; border-radius:999px; font-size:.6rem; font-weight:700;
-  letter-spacing:.06em; text-transform:uppercase; cursor:pointer; text-align:center;
+  padding:6px 2px; border-radius:999px;
+  font-size:clamp(.56rem, 2.6vw, .72rem); font-weight:700;
+  letter-spacing:.01em; text-transform:uppercase; cursor:pointer; text-align:center;
   opacity:.35; transition: opacity 150ms ease, transform 120ms ease;
   border: 1px solid transparent; width:100%;
+  white-space:nowrap;
 }
 .hsk-filter-pill.active { opacity:1; }
 .hsk-filter-pill:active { transform:scale(.94); }
-.filter-hint { font-size:.6rem; color:var(--faint); margin-top:2px; }
+.filter-hint { font-size:.66rem; color:var(--faint); margin-top:2px; }
 .status-filter-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .status-filter-pill {
-  padding:6px 4px; border-radius:999px; font-size:.6rem; font-weight:700;
+  padding:6px 4px; border-radius:999px; font-size:.66rem; font-weight:700;
   letter-spacing:.06em; text-transform:uppercase; cursor:pointer; text-align:center;
   opacity:.35; transition: opacity 150ms ease, transform 120ms ease;
   border: 1px solid transparent; width:100%;
@@ -937,7 +939,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-token.selected { border-color:transparent; }
 .tr-token.selected::before { opacity:1; }
 .tr-token .py {
-  display:block; font-size:.62rem; color:var(--green);
+  display:block; font-size:.68rem; color:var(--green);
   margin-bottom:4px; white-space:nowrap;
 }
 .tr-token .zh {
@@ -962,7 +964,7 @@ body.account-open .account-scrim { pointer-events: auto; }
    revealed (per-word tap, or all at once via the eye), growing/shrinking the
    token block as it appears/disappears. */
 .tr-token .en {
-  display:block; font-size:.6rem; color:var(--faint);
+  display:block; font-size:.66rem; color:var(--faint);
   white-space:nowrap; font-style:italic;
   /* max-width:0 keeps the hidden gloss from widening the token — it only
      contributes to the box size once revealed. */
@@ -1189,4 +1191,55 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
+}
+
+/* ══════════════════════════════
+   DESKTOP / POINTER REFINEMENTS
+   Mobile-first app: the rules below only enhance large, mouse-driven screens
+   and never change the touch/phone layout.
+══════════════════════════════ */
+
+/* Hover affordances — mirror the existing :active feedback for mouse users so
+   interactive elements feel responsive with a cursor, not just on tap. */
+@media (hover:hover) and (pointer:fine) {
+  .icon-btn:hover { opacity:.7; }
+  .tab:not(.active):hover { color:var(--muted); }
+  .hsk-group-header:hover { opacity:.8; }
+  .pill:hover { opacity:.85; }
+  .char-tile:hover { background:var(--surf2); }
+  .settings-item:hover {
+    background:var(--surf2);
+    border-color:color-mix(in srgb, var(--txt) 16%, var(--bdr));
+  }
+  .hsk-filter-pill:not(.active):not([disabled]):hover,
+  .status-filter-pill:not(.active):hover { opacity:.7; }
+}
+
+/* On wide screens the centred column becomes a floating, rounded "app card".
+   The page backdrop is derived from the app's own surface tones so the framing
+   blends with the UI instead of sitting on flat or off-palette colour. */
+@media (min-width:900px) {
+  body {
+    align-items:center;
+    background:
+      radial-gradient(140% 100% at 50% 0%,
+        color-mix(in srgb, var(--surf) 60%, var(--bg)),
+        var(--bg) 72%);
+  }
+  .root {
+    height:calc(100dvh - 48px);
+    border-radius:26px;
+    border:1px solid var(--bdr);
+    box-shadow:var(--sh);
+    overflow:hidden;
+  }
+  /* Keep the side drawers inside the card's vertical band and round them to
+     match, so they read as companion cards revealed beside the app. */
+  .settings-panel,
+  .account-panel,
+  .tr-history-panel {
+    top:24px; bottom:24px;
+    border-radius:26px;
+    overflow:hidden;
+  }
 }
