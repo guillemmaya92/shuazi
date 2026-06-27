@@ -56,7 +56,7 @@ export function initPwaInstall() {
     banner.setAttribute('role', 'dialog');
     banner.setAttribute('aria-label', 'Install app');
     banner.innerHTML = `
-      <div class="pwa-banner-icon" aria-hidden="true">刷字</div>
+      <img class="pwa-banner-icon" src="./icons/favicon.svg" alt="Shuazi"/>
       <div class="pwa-banner-text">
         <strong>Install Shuazi</strong>
         <span>Add it to your home screen</span>
