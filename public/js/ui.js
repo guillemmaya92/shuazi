@@ -1527,6 +1527,38 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
   document.getElementById('settingsTermsBtn')?.addEventListener('click', () => closeSettings());
   document.getElementById('settingsPrivacyBtn')?.addEventListener('click', () => closeSettings());
 
+  // Hanzi Rain effect → clean fullscreen overlay with the matrix.html canvas.
+  // No close button: exit via browser back gesture/button, Escape, or swipe-down.
+  const matrixOverlay = document.getElementById('matrixOverlay');
+  const matrixFrame   = document.getElementById('matrixFrame');
+  let matrixOpen = false;
+
+  const openMatrix = () => {
+    closeSettings();
+    if (!matrixFrame.getAttribute('src')) matrixFrame.setAttribute('src', './汉字雨/');
+    matrixOverlay.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => matrixOverlay.classList.add('open'));
+    matrixOpen = true;
+    history.pushState({ matrix: true }, '');
+  };
+  const closeMatrix = (fromPop) => {
+    if (!matrixOpen) return;
+    matrixOpen = false;
+    matrixOverlay.classList.remove('open');
+    matrixOverlay.setAttribute('aria-hidden', 'true');
+    // unwind the history entry we pushed, unless this close came from popstate
+    if (!fromPop && history.state && history.state.matrix) history.back();
+  };
+
+  document.getElementById('settingsMatrixBtn')?.addEventListener('click', openMatrix);
+
+  // back gesture / button
+  window.addEventListener('popstate', () => { if (matrixOpen) closeMatrix(true); });
+  // Escape on desktop (parent document)
+  document.addEventListener('keydown', e => { if (matrixOpen && e.key === 'Escape') closeMatrix(); });
+  // messages from inside the iframe (Escape pressed while focused there, or swipe-down)
+  window.addEventListener('message', e => { if (e.data === 'closeMatrix') closeMatrix(); });
+
   // iPhone-style interactive drag: swipe LEFT on profile to reveal settings;
   // swipe RIGHT while open to push it back. Mirrors the translator history gesture.
   const profileScreen = document.getElementById('screen-profile');

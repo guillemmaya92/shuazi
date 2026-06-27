@@ -644,6 +644,22 @@ body.account-open .account-scrim { pointer-events: auto; }
 .settings-item > span { flex:1; }
 .settings-item > svg:first-child { color:var(--muted); flex-shrink:0; }
 .settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
+.settings-item > .settings-item-hanzi {
+  flex:0 0 18px; width:18px; text-align:center;
+  color:var(--muted); font-size:18px; line-height:1; font-weight:700;
+}
+
+/* Matrix Rain effect overlay */
+.matrix-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: #000;
+  opacity: 0; visibility: hidden;
+  transition: opacity 200ms ease;
+}
+.matrix-overlay.open { opacity: 1; visibility: visible; }
+.matrix-overlay iframe {
+  width: 100%; height: 100%; border: 0; display: block;
+}
 .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
 .modal #modal-content .info-row { margin-top:-14px; }
 .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }

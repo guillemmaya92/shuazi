@@ -515,9 +515,19 @@
       <span>Privacy Policy</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </a>
+    <button class="settings-item" id="settingsMatrixBtn">
+      <span class="settings-item-hanzi" aria-hidden="true">雨</span>
+      <span>Hanzi</span>
+      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
   </div>
 </aside>
 <div class="settings-scrim" id="settingsScrim" aria-hidden="true"></div>
+
+<!-- Hanzi Rain effect overlay -->
+<div class="matrix-overlay" id="matrixOverlay" aria-hidden="true">
+  <iframe id="matrixFrame" title="Hanzi Rain" loading="lazy"></iframe>
+</div>
 
 <!-- Supabase loaded async (non-blocking); onload resolves the ready-gate above -->
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<title>雨字 — Matrix Rain</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: -apple-system, "Segoe UI", sans-serif;
+  }
+  canvas {
+    display: block;
+  }
+  .label {
+    position: fixed;
+    bottom: 14px;
+    left: 18px;
+    color: #888;
+    font-family: monospace;
+    font-size: 12px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<script>
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+
+const chars = "的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能成于然样没还最长凍京汽亦吉並佞昏予棟亍丰從場拚予扎弍京並劲呔吋於亍".split('');
+
+const MOBILE_BREAKPOINT = 768;
+function isMobileWidth() { return window.innerWidth < MOBILE_BREAKPOINT; }
+function deviceDefaults() {
+  return isMobileWidth()
+    ? { baseFontSize: 16, minScale: 0.45, maxScale: 1.25, colGapFactor: 1.15 }
+    : { baseFontSize: 24, minScale: 0.55, maxScale: 1.55, colGapFactor: 1.25 };
+}
+
+// ---- parámetros controlables, con sus valores por defecto ----
+const P = Object.assign({
+  lineGapFactor: 1.18,
+  speedMin: 1.8,
+  speedMax: 8,
+  trailMin: 6,
+  trailMax: 24,
+  headDarkFar: 150,
+  headDarkNear: 0,
+  mergeGrayFar: 248,
+  mergeGrayNear: 165,
+  bgVisFar: 0.06,
+  bgVisNear: 0.28,
+  bgColor: '#000000',
+  fgColor: '#0a7f3d',
+  depthOrder: true,
+  touchRadius: 22,
+  gravity: 600,
+  respawnSeconds: 3
+}, deviceDefaults());
+
+// estos parámetros no requieren regenerar la lluvia, solo se aplican en vivo
+const LIVE_ONLY = new Set(['touchRadius', 'gravity', 'respawnSeconds']);
+
+function randomChar() {
+  return chars[Math.floor(Math.random() * chars.length)];
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function hexToRgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+let cols, columnsData;
+let mouseX = null, mouseY = null;
+let debris = []; // caracteres que se rompieron de su fila y caen libremente
+
+function makeColumn() {
+  const depth = Math.random();
+
+  const fontSize = P.baseFontSize * lerp(P.minScale, P.maxScale, depth);
+  const lineGap  = fontSize * P.lineGapFactor;
+  const rowsC    = Math.ceil(canvas.height / lineGap) + 2;
+
+  const gridChars = new Array(rowsC).fill(0).map(randomChar);
+  const visRange  = lerp(P.bgVisFar, P.bgVisNear, depth);
+  const bgBrightness = new Array(rowsC).fill(0).map(() => 0.02 + Math.random() * visRange);
+
+  return {
+    depth,
+    fontSize,
+    lineGap,
+    rowsC,
+    gridChars,
+    bgBrightness,
+    broken: new Array(rowsC).fill(false),
+    brokenUntil: new Array(rowsC).fill(0),
+    headPos: Math.random() * -30,
+    speed: lerp(P.speedMin, P.speedMax, depth) + Math.random() * (P.speedMax * 0.15),
+    trailLen: Math.round(lerp(P.trailMin, P.trailMax, depth) + Math.random() * 6),
+    headDark: Math.round(lerp(P.headDarkFar, P.headDarkNear, depth)),
+    mergeGray: Math.round(lerp(P.mergeGrayFar, P.mergeGrayNear, depth))
+  };
+}
+
+function setup() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colGap = P.baseFontSize * P.maxScale * P.colGapFactor;
+  cols = Math.ceil(canvas.width / colGap);
+  columnsData = new Array(cols).fill(0).map(makeColumn);
+  setup.colGap = colGap;
+  debris = [];
+}
+
+function update(dt) {
+  for (const s of columnsData) {
+    s.headPos += s.speed * dt;
+    if (s.headPos - s.trailLen > s.rowsC + 5) {
+      const fresh = makeColumn();
+      s.headPos = fresh.headPos;
+      s.speed = fresh.speed;
+      s.trailLen = fresh.trailLen;
+    }
+  }
+}
+
+// si el cursor toca un carácter, lo rompe de su fila y lo manda a la lista de "debris"
+function updateTouch() {
+  const colGap = setup.colGap;
+  const now = performance.now() / 1000;
+  const fg = hexToRgb(P.fgColor);
+
+  for (let i = 0; i < columnsData.length; i++) {
+    const s = columnsData[i];
+    const x = i * colGap;
+
+    for (let r = 0; r < s.rowsC; r++) {
+      if (s.broken[r]) {
+        // se le acabó el tiempo roto -> reaparece como carácter nuevo en su lugar
+        if (now >= s.brokenUntil[r]) {
+          s.broken[r] = false;
+          s.gridChars[r] = randomChar();
+        }
+        continue;
+      }
+      if (mouseX === null) continue;
+
+      const y = r * s.lineGap;
+      const cx = x + s.fontSize / 2;
+      const cy = y + s.fontSize / 2;
+      const dx = cx - mouseX, dy = cy - mouseY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < P.touchRadius) {
+        s.broken[r] = true;
+        s.brokenUntil[r] = now + P.respawnSeconds * (0.7 + Math.random() * 0.6);
+
+        debris.push({
+          x, y,
+          fontSize: s.fontSize,
+          char: s.gridChars[r],
+          color: `rgb(${fg[0]},${fg[1]},${fg[2]})`,
+          vx: (Math.random() - 0.5) * 70,
+          vy: 10 + Math.random() * 50,
+          rot: 0,
+          rotSpeed: (Math.random() - 0.5) * 4
+        });
+      }
+    }
+  }
+}
+
+function updateDebris(dt) {
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    d.vy += P.gravity * dt;
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.rot += d.rotSpeed * dt;
+    if (d.y > canvas.height + 80) debris.splice(i, 1);
+  }
+}
+
+function draw() {
+  const fg = hexToRgb(P.fgColor);
+  const bg = hexToRgb(P.bgColor);
+
+  ctx.fillStyle = P.bgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+
+  const colGap = setup.colGap;
+  let order = columnsData.map((s, i) => i);
+  if (P.depthOrder) order.sort((a, b) => columnsData[a].depth - columnsData[b].depth);
+
+  for (const c of order) {
+    const s = columnsData[c];
+    const x = c * colGap;
+    ctx.font = s.fontSize + 'px monospace';
+
+    for (let r = 0; r < s.rowsC; r++) {
+      if (s.broken[r]) continue; // hueco: ese carácter ya está cayendo como debris
+
+      const diff = s.headPos - r;
+      let g;
+
+      if (diff >= 0 && diff <= s.trailLen) {
+        const t = 1 - diff / s.trailLen;
+        g = t > 0.92 ? s.headDark : Math.round(lerp(s.mergeGray, s.headDark, t));
+      } else {
+        g = Math.round(255 - s.bgBrightness[r] * 300);
+      }
+
+      const tt = Math.min(1, Math.max(0, g / 255));
+      const rr = Math.round(lerp(fg[0], bg[0], tt));
+      const gg = Math.round(lerp(fg[1], bg[1], tt));
+      const bb = Math.round(lerp(fg[2], bg[2], tt));
+      ctx.fillStyle = `rgb(${rr},${gg},${bb})`;
+      ctx.fillText(s.gridChars[r], x, r * s.lineGap);
+    }
+  }
+
+  // dibuja los caracteres rotos, cayendo libremente, encima de todo
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const d of debris) {
+    ctx.save();
+    ctx.translate(d.x + d.fontSize / 2, d.y + d.fontSize / 2);
+    ctx.rotate(d.rot);
+    ctx.font = d.fontSize + 'px monospace';
+    ctx.fillStyle = d.color;
+    ctx.fillText(d.char, 0, 0);
+    ctx.restore();
+  }
+}
+
+let lastTime = performance.now();
+function frame(now) {
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+  update(dt);
+  updateTouch();
+  updateDebris(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+canvas.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+canvas.addEventListener('mouseleave', () => { mouseX = null; mouseY = null; });
+
+// salir del efecto: doble toque/clic o pulsación larga
+function exitMatrix() { window.parent.postMessage('closeMatrix', '*'); }
+
+// táctil: deslizar el dedo rompe los caracteres igual que el ratón
+let pressTimer = null, pressStartX = 0, pressStartY = 0, lastTapTime = 0;
+function setTouchPos(e) {
+  if (!e.touches.length) return;
+  const t = e.touches[0];
+  mouseX = t.clientX; mouseY = t.clientY;
+}
+canvas.addEventListener('touchstart', (e) => {
+  setTouchPos(e);
+  const t = e.touches[0];
+  pressStartX = t.clientX; pressStartY = t.clientY;
+  // pulsación larga (mantener el dedo quieto ~600ms) cierra el efecto
+  clearTimeout(pressTimer);
+  pressTimer = setTimeout(exitMatrix, 600);
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchmove',  (e) => {
+  setTouchPos(e);
+  // si el dedo se mueve, ya no es pulsación larga
+  const t = e.touches[0];
+  if (Math.abs(t.clientX - pressStartX) > 12 || Math.abs(t.clientY - pressStartY) > 12) {
+    clearTimeout(pressTimer);
+  }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend',   (e) => {
+  mouseX = null; mouseY = null;
+  clearTimeout(pressTimer);
+  // doble toque rápido cierra el efecto
+  const now = Date.now();
+  const t = e.changedTouches[0];
+  const moved = Math.abs(t.clientX - pressStartX) > 12 || Math.abs(t.clientY - pressStartY) > 12;
+  if (!moved) {
+    if (now - lastTapTime < 300) { exitMatrix(); lastTapTime = 0; }
+    else lastTapTime = now;
+  }
+}, { passive: false });
+canvas.addEventListener('touchcancel',() => { mouseX = null; mouseY = null; clearTimeout(pressTimer); });
+
+// ratón: doble clic cierra el efecto
+canvas.addEventListener('dblclick', exitMatrix);
+
+// Escape (cuando el foco está dentro del iframe) cierra el efecto
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') exitMatrix(); });
+
+function applyDeviceDefaults() {
+  Object.assign(P, deviceDefaults());
+}
+
+setup();
+let lastIsMobile = isMobileWidth();
+window.addEventListener('resize', () => {
+  const nowMobile = isMobileWidth();
+  if (nowMobile !== lastIsMobile) {
+    lastIsMobile = nowMobile;
+    applyDeviceDefaults();
+  }
+  setup();
+});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
