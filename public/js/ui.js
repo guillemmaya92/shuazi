@@ -1350,9 +1350,9 @@ export function renderProfile() {
 /* ── SLANG ── */
 function shuffleArr(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = 0 | Math.random() * (i + 1); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 
-function makeSlangCardEl(phrase) {
+function makeSlangCardEl(phrase, isStack) {
   const card = document.createElement('div');
-  card.className = 'card phrase-card';
+  card.className = 'card phrase-card ' + (isStack ? 'stack-under' : 'top');
   card.innerHTML = `
     <div class="phrase-inner">
       <div class="phrase-hanzi">${phrase.id}</div>
@@ -1361,82 +1361,86 @@ function makeSlangCardEl(phrase) {
       <div class="phrase-divider"></div>
       <div class="phrase-meaning">${phrase.meaning}</div>
       ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
-      ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" onerror="this.style.display='none'"/>` : ''}
+      ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" draggable="false" onerror="this.style.display='none'"/>` : ''}
     </div>
   `;
   return card;
 }
 
+// Mirrors cards.js render(): a 2-card stack (top + one underneath) styled purely
+// via the shared .card.top / .card.stack-under CSS — same look as the main deck.
 export function renderSlang() {
   const deckPhrEl = document.getElementById('deck-slang');
   if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
   deckPhrEl.innerHTML = '';
-  const stack = state.slangDeck.slice(0, 3);
-  [...stack].reverse().forEach((phrase, ri) => {
-    const i = stack.length - 1 - ri;
-    const card = makeSlangCardEl(phrase);
-    card.style.zIndex = i + 1;
-    card.style.transform = i === stack.length - 1 ? '' : `scale(${0.97 - (stack.length - 1 - i) * 0.01}) translateY(${(stack.length - 1 - i) * 6}px)`;
-    deckPhrEl.appendChild(card);
-    if (i === stack.length - 1) attachPhraseSwipe(card, phrase);
-  });
+  if (state.slangDeck.length > 1) deckPhrEl.appendChild(makeSlangCardEl(state.slangDeck[1], true));
+  const top = makeSlangCardEl(state.slangDeck[0], false);
+  deckPhrEl.appendChild(top);
+  attachPhraseSwipe(top, state.slangDeck[0]);
 }
 
+// Same swipe physics/animation as the main cards' attachDrag (horizontal only,
+// since slang has no known/review classification): same 8px axis lock, 100px
+// commit threshold, rotation and opacity falloff, and the shared .fly / .snap
+// transition classes. Both directions just advance to the next phrase.
 function attachPhraseSwipe(cardEl, phrase) {
-  let startX = 0, dx = 0, active = false;
-  cardEl.addEventListener('pointerdown', e => {
-    startX = e.clientX; dx = 0; active = true;
-    cardEl.style.transition = 'none';
-    cardEl.setPointerCapture(e.pointerId);
-  });
-  cardEl.addEventListener('pointermove', e => {
+  let sx = 0, sy = 0, dx = 0, dy = 0, active = false, axis = null;
+
+  function snap() {
+    cardEl.classList.add('snap');
+    cardEl.style.transform = ''; cardEl.style.opacity = '';
+  }
+  function onStart(x, y) {
+    sx = x; sy = y; dx = 0; dy = 0; active = true; axis = null;
+    cardEl.classList.remove('fly', 'snap');
+  }
+  function onMove(x, y) {
     if (!active) return;
-    dx = e.clientX - startX;
-    cardEl.style.transform = `translateX(${dx}px) rotate(${dx * 0.04}deg)`;
-    cardEl.style.opacity = String(Math.max(.7, 1 - Math.abs(dx) / 300));
-  });
-  cardEl.addEventListener('pointerup', () => {
-    if (!active) return; active = false;
-    if (Math.abs(dx) > 80) {
-      const dir = dx > 0 ? 1 : -1;
-      cardEl.style.transition = 'transform 300ms ease, opacity 300ms ease';
-      cardEl.style.transform = `translateX(${dir * 120}%) rotate(${dir * 20}deg)`;
-      cardEl.style.opacity = '0';
-      state.slangDeck.splice(state.slangDeck.indexOf(phrase), 1);
-      if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
-
-      const deckPhrEl = document.getElementById('deck-slang');
-      const bgCards = [...deckPhrEl.querySelectorAll('.phrase-card')].filter(c => c !== cardEl);
-
-      if (bgCards.length === 0) { setTimeout(renderSlang, 310); return; }
-
-      const newStack = state.slangDeck.slice(0, 3);
-      const N = newStack.length;
-      bgCards.forEach((bgCard, i) => {
-        const newI = N - bgCards.length + i;
-        bgCard.style.transition = 'transform 200ms ease';
-        bgCard.style.zIndex = newI + 1;
-        bgCard.style.transform = newI === N - 1 ? '' : `scale(${0.97 - (N - 1 - newI) * 0.01}) translateY(${(N - 1 - newI) * 6}px)`;
-      });
-
-      const newTopCard = bgCards[bgCards.length - 1];
-      setTimeout(() => {
-        cardEl.remove();
-        if (state.slangDeck.length >= 3) {
-          const newCard = makeSlangCardEl(state.slangDeck[2]);
-          newCard.style.zIndex = 1;
-          newCard.style.transform = `scale(${0.97 - (N - 1) * 0.01}) translateY(${(N - 1) * 6}px)`;
-          deckPhrEl.insertBefore(newCard, deckPhrEl.firstChild);
-        }
-        if (newTopCard.isConnected) attachPhraseSwipe(newTopCard, state.slangDeck[0]);
-      }, 310);
-    } else {
-      cardEl.style.transition = 'transform 300ms ease, opacity 300ms ease';
-      cardEl.style.transform = '';
-      cardEl.style.opacity = '1';
+    dx = x - sx; dy = y - sy;
+    if (!axis) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+      else return;
     }
-  });
-  cardEl.addEventListener('pointercancel', () => { active = false; cardEl.style.transform = ''; cardEl.style.opacity = '1'; });
+    if (axis !== 'x') { cardEl.style.transform = ''; cardEl.style.opacity = ''; return; }
+    cardEl.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
+    cardEl.style.opacity = String(Math.max(.7, 1 - Math.abs(dx) / 360));
+  }
+  function advance(dir) {
+    const deckPhrEl = document.getElementById('deck-slang');
+    // Fly the top card off-screen.
+    cardEl.classList.add('fly');
+    cardEl.style.transform = `translateX(${dir * 140}%) rotate(${dir * 16}deg)`;
+    cardEl.style.opacity = '0';
+
+    state.slangDeck.splice(state.slangDeck.indexOf(phrase), 1);
+    if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
+
+    // Smoothly promote the existing under-card to the top (no rebuild = no flash).
+    const under = deckPhrEl.querySelector('.phrase-card.stack-under');
+    if (!under) { setTimeout(renderSlang, 210); return; }
+    under.classList.add('snap');          // .snap eases the scale/opacity change
+    under.classList.remove('stack-under');
+    under.classList.add('top');
+    attachPhraseSwipe(under, state.slangDeck[0]);
+
+    // Slot a fresh card behind the new top right away (hidden under the opaque
+    // top card), so quick consecutive swipes always have one ready to promote.
+    if (state.slangDeck.length > 1) {
+      deckPhrEl.insertBefore(makeSlangCardEl(state.slangDeck[1], true), deckPhrEl.firstChild);
+    }
+
+    setTimeout(() => cardEl.remove(), 230);
+  }
+  function onEnd() {
+    if (!active) return; active = false;
+    if (axis === 'x' && Math.abs(dx) > 100) advance(dx > 0 ? 1 : -1);
+    else snap();
+  }
+
+  cardEl.addEventListener('pointerdown', e => { onStart(e.clientX, e.clientY); cardEl.setPointerCapture(e.pointerId); });
+  cardEl.addEventListener('pointermove', e => onMove(e.clientX, e.clientY));
+  cardEl.addEventListener('pointerup', onEnd);
+  cardEl.addEventListener('pointercancel', () => { active = false; snap(); });
 }
 
 /* ── SORT & SEARCH ── */

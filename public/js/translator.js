@@ -210,7 +210,7 @@ function stopPlayback() {
 
 // Speaks Chinese text. Tries cloud TTS first, falls back to Web Speech on any
 // failure. `onState` (optional) toggles UI feedback (true while playing).
-async function speak(text, onState) {
+export async function speak(text, onState) {
   if (!text) return;
   stopPlayback();
   onState?.(true);

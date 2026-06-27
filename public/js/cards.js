@@ -2,6 +2,22 @@ import { supa, FREE_HSK } from './config.js';
 import { state } from './state.js';
 import { saveState, loadState, saveSettings } from './progress.js';
 import { renderGroups } from './ui.js';
+import { speak } from './translator.js';
+
+// Speaker SVG used by the per-card "listen" button.
+const LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
+
+// Wires a card's listen button to play the character's pronunciation. Stops
+// pointer/click propagation so it never triggers the card's drag or tap zones.
+function attachListen(el, text) {
+  const btn = el.querySelector('.listen-btn');
+  if (!btn) return;
+  btn.addEventListener('pointerdown', e => e.stopPropagation());
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    speak(text, on => btn.classList.toggle('playing', on));
+  });
+}
 
 // Cache in-flight promises so prefetch + on-demand callers share one request
 // (and a fast tap awaits the prefetch instead of racing it to an empty result).
@@ -196,7 +212,10 @@ function makeCard(card, isStack) {
         </div>
       </div>
     </div>
+    <button class="listen-btn" aria-label="Listen to pronunciation">${LISTEN_SVG}</button>
   `;
+
+  attachListen(el, card.char);
 
   const pages    = el.querySelector('#pages');
   const segs     = el.querySelectorAll('.seg');
@@ -318,7 +337,10 @@ function makeWordCard(card, isStack) {
         </div>
       </div>
     </div>
+    <button class="listen-btn" aria-label="Listen to pronunciation">${LISTEN_SVG}</button>
   `;
+
+  attachListen(el, card.char);
 
   const pages = el.querySelector('#pages');
   const segs  = el.querySelectorAll('.seg');

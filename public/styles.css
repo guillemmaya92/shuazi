@@ -198,7 +198,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   position:absolute; inset:0; border-radius:24px;
   background:var(--surf2); border:1px solid var(--bdr);
   box-shadow:var(--sh); overflow:hidden;
-  touch-action:none; user-select:none;
+  touch-action:none; user-select:none; -webkit-user-select:none;
   display:flex; flex-direction:column;
 }
 .card::before {
@@ -280,8 +280,30 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .ans-hint { font-size:.68rem; color:var(--faint); margin-top:2px; }
 .tap-hint { font-size:.68rem; color:var(--faint); text-align:center; }
 
-/* card bottom */
-.card-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+/* card bottom — reserve room on the right so the listen button sits beside the
+   HSK level pill instead of overlapping it. */
+.card-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:6px; padding-right:46px; }
+
+/* Listen button: plays the character's pronunciation. Sits above the tap zones
+   (z-index 6 > 5) so it's tappable, and hides on the info page. */
+.listen-btn {
+  position:absolute; bottom:14px; right:18px; z-index:6;
+  width:34px; height:34px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--surf); border:1px solid var(--bdr);
+  color:var(--muted); pointer-events:auto;
+  transition:transform 120ms ease, color 150ms ease, background 150ms ease, opacity 180ms ease;
+}
+.listen-btn svg { width:18px; height:18px; }
+.listen-btn:active { transform:scale(.9); }
+.listen-btn.playing {
+  color:var(--blue); background:var(--blue-bg);
+  border-color:color-mix(in srgb, var(--blue) 30%, var(--bdr));
+}
+.card[data-page="1"] .listen-btn { opacity:0; pointer-events:none; }
+@media (hover:hover) and (pointer:fine) {
+  .listen-btn:hover { color:var(--blue); }
+}
 
 /* pages slider */
 .pages { position:absolute; inset:0; display:flex; transition:transform 280ms cubic-bezier(0.4,0,0.2,1); will-change:transform; }
@@ -380,7 +402,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .phrase-divider { height:1px; background:var(--bdr); margin:2px 0; flex-shrink:0; }
 .phrase-meaning { font-size:.9rem; color:var(--txt); line-height:1.65; font-weight:300; flex-shrink:0; }
 .phrase-origin { font-size:.78rem; color:var(--faint); line-height:1.55; flex-shrink:0; }
-.phrase-img { width:100%; border-radius:12px; object-fit:contain; flex:1; min-height:0; max-height:200px; margin-top:4px; mix-blend-mode:multiply; }
+.phrase-img { width:100%; border-radius:12px; object-fit:contain; flex:1; min-height:0; max-height:200px; margin-top:4px; mix-blend-mode:multiply; user-select:none; -webkit-user-select:none; -webkit-user-drag:none; pointer-events:none; }
 [data-theme="dark"] .phrase-img { mix-blend-mode:screen; }
 .done h2 { font-size:1.2rem; font-weight:700; }
 .done p  { font-size:.84rem; color:var(--muted); }
