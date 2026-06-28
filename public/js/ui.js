@@ -868,8 +868,15 @@ export async function openWordModal(word, backStack = []) {
   phrasesEl.innerHTML = phrases.length === 0
     ? '<span style="color:var(--faint);font-size:.75rem">No phrases found</span>'
     : phrases.map(p =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span></div>`
+        `<div style="position:relative;display:flex;flex-direction:column;gap:2px;padding:7px 34px 7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span><button class="cell-listen-btn phrase-listen-btn" data-phrase="${p.phrase}" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>`
       ).join('');
+
+  phrasesEl.querySelectorAll('.phrase-listen-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      speak(btn.dataset.phrase, on => btn.classList.toggle('playing', on));
+    });
+  });
 }
 
 const modalSheet = document.getElementById('modal');

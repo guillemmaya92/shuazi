@@ -331,6 +331,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   transition:transform 120ms ease, color 150ms ease, background 150ms ease;
 }
 .cell-listen-btn svg { width:12px; height:12px; }
+.phrase-listen-btn { top:7px; right:7px; bottom:auto; }
 .cell-listen-btn:active { transform:scale(.9); }
 .cell-listen-btn.playing {
   color:var(--blue); background:var(--blue-bg);
