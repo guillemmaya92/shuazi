@@ -3,7 +3,29 @@ import { state } from './state.js';
 import { saveState, saveSettings } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
-import { initTranslator } from './translator.js';
+import { initTranslator, speak } from './translator.js';
+
+// Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
+const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
+
+function attachModalListen(text) {
+  const btn = modalContent.querySelector('.cell-listen-btn');
+  if (!btn) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    speak(text, on => btn.classList.toggle('playing', on));
+  });
+}
+
+// Radical/component glyphs (e.g. 氵) are often non-standalone forms the TTS can't
+// voice, and raw pinyin ("shuǐ") gets read as letters. So resolve to a real hanzi
+// with the same reading — the glyph itself if it's a known character, otherwise any
+// character sharing its exact pinyin (same sound + tone). Falls back to the glyph.
+function hanziForReading(glyph, pinyin) {
+  if (state.CHARACTERS.some(c => c.char === glyph)) return glyph;
+  const match = pinyin && state.CHARACTERS.find(c => c.pinyin === pinyin);
+  return match ? match.char : glyph;
+}
 
 /* ── GROUPS ── */
 const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
@@ -90,6 +112,8 @@ export function renderGroups() {
             radPressTimer = null;
             activeRadical = activeRadical === rad.radical ? null : rad.radical;
             activeComponent = null;
+            radicalsCollapsed = false;   // keep the Radicals grid open after the search bar closes
+            closeSearchBar();
             renderGroups();
             if (navigator.vibrate) navigator.vibrate(30);
           }, 450);
@@ -180,6 +204,8 @@ export function renderGroups() {
             compPressTimer = null;
             activeComponent = activeComponent === comp.id ? null : comp.id;
             activeRadical = null;
+            componentsCollapsed = false;   // keep the Components grid open after the search bar closes
+            closeSearchBar();
             renderGroups();
             if (navigator.vibrate) navigator.vibrate(30);
           }, 450);
@@ -297,7 +323,7 @@ export function renderGroups() {
         const fs = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.68rem';
         const isKnown  = state.known.has(word.word);
         const isRepaso = state.unknown.has(word.word);
-        tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
+        tile.className = 'char-tile word-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
         tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
         tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp">${word.pinyin ?? ''}</div>
           <div class="toggle-btn">
@@ -595,7 +621,7 @@ export async function openModal(card) {
   modalContent.innerHTML = `
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
       <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
-      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
@@ -604,6 +630,8 @@ export async function openModal(card) {
     <div class="words-title">Compound words</div>
     <div class="words-list">${groupsHTML}</div>
   `;
+
+  attachModalListen(card.char);
 
   modalContent.querySelectorAll('.word-group-header').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -646,21 +674,21 @@ export async function openModal(card) {
 function openRadicalModal(rad) {
   const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
   const charsHTML = chars.length === 0
-    ? '<div class="word-item" style="color:var(--faint)">No characters found</div>'
+    ? '<span style="color:var(--faint);font-size:.75rem">No characters found</span>'
     : chars.map(c =>
-        `<div class="word-item"><strong style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.1rem">${c.char}</strong><span class="word-pinyin">${c.pinyin}</span><span class="word-meaning">${c.meaning}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
 
   modalContent.innerHTML = `
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
-      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
+      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="word-phrases-list" style="display:flex;flex-direction:column;gap:6px;margin-top:3px">${charsHTML}</div></div>
     </div>
-    <div class="words-title">Compound characters <span style="font-size:.65rem;color:var(--faint);font-weight:400">(${chars.length})</span></div>
-    <div class="words-list">${charsHTML}</div>
   `;
+  attachModalListen(hanziForReading(rad.radical, rad.pinyin));
   backdrop.classList.add('open');
 }
 
@@ -668,21 +696,23 @@ function openComponentModal(comp) {
   const set = state.charsByComponent[comp.id];
   const chars = set ? state.CHARACTERS.filter(c => set.has(c.id)) : [];
   const charsHTML = chars.length === 0
-    ? '<div class="word-item" style="color:var(--faint)">No characters found</div>'
+    ? '<span style="color:var(--faint);font-size:.75rem">No characters found</span>'
     : chars.map(c =>
-        `<div class="word-item"><strong style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.1rem">${c.char}</strong><span class="word-pinyin">${c.pinyin}</span><span class="word-meaning">${c.meaning}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
+
+  const hasPinyin = !!(comp.pinyin && comp.pinyin.trim());
 
   modalContent.innerHTML = `
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="info-cell"><div class="lbl">Component</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
-      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${comp.pinyin}</div></div>
+      <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">Pinyin</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${comp.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${comp.meaning}</div></div>
+      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="word-phrases-list" style="display:flex;flex-direction:column;gap:6px;margin-top:3px">${charsHTML}</div></div>
     </div>
-    <div class="words-title">Compound characters <span style="font-size:.65rem;color:var(--faint);font-weight:400">(${chars.length})</span></div>
-    <div class="words-list">${charsHTML}</div>
   `;
+  if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
   backdrop.classList.add('open');
 }
 
@@ -698,12 +728,13 @@ async function openWordModal(word) {
     <div class="info-row" style="grid-template-columns:1fr 1fr">
       <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">HSK ${word.hsk ?? '?'}</span></div></div>
-      <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
       <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list" id="wm-phrases"><span style="color:var(--faint);font-size:.75rem">Loading…</span></div></div>
     </div>
   `;
+  attachModalListen(word.word);
   backdrop.classList.add('open');
 
   await fetchPhrasesForWord(word.id);
@@ -1464,6 +1495,14 @@ searchToggleBtn.addEventListener('click', () => {
   if (open) searchInput.focus();
   else { searchInput.value = ''; state.gridSearch = ''; renderGroups(); }
 });
+// Collapse the search bar (used when a long-press radical/component filter takes over).
+function closeSearchBar() {
+  if (!searchBarWrap.classList.contains('open')) return;
+  searchBarWrap.classList.remove('open');
+  document.getElementById('searchHint').style.display = 'none';
+  searchInput.value = '';
+  state.gridSearch = '';
+}
 searchInput.addEventListener('input', () => { state.gridSearch = searchInput.value; renderGroups(); });
 searchClear.addEventListener('click', () => { searchInput.value = ''; state.gridSearch = ''; renderGroups(); searchInput.focus(); });
 
