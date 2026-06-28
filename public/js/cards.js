@@ -236,7 +236,13 @@ function makeCard(card, isStack) {
     if (wordsList.dataset.loaded) return;
     await fetchWordsForChar(card);
     wordsList.dataset.loaded = '1';
-    const cardWords = (state.wordsByChar[card.char] || []).slice(0, 3);
+    // Show the most-used compound words: 2+ characters only, ordered by HSK then
+    // frequency asc (the fetch already returns frequency asc, so a stable sort by
+    // HSK keeps the most-frequent word first within each level).
+    const cardWords = (state.wordsByChar[card.char] || [])
+      .filter(w => [...(w.id || '')].length > 1)
+      .sort((a, b) => (a.hsk ?? 99) - (b.hsk ?? 99))
+      .slice(0, 3);
     wordsList.style.display       = 'flex';
     wordsList.style.flexDirection = 'column';
     wordsList.style.gap           = '6px';
@@ -260,8 +266,11 @@ function makeCard(card, isStack) {
       el.dataset.answer = '1';
       tapHint.style.visibility = 'hidden';
       await fetchWordsForChar(card);
-      // Prefer a compound (2+ characters) so the example isn't just the card char itself.
-      const w = (state.wordsByChar[card.char] || []).find(x => [...(x.id || '')].length >= 2);
+      // Same criterion as the info page: most-used compound word (2+ characters),
+      // ordered by HSK then frequency asc, so the example isn't just the card char.
+      const w = (state.wordsByChar[card.char] || [])
+        .filter(x => [...(x.id || '')].length > 1)
+        .sort((a, b) => (a.hsk ?? 99) - (b.hsk ?? 99))[0];
       const exHTML = w
         ? `<span style="display:block;color:var(--txt);font-size:.9rem;font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-weight:600;line-height:1.3">${w.id}</span><span style="display:block;color:var(--muted);font-size:.75rem;font-weight:300;line-height:1.3">${w.pinyin}</span><span style="display:block;color:var(--faint);font-size:.75rem;font-weight:300;line-height:1.3">${w.meaning}</span>`
         : '—';

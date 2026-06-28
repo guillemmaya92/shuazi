@@ -1468,6 +1468,9 @@ function attachPhraseSwipe(cardEl, phrase) {
     else snap();
   }
 
+  // Expose so the keyboard handler can advance the top card with the arrow keys.
+  cardEl.advance = advance;
+
   cardEl.addEventListener('pointerdown', e => { onStart(e.clientX, e.clientY); cardEl.setPointerCapture(e.pointerId); });
   cardEl.addEventListener('pointermove', e => onMove(e.clientX, e.clientY));
   cardEl.addEventListener('pointerup', onEnd);
@@ -1768,6 +1771,14 @@ document.addEventListener('keydown', e => {
   // Don't hijack keys (space, arrows…) while typing in a text field — e.g. the translator.
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  // Slang screen: arrow keys (or A/D) flick the top phrase card to the next one.
+  if (scrPhrases.classList.contains('active')) {
+    const topPhrase = document.getElementById('deck-slang')?.querySelector('.phrase-card.top');
+    if (!topPhrase) return;
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') topPhrase.advance?.(1);
+    else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') topPhrase.advance?.(-1);
+    return;
+  }
   // Only the cards screen reacts to deck shortcuts.
   if (!scrCards.classList.contains('active')) return;
   const deckEl = document.getElementById('deck');
