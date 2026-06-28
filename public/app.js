@@ -129,6 +129,18 @@ async function loadRest(mode) {
 const rebuildDeck = () =>
   state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
 
+// Rebuild the deck but keep whatever card is currently on top still in front, so
+// an async load (progress/settings after auth) never yanks the card the user is
+// already looking at out from under them on open. Falls back to a fresh build's
+// order if that card is no longer in the deck (e.g. filtered out by settings).
+const rebuildDeckKeepingTop = () => {
+  const prevTopChar = state.deck && state.deck[0] && state.deck[0].char;
+  const next = rebuildDeck();
+  const i = prevTopChar ? next.findIndex(c => c.char === prevTopChar) : -1;
+  if (i > 0) next.unshift(next.splice(i, 1)[0]);
+  return next;
+};
+
 // Restore theme before first paint
 try {
   const t = localStorage.getItem('shuazi-theme');
@@ -189,7 +201,7 @@ loadCritical(bootMode).then(() => {
       await loadSettingsFromSupabase();
       setTheme(state.theme);   // apply the account's saved theme
       await restReady;
-      state.deck = rebuildDeck();
+      state.deck = rebuildDeckKeepingTop();
       render();
       renderGroups();
       renderProfile();
@@ -206,7 +218,7 @@ loadCritical(bootMode).then(() => {
         await loadSettingsFromSupabase();
         setTheme(state.theme);   // apply the account's saved theme
         await restReady;
-        state.deck = rebuildDeck();
+        state.deck = rebuildDeckKeepingTop();
         render();
         stats();
         renderGroups();
