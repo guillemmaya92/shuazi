@@ -208,6 +208,23 @@ function stopPlayback() {
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
 
+// Gives the browser/OS media UI the Shuazi logo (otherwise it shows a blank or
+// generic icon when our TTS Audio element starts playing). Absolute icon paths
+// so it resolves the same from any page.
+function setMediaSession(text) {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: text,
+      artist: 'Shuazi',
+      artwork: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      ],
+    });
+  } catch { /* MediaMetadata unsupported — ignore */ }
+}
+
 // Speaks Chinese text. Tries cloud TTS first, falls back to Web Speech on any
 // failure. `onState` (optional) toggles UI feedback (true while playing).
 export async function speak(text, onState) {
@@ -219,6 +236,7 @@ export async function speak(text, onState) {
   try {
     const url = await fetchTtsUrl(text);
     const audio = new Audio(url);
+    setMediaSession(text);
     stopCurrent = () => { audio.pause(); done(); };
     audio.onended = () => { done(); stopCurrent = null; };
     audio.onerror = () => { done(); stopCurrent = null; };
