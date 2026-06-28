@@ -5,13 +5,13 @@
   --safe-r: env(safe-area-inset-right,  0px);
 }
 [data-theme="dark"] {
-  --bg:        #0e1215;
-  --surf:      #161c21;
-  --surf2:     #1d252c;
+  --bg:        #11161a; /* lifted off near-black to soften the harsh edge contrast */
+  --surf:      #181f25;
+  --surf2:     #212a31; /* a touch more elevation separation from --surf */
   --bdr:       rgba(255,255,255,.08);
-  --txt:       #e8f0f4;
-  --muted:     #8fa4b0;
-  --faint:     #7090a0; /* was #4a5c68 — lifted to 5.6:1 contrast on dark bg */
+  --txt:       #dbe3e8; /* softened from #e8f0f4 to reduce white-on-black halation */
+  --muted:     #94a7b3;
+  --faint:     #7593a3; /* lifted for ~5.6:1 contrast on the dark bg */
   --red:       #d9705a;
   --red-bg:    rgba(217,112,90,.15);
   --green:     #68bf8a;
@@ -19,18 +19,18 @@
   --blue:      #64a0e6;
   --blue-bg:   rgba(100,160,230,.15);
   --sh:        0 28px 70px rgba(0,0,0,.6), 0 4px 14px rgba(0,0,0,.3);
-  --tabbar:    rgba(14,18,21,.88);
+  --tabbar:    rgba(17,22,26,.88);
   --bar-bg:    rgba(255,255,255,.18);
   --bar-act:   rgba(255,255,255,.92);
 }
 [data-theme="light"] {
-  --bg:        #e7e1d7; /* warm low-glare base, dropped a touch from #f0ebe4 */
-  --surf:      #efe9e0; /* soft off-white instead of near-white */
-  --surf2:     #f6f1e9; /* was #ffffff — pure white removed to cut eye strain */
+  --bg:        #e4ded3; /* gently warmed, low-glare base */
+  --surf:      #ede7de; /* soft warm surface */
+  --surf2:     #f3eee5; /* was #ffffff — no pure white */
   --bdr:       rgba(0,0,0,.08);
-  --txt:       #1c1510;
-  --muted:     #6b5e54; /* was #7a6d63 — darkened to 5.1:1 contrast on light bg */
-  --faint:     #6a5c50; /* was #b0a49a — darkened to 5.3:1 contrast on light bg */
+  --txt:       #251d17; /* slightly softened ink, not full black */
+  --muted:     #645750;
+  --faint:     #635649;
   --red:       #b04030;
   --red-bg:    rgba(176,64,48,.11);
   --green:     #3a7a56;
@@ -38,7 +38,7 @@
   --blue:      #2560b0;
   --blue-bg:   rgba(37,96,176,.11);
   --sh:        0 28px 70px rgba(28,21,16,.18), 0 4px 14px rgba(28,21,16,.08);
-  --tabbar:    rgba(231,225,215,.92);
+  --tabbar:    rgba(228,222,211,.92);
   --bar-bg:    rgba(0,0,0,.18);
   --bar-act:   rgba(0,0,0,.85);
 }
