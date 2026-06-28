@@ -772,7 +772,7 @@ function openComponentModal(comp, backStack = []) {
   backdrop.classList.add('open');
 }
 
-async function openWordModal(word, backStack = []) {
+export async function openWordModal(word, backStack = []) {
   const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
 
   const posDesc = state.POS_TAGS?.[word.pos];

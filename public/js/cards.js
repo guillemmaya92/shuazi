@@ -1,7 +1,7 @@
 import { supa, FREE_HSK } from './config.js';
 import { state } from './state.js';
 import { saveState, loadState, saveSettings } from './progress.js';
-import { renderGroups } from './ui.js';
+import { renderGroups, openWordModal } from './ui.js';
 import { speak } from './translator.js';
 
 // Speaker SVG used by the per-card "listen" button.
@@ -337,7 +337,7 @@ function makeWordCard(card, isStack) {
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:1fr 1fr">
-          <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+          <div class="info-cell"><div class="lbl">Word</div><button class="card-word-btn val" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</button></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
           <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
@@ -357,6 +357,21 @@ function makeWordCard(card, isStack) {
   const tzC   = el.querySelector('.tz-center');
   const tzR   = el.querySelector('.tz-right');
   const aa    = el.querySelector('#aa');
+
+  // The word glyph on the info page acts as a button to open the full word modal.
+  // It lives inside .pages (its own stacking context from the slide transform), so
+  // it can never paint above the tap-zone overlay — instead we hit-test the tap
+  // against its rect from within the tap-zone handlers below.
+  const wordBtn = el.querySelector('.card-word-btn');
+  function maybeOpenWord(e) {
+    if (+el.dataset.page !== 1) return false;
+    const r = wordBtn.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      openWordModal(card);
+      return true;
+    }
+    return false;
+  }
 
   const phrasesEl = el.querySelector('.word-phrases-list');
 
@@ -383,10 +398,11 @@ function makeWordCard(card, isStack) {
     if (n === 1) renderPhrases();
   }
 
-  tzL.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
+  tzL.addEventListener('click', e => { e.stopPropagation(); if (maybeOpenWord(e)) return; const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
   tzR.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c < PAGES - 1) goPage(c + 1); });
   tzC.addEventListener('click', async e => {
     e.stopPropagation();
+    if (maybeOpenWord(e)) return;
     if (+el.dataset.page !== 0) return;
     const tapHint = el.querySelector('#tap-hint');
     if (el.dataset.answer === '1') {

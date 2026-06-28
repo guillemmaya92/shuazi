@@ -318,6 +318,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .info-cell .val { font-size:.88rem; font-weight:600; color:var(--txt); line-height:1.3; }
 .info-cell .val .hsk-pill { white-space:nowrap; max-width:100%; }
 .info-cell.full { grid-column:1/-1; }
+.info-cell .card-word-btn { display:inline-block; width:auto; margin:0; padding:0; background:none; border:none; text-align:left; cursor:pointer; color:var(--blue); -webkit-tap-highlight-color:transparent; }
 .info-cell.cell-listen { position:relative; }
 .info-cell.cell-listen .cell-listen-main { padding-right:30px; }
 .cell-listen-btn {
