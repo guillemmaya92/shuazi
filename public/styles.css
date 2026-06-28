@@ -344,6 +344,16 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chips.stack .char-chip { flex-direction:column; gap:1px; padding:4px 8px; }
 .char-chips.stack .char-chip .cc-py { text-align:center; }
 .char-chip-empty { font-size:.85rem; color:var(--faint); }
+.char-chip-link { cursor:pointer; font:inherit; background:var(--blue-bg); border-color:color-mix(in srgb, var(--blue) 35%, transparent); transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
+.char-chip-link .cc-glyph { color:var(--blue); }
+.char-chip-link .cc-py { color:var(--blue); }
+@media (hover:hover) and (pointer:fine) { .char-chip-link:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
+.char-chip-link:active { transform:scale(.94); background:color-mix(in srgb, var(--blue) 30%, transparent); }
+.modal-back { display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:999px; color:var(--blue); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
+.modal-back svg { stroke:var(--blue); }
+.modal-back span { font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; color:var(--blue); }
+@media (hover:hover) and (pointer:fine) { .modal-back:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
+.modal-back:active { transform:scale(.96); background:color-mix(in srgb, var(--blue) 30%, transparent); }
 .cc-desc { font-weight:500; color:var(--muted); }
 .words-title { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
@@ -551,7 +561,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-tile .tp { font-size:.68rem; color:var(--faint); margin-top:2px; }
 /* Word tiles hold multi-character words + longer pinyin, so let the content wrap
    and fit the tile width instead of overflowing (being clipped) the square. */
-.char-tile.word-tile { padding:2px 4px; }
+.char-tile.word-tile { padding:2px 4px; overflow:hidden; }
 .char-tile.word-tile .tc { max-width:100%; text-align:center; line-height:1.1; word-break:break-word; }
 .char-tile.word-tile .tp { max-width:100%; text-align:center; line-height:1.15; font-size:.6rem; word-break:break-word; }
 .char-tile.known {
@@ -709,6 +719,8 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
 .modal #modal-content .info-row { margin-top:-14px; }
+.modal #modal-content .modal-back { margin-top:-14px; }
+.modal #modal-content .modal-back + .info-row { margin-top:6px; }
 .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }
 .modal #modal-content .words-list { margin-top:6px; }
 

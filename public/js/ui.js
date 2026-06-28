@@ -320,12 +320,13 @@ export function renderGroups() {
       wgroup.forEach(word => {
         const tile = document.createElement('button');
         const len = [...(word.word || '')].length;
-        const fs = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.68rem';
+        const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
+        const pfs = len >= 4 ? '.5rem' : '.6rem';
         const isKnown  = state.known.has(word.word);
         const isRepaso = state.unknown.has(word.word);
         tile.className = 'char-tile word-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
         tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
-        tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp">${word.pinyin ?? ''}</div>
+        tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp" style="font-size:${pfs}">${word.pinyin ?? ''}</div>
           <div class="toggle-btn">
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="2,6 5,9 10,3"/>
@@ -560,6 +561,31 @@ export function renderGroups() {
 const backdrop     = document.getElementById('modal-backdrop');
 const modalContent = document.getElementById('modal-content');
 
+/* Navigation stack for drilling word → char → radical/component. Each modal
+   receives the trail of entries behind it; the back button pops one level. */
+function modalEntryLabel(e) {
+  return e.kind === 'word'    ? e.data.word
+       : e.kind === 'char'    ? e.data.char
+       : e.kind === 'radical' ? e.data.radical
+       :                        e.data.component;
+}
+function openModalEntry(entry, backStack) {
+  if (entry.kind === 'word')      return openWordModal(entry.data, backStack);
+  if (entry.kind === 'char')      return openModal(entry.data, backStack);
+  if (entry.kind === 'radical')   return openRadicalModal(entry.data, backStack);
+  if (entry.kind === 'component') return openComponentModal(entry.data, backStack);
+}
+function modalBackHTML(backStack) {
+  if (!backStack?.length) return '';
+  const label = modalEntryLabel(backStack[backStack.length - 1]);
+  return `<button type="button" class="modal-back" id="modal-back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>${label}</span></button>`;
+}
+function wireModalBack(backStack) {
+  if (!backStack?.length) return;
+  const btn = modalContent.querySelector('#modal-back-btn');
+  btn?.addEventListener('click', () => openModalEntry(backStack[backStack.length - 1], backStack.slice(0, -1)));
+}
+
 export function closeResetModal() {
   const rb = document.getElementById('reset-backdrop');
   rb.classList.remove('open');
@@ -569,7 +595,7 @@ export function closeResetModal() {
   rm.style.transform  = '';
 }
 
-export async function openModal(card) {
+export async function openModal(card, backStack = []) {
   await fetchWordsForChar(card);
   const cardWords = (state.wordsByChar[card.char] || []);
   const groupMap = {};
@@ -610,15 +636,20 @@ export async function openModal(card) {
 
   const radInfo = state.RADICALS.find(r => r.radical === card.radical);
   const radicalHTML = card.radical
-    ? `<span class="char-chip"><span class="cc-glyph">${card.radical}</span>${radInfo?.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</span>`
+    ? (radInfo
+        ? `<button type="button" class="char-chip char-chip-link" data-radical="${card.radical}"><span class="cc-glyph">${card.radical}</span>${radInfo.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</button>`
+        : `<span class="char-chip"><span class="cc-glyph">${card.radical}</span></span>`)
     : '<span class="char-chip-empty">—</span>';
 
   const charComponents = state.COMPONENTS.filter(comp => state.charsByComponent[comp.id]?.has(card.id));
   const componentsHTML = charComponents.length
-    ? charComponents.map(c => `<span class="char-chip"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</span>`).join('')
+    ? charComponents.map(c => `<button type="button" class="char-chip char-chip-link" data-comp-id="${c.id}"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</button>`).join('')
     : '<span class="char-chip-empty">—</span>';
 
+  const backHTML = modalBackHTML(backStack);
+
   modalContent.innerHTML = `
+    ${backHTML}
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
       <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
@@ -632,6 +663,23 @@ export async function openModal(card) {
   `;
 
   attachModalListen(card.char);
+
+  wireModalBack(backStack);
+
+  const deeper = [...backStack, { kind: 'char', data: card }];
+  modalContent.querySelectorAll('.char-chip-link[data-comp-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const comp = state.COMPONENTS.find(c => c.id === +btn.dataset.compId);
+      if (comp) openComponentModal(comp, deeper);
+    });
+  });
+
+  modalContent.querySelectorAll('.char-chip-link[data-radical]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rad = state.RADICALS.find(r => r.radical === btn.dataset.radical);
+      if (rad) openRadicalModal(rad, deeper);
+    });
+  });
 
   modalContent.querySelectorAll('.word-group-header').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -671,7 +719,7 @@ export async function openModal(card) {
   backdrop.classList.add('open');
 }
 
-function openRadicalModal(rad) {
+function openRadicalModal(rad, backStack = []) {
   const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
   const charsHTML = chars.length === 0
     ? '<span style="color:var(--faint);font-size:.75rem">No characters found</span>'
@@ -679,7 +727,10 @@ function openRadicalModal(rad) {
         `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
 
+  const backHTML = modalBackHTML(backStack);
+
   modalContent.innerHTML = `
+    ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
@@ -689,10 +740,11 @@ function openRadicalModal(rad) {
     </div>
   `;
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
+  wireModalBack(backStack);
   backdrop.classList.add('open');
 }
 
-function openComponentModal(comp) {
+function openComponentModal(comp, backStack = []) {
   const set = state.charsByComponent[comp.id];
   const chars = set ? state.CHARACTERS.filter(c => set.has(c.id)) : [];
   const charsHTML = chars.length === 0
@@ -703,7 +755,10 @@ function openComponentModal(comp) {
 
   const hasPinyin = !!(comp.pinyin && comp.pinyin.trim());
 
+  const backHTML = modalBackHTML(backStack);
+
   modalContent.innerHTML = `
+    ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
       <div class="info-cell"><div class="lbl">Component</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
       <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">Pinyin</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
@@ -713,10 +768,11 @@ function openComponentModal(comp) {
     </div>
   `;
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
+  wireModalBack(backStack);
   backdrop.classList.add('open');
 }
 
-async function openWordModal(word) {
+async function openWordModal(word, backStack = []) {
   const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
 
   const posDesc = state.POS_TAGS?.[word.pos];
@@ -724,17 +780,40 @@ async function openWordModal(word) {
     ? `<span class="char-chip"><span class="cc-glyph" style="font-size:.72rem">${posDesc}</span></span>`
     : '<span class="char-chip-empty">—</span>';
 
+  const wordChars = [...(word.word || '')]
+    .map(ch => state.CHARACTERS.find(c => c.char === ch))
+    .filter(Boolean);
+  const charsHTML = wordChars.length
+    ? wordChars.map(c =>
+        `<button type="button" class="char-chip char-chip-link" data-char="${c.char}"><span class="cc-glyph">${c.char}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</button>`
+      ).join('')
+    : '<span class="char-chip-empty">—</span>';
+
+  const backHTML = modalBackHTML(backStack);
+
   modalContent.innerHTML = `
+    ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr">
       <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">HSK ${word.hsk ?? '?'}</span></div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
+      <div class="info-cell full"><div class="lbl">Characters</div><div class="char-chips stack">${charsHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list" id="wm-phrases"><span style="color:var(--faint);font-size:.75rem">Loading…</span></div></div>
     </div>
   `;
   attachModalListen(word.word);
+  wireModalBack(backStack);
+
+  const deeper = [...backStack, { kind: 'word', data: word }];
+  modalContent.querySelectorAll('.char-chip-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ch   = btn.dataset.char;
+      const card = state.CHARACTERS.find(c => c.char === ch);
+      if (card) openModal(card, deeper);
+    });
+  });
   backdrop.classList.add('open');
 
   await fetchPhrasesForWord(word.id);
