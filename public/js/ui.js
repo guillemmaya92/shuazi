@@ -719,13 +719,60 @@ export async function openModal(card, backStack = []) {
   openModalSheet();
 }
 
-function openRadicalModal(rad, backStack = []) {
-  const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
-  const charsHTML = chars.length === 0
-    ? '<span style="color:var(--faint);font-size:.75rem">No characters found</span>'
-    : chars.map(c =>
+function compoundCharsHTML(chars) {
+  if (chars.length === 0)
+    return '<span style="color:var(--faint);font-size:.75rem">No characters found</span>';
+
+  const groupMap = {};
+  chars.forEach(c => {
+    const g = c.hsk ?? 'Other';
+    if (!groupMap[g]) groupMap[g] = [];
+    groupMap[g].push(c);
+  });
+  const groupOrder = Object.keys(groupMap).sort((a, b) => {
+    if (a === 'Other') return 1;
+    if (b === 'Other') return -1;
+    return a - b;
+  });
+
+  return groupOrder.map((g, i) => {
+    const label = g === 'Other' ? 'Other' : `HSK ${g}`;
+    const items = groupMap[g]
+      .slice()
+      .sort((a, b) => (a.pinyin ?? '').localeCompare(b.pinyin ?? ''))
+      .map(c =>
         `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
+    const open = i === 0;
+    return `
+      <div class="word-group">
+        <button class="word-group-header" data-open="${open}">
+          <span>${label}</span>
+          <span class="word-group-count">${groupMap[g].length}</span>
+          <svg class="word-group-chev ${open ? 'open' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="word-group-body ${open ? '' : 'collapsed'}" style="display:flex;flex-direction:column;gap:6px;padding:${open ? '8px 10px' : '0 10px'}">${items}</div>
+      </div>`;
+  }).join('');
+}
+
+function wireCompoundGroups() {
+  modalContent.querySelectorAll('.word-group-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const open = btn.dataset.open === 'true';
+      const body = btn.nextElementSibling;
+      const chev = btn.querySelector('.word-group-chev');
+      btn.dataset.open = !open;
+      body.classList.toggle('collapsed', open);
+      body.style.padding = open ? '0 10px' : '8px 10px';
+      chev.classList.toggle('open', !open);
+    });
+  });
+}
+
+function openRadicalModal(rad, backStack = []) {
+  const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
+  const charsHTML = compoundCharsHTML(chars);
 
   const backHTML = modalBackHTML(backStack);
 
@@ -736,22 +783,19 @@ function openRadicalModal(rad, backStack = []) {
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
-      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="word-phrases-list" style="display:flex;flex-direction:column;gap:6px;margin-top:3px">${charsHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
     </div>
   `;
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
   wireModalBack(backStack);
+  wireCompoundGroups();
   openModalSheet();
 }
 
 function openComponentModal(comp, backStack = []) {
   const set = state.charsByComponent[comp.id];
   const chars = set ? state.CHARACTERS.filter(c => set.has(c.id)) : [];
-  const charsHTML = chars.length === 0
-    ? '<span style="color:var(--faint);font-size:.75rem">No characters found</span>'
-    : chars.map(c =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
-      ).join('');
+  const charsHTML = compoundCharsHTML(chars);
 
   const hasPinyin = !!(comp.pinyin && comp.pinyin.trim());
 
@@ -764,11 +808,12 @@ function openComponentModal(comp, backStack = []) {
       <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">Pinyin</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${comp.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${comp.meaning}</div></div>
-      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="word-phrases-list" style="display:flex;flex-direction:column;gap:6px;margin-top:3px">${charsHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
     </div>
   `;
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
   wireModalBack(backStack);
+  wireCompoundGroups();
   openModalSheet();
 }
 
