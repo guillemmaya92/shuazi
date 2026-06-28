@@ -1581,7 +1581,7 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
 
   const openMatrix = () => {
     closeSettings();
-    if (!matrixFrame.getAttribute('src')) matrixFrame.setAttribute('src', './汉字雨/');
+    if (!matrixFrame.getAttribute('src')) matrixFrame.setAttribute('src', './汉字雨.html');
     matrixOverlay.setAttribute('aria-hidden', 'false');
     requestAnimationFrame(() => matrixOverlay.classList.add('open'));
     matrixOpen = true;
