@@ -637,13 +637,13 @@ export async function openModal(card, backStack = []) {
   const radInfo = state.RADICALS.find(r => r.radical === card.radical);
   const radicalHTML = card.radical
     ? (radInfo
-        ? `<button type="button" class="char-chip char-chip-link" data-radical="${card.radical}"><span class="cc-glyph">${card.radical}</span>${radInfo.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</button>`
+        ? `<button type="button" class="char-chip char-chip-link char-chip-radical" data-radical="${card.radical}"><span class="cc-glyph">${card.radical}</span>${radInfo.pinyin ? `<span class="cc-py">${radInfo.pinyin}</span>` : ''}</button>`
         : `<span class="char-chip"><span class="cc-glyph">${card.radical}</span></span>`)
     : '<span class="char-chip-empty">—</span>';
 
   const charComponents = state.COMPONENTS.filter(comp => state.charsByComponent[comp.id]?.has(card.id));
   const componentsHTML = charComponents.length
-    ? charComponents.map(c => `<button type="button" class="char-chip char-chip-link" data-comp-id="${c.id}"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</button>`).join('')
+    ? charComponents.map(c => `<button type="button" class="char-chip char-chip-link char-chip-component" data-comp-id="${c.id}"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</button>`).join('')
     : '<span class="char-chip-empty">—</span>';
 
   const backHTML = modalBackHTML(backStack);
@@ -1182,7 +1182,7 @@ export function renderProfile() {
     return `<button class="status-filter-pill ${cls} ${active ? 'active' : ''}" data-status="${key}">${label}</button>`;
   }).join('');
 
-  const groupsPills = ['characters', 'words'].map(key => {
+  const groupsPills = ['words', 'characters'].map(key => {
     const active = state.groupsContent === key;
     const label  = key === 'characters' ? 'Characters' : 'Words';
     return `<button class="status-filter-pill groups-pill ${active ? 'active' : ''}" data-groups="${key}">${label}</button>`;

@@ -243,8 +243,8 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .hsk-pill { padding:4px 11px; border-radius:999px; font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
 .hsk-1 { background:rgba(220,158,40,.14);  color:#d89e32; border:1px solid rgba(220,158,40,.28); }
 .hsk-2 { background:rgba(42,118,136,.16);  color:#3a9aaf; border:1px solid rgba(42,118,136,.30); }
-.radical { background:rgba(138,123,168,.14); color:#8a7ba8; border:1px solid rgba(138,123,168,.28); }
-.component { background:rgba(62,156,143,.14); color:#3e9c8f; border:1px solid rgba(62,156,143,.28); }
+.radical { background:rgba(62,156,143,.14); color:#3e9c8f; border:1px solid rgba(62,156,143,.28); }
+.component { background:rgba(120,120,130,.14); color:#7e7e88; border:1px solid rgba(120,120,130,.28); }
 .hsk-3 { background:rgba(210,95,30,.14);   color:#c8612a; border:1px solid rgba(210,95,30,.28); }
 .hsk-4 { background:rgba(168,28,38,.16);   color:#c04050; border:1px solid rgba(168,28,38,.30); }
 .hsk-5 { background:rgba(55,90,148,.20);   color:#6890c8; border:1px solid rgba(55,90,148,.38); }
@@ -349,6 +349,14 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chip-link .cc-py { color:var(--blue); }
 @media (hover:hover) and (pointer:fine) { .char-chip-link:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
 .char-chip-link:active { transform:scale(.94); background:color-mix(in srgb, var(--blue) 30%, transparent); }
+.char-chip-radical { background:rgba(62,156,143,.14); border-color:rgba(62,156,143,.35); }
+.char-chip-radical .cc-glyph, .char-chip-radical .cc-py { color:#3e9c8f; }
+@media (hover:hover) and (pointer:fine) { .char-chip-radical:hover { background:rgba(62,156,143,.22); border-color:#3e9c8f; } }
+.char-chip-radical:active { background:rgba(62,156,143,.30); }
+.char-chip-component { background:rgba(120,120,130,.14); border-color:rgba(120,120,130,.35); }
+.char-chip-component .cc-glyph, .char-chip-component .cc-py { color:#7e7e88; }
+@media (hover:hover) and (pointer:fine) { .char-chip-component:hover { background:rgba(120,120,130,.22); border-color:#7e7e88; } }
+.char-chip-component:active { background:rgba(120,120,130,.30); }
 .modal-back { display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:999px; color:var(--blue); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
 .modal-back svg { stroke:var(--blue); }
 .modal-back span { font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; color:var(--blue); }
@@ -593,13 +601,13 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-tile.empty { opacity:.4; }
 .char-tile.empty .tc { color:var(--faint); -webkit-text-fill-color:var(--faint); }
 .char-tile.empty .tp { color:var(--faint); }
-.radical-tile.active { background:rgba(138,123,168,.22); border-color:rgba(138,123,168,.5); }
-.radical-tile.active .tc { color:#8a7ba8; -webkit-text-fill-color:#8a7ba8; }
-.radical-tile.active .tp { color:#8a7ba8; opacity:.7; }
+.radical-tile.active { background:rgba(62,156,143,.22); border-color:rgba(62,156,143,.5); }
+.radical-tile.active .tc { color:#3e9c8f; -webkit-text-fill-color:#3e9c8f; }
+.radical-tile.active .tp { color:#3e9c8f; opacity:.7; }
 .char-grid.radical-filtered .radical-tile:not(.active) { display:none; }
-.component-tile.active { background:rgba(62,156,143,.22); border-color:rgba(62,156,143,.5); }
-.component-tile.active .tc { color:#3e9c8f; -webkit-text-fill-color:#3e9c8f; }
-.component-tile.active .tp { color:#3e9c8f; opacity:.7; }
+.component-tile.active { background:rgba(120,120,130,.22); border-color:rgba(120,120,130,.5); }
+.component-tile.active .tc { color:#7e7e88; -webkit-text-fill-color:#7e7e88; }
+.component-tile.active .tp { color:#7e7e88; opacity:.7; }
 .char-grid.component-filtered .component-tile:not(.active) { display:none; }
 
 /* char detail modal */

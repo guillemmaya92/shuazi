@@ -2,7 +2,7 @@
 // the boot sequence can put the matching data on the critical path and build the
 // first deck with the right filters. For signed-in users these are refreshed from
 // Supabase on login (see loadSettingsFromSupabase).
-let _initialMode     = 'characters';
+let _initialMode     = 'words';
 let _initialHsk      = [1, 2, 3, 4, 5, 6];
 let _initialStatuses = ['left', 'know', 'review'];
 let _initialTheme    = 'light';
