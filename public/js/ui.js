@@ -716,7 +716,7 @@ export async function openModal(card, backStack = []) {
     });
   });
 
-  backdrop.classList.add('open');
+  openModalSheet();
 }
 
 function openRadicalModal(rad, backStack = []) {
@@ -741,7 +741,7 @@ function openRadicalModal(rad, backStack = []) {
   `;
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
   wireModalBack(backStack);
-  backdrop.classList.add('open');
+  openModalSheet();
 }
 
 function openComponentModal(comp, backStack = []) {
@@ -769,7 +769,7 @@ function openComponentModal(comp, backStack = []) {
   `;
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
   wireModalBack(backStack);
-  backdrop.classList.add('open');
+  openModalSheet();
 }
 
 export async function openWordModal(word, backStack = []) {
@@ -814,7 +814,7 @@ export async function openWordModal(word, backStack = []) {
       if (card) openModal(card, deeper);
     });
   });
-  backdrop.classList.add('open');
+  openModalSheet();
 
   await fetchPhrasesForWord(word.id);
   const phrasesEl = modalContent.querySelector('#wm-phrases');
@@ -833,19 +833,54 @@ export async function openWordModal(word, backStack = []) {
 const modalSheet = document.getElementById('modal');
 const MODAL_EASE = 'cubic-bezier(0.32,0.72,0,1)';
 
+// Bumped on every open. A close that started before the latest open carries a
+// stale generation, so its (possibly delayed) cleanup is ignored — otherwise a
+// pending transitionend/timeout from a previous close could tear down a freshly
+// reopened modal, making it flash open then closed.
+let modalGen = 0;
+let modalOpenedAt = 0;
+
 function closeModal() {
+  const gen = modalGen;
   modalSheet.style.transition = `transform 300ms ${MODAL_EASE}`;
   backdrop.style.transition   = 'background 300ms ease';
   modalSheet.style.transform  = 'translateY(100%)';
   backdrop.style.background    = 'rgba(0,0,0,0)';
-  modalSheet.addEventListener('transitionend', () => {
+  // transitionend can be missed on Android (interrupted transition, backgrounded
+  // tab…), which would leave the blurred backdrop stuck on screen — so guard the
+  // cleanup with a timeout fallback. Skip it if a newer open has happened since.
+  const cleanup = () => {
+    if (gen !== modalGen) return;
     backdrop.classList.remove('open');
     modalSheet.style.transition = ''; modalSheet.style.transform = ''; modalSheet.style.willChange = '';
     backdrop.style.transition   = ''; backdrop.style.background = '';
-  }, { once: true });
+  };
+  modalSheet.addEventListener('transitionend', cleanup, { once: true });
+  setTimeout(cleanup, 360);
 }
 
-backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+// Reveal the modal sheet. Clears any inline styles left by a previous close or
+// swipe-drag before adding `.open` — on Android a missed `transitionend` can leave
+// `transform:translateY(100%)` on the sheet, which (after the slide-up animation
+// ends) hides it behind the blurred backdrop, looking like a stuck blurry screen.
+function openModalSheet() {
+  modalGen++;
+  modalOpenedAt = Date.now();
+  modalSheet.style.transition = '';
+  modalSheet.style.transform  = '';
+  modalSheet.style.willChange = '';
+  backdrop.style.transition   = '';
+  backdrop.style.background   = '';
+  backdrop.classList.add('open');
+}
+
+backdrop.addEventListener('click', e => {
+  // Ignore the tap that opened the sheet: on Android the backdrop appears under the
+  // finger mid-tap, and the tap's (synthesized) click then lands on the backdrop,
+  // which would instantly close the modal it just opened.
+  if (Date.now() - modalOpenedAt < 350) return;
+  if (e.target === backdrop) closeModal();
+});
 
 // Swipe-down-to-close. Only starts when the sheet is scrolled to the very top and
 // the finger moves down, so it never steals scrolling of long content. Pointer
