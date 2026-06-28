@@ -604,12 +604,19 @@ export async function openModal(card, backStack = []) {
     if (!groupMap[g]) groupMap[g] = [];
     groupMap[g].push(w);
   });
-  const groupOrder = Object.keys(groupMap).sort((a, b) => a - b);
+  const groupOrder = Object.keys(groupMap).sort((a, b) => {
+    if (a === 'Other') return 1;
+    if (b === 'Other') return -1;
+    return a - b;
+  });
   const groupsHTML = groupOrder.length === 0
     ? '<div class="word-item" style="color:var(--faint)">No words found</div>'
     : groupOrder.map((g, i) => {
         const label = g === 'Other' ? 'Other' : `HSK ${g}`;
-        const items = groupMap[g].map(w =>
+        const items = groupMap[g]
+          .slice()
+          .sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0))
+          .map(w =>
           `<div class="word-exp" data-word-id="${w.dbId}">
             <button class="word-exp-header">
               <div class="word-exp-info">
@@ -630,7 +637,7 @@ export async function openModal(card, backStack = []) {
               <span class="word-group-count">${groupMap[g].length}</span>
               <svg class="word-group-chev ${open ? 'open' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="word-group-body ${open ? '' : 'collapsed'}">${items}</div>
+            <div class="word-group-body ${open ? '' : 'collapsed'}" style="display:flex;flex-direction:column;gap:6px;padding:${open ? '8px 10px' : '0 10px'}">${items}</div>
           </div>`;
       }).join('');
 
@@ -651,15 +658,14 @@ export async function openModal(card, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-      <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+      <div class="info-cell"><div class="lbl">Char</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
       <div class="info-cell full"><div class="lbl">Components</div><div class="char-chips stack">${componentsHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">Compound words (${cardWords.length})</div><div class="words-list" style="margin-top:6px">${groupsHTML}</div></div>
     </div>
-    <div class="words-title">Compound words</div>
-    <div class="words-list">${groupsHTML}</div>
   `;
 
   attachModalListen(card.char);
@@ -681,16 +687,7 @@ export async function openModal(card, backStack = []) {
     });
   });
 
-  modalContent.querySelectorAll('.word-group-header').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const open = btn.dataset.open === 'true';
-      const body = btn.nextElementSibling;
-      const chev = btn.querySelector('.word-group-chev');
-      btn.dataset.open = !open;
-      body.classList.toggle('collapsed', open);
-      chev.classList.toggle('open', !open);
-    });
-  });
+  wireCompoundGroups();
 
   modalContent.querySelectorAll('.word-exp-header').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -739,9 +736,9 @@ function compoundCharsHTML(chars) {
     const label = g === 'Other' ? 'Other' : `HSK ${g}`;
     const items = groupMap[g]
       .slice()
-      .sort((a, b) => (a.pinyin ?? '').localeCompare(b.pinyin ?? ''))
+      .sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0))
       .map(c =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
     const open = i === 0;
     return `
@@ -779,7 +776,7 @@ function openRadicalModal(rad, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
+      <div class="info-cell"><div class="lbl">Radical</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
