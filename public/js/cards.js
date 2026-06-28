@@ -1,7 +1,7 @@
 import { supa, FREE_HSK } from './config.js';
 import { state } from './state.js';
 import { saveState, loadState, saveSettings } from './progress.js';
-import { renderGroups, openWordModal } from './ui.js';
+import { renderGroups, openWordModal, openModal } from './ui.js';
 import { speak } from './translator.js';
 
 // Speaker SVG used by the per-card "listen" button.
@@ -203,7 +203,7 @@ function makeCard(card, isStack) {
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-          <div class="info-cell"><div class="lbl">Hanzi</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+          <div class="info-cell"><div class="lbl">Hanzi</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
           <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.62rem">HSK ${card.hsk}</span></div></div>
@@ -224,6 +224,20 @@ function makeCard(card, isStack) {
   const tzR      = el.querySelector('.tz-right');
   const aa       = el.querySelector('#aa');
   const wordsList = el.querySelector('.word-phrases-list');
+
+  // The hanzi chip on the info page opens the full character modal. It lives inside
+  // .pages (its own stacking context from the slide transform), so it can't paint
+  // above the tap-zone overlay — we hit-test the tap against its rect instead.
+  const wordBtn = el.querySelector('.card-word-btn');
+  function maybeOpenWord(e) {
+    if (+el.dataset.page !== 1) return false;
+    const r = wordBtn.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      openModal(card);
+      return true;
+    }
+    return false;
+  }
 
   function goPage(n) {
     el.dataset.page = String(n);
@@ -253,10 +267,11 @@ function makeCard(card, isStack) {
       : '<span style="color:var(--faint);font-size:.75rem">No words found</span>';
   }
 
-  tzL.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
+  tzL.addEventListener('click', e => { e.stopPropagation(); if (maybeOpenWord(e)) return; const c = +el.dataset.page; if (c > 0) goPage(c - 1); });
   tzR.addEventListener('click', e => { e.stopPropagation(); const c = +el.dataset.page; if (c < PAGES - 1) goPage(c + 1); });
   tzC.addEventListener('click', async e => {
     e.stopPropagation();
+    if (maybeOpenWord(e)) return;
     if (+el.dataset.page !== 0) return;
     const tapHint = el.querySelector('#tap-hint');
     if (el.dataset.answer === '1') {
@@ -337,7 +352,7 @@ function makeWordCard(card, isStack) {
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:1fr 1fr">
-          <div class="info-cell"><div class="lbl">Word</div><button class="card-word-btn val" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</button></div>
+          <div class="info-cell"><div class="lbl">Word</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
           <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
           <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
