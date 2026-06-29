@@ -98,6 +98,7 @@ export function buildDeck(src) {
     return state.activeStatuses.has('left');
   });
   shuffle(cards);
+  state.deckInitial = cards.length;   // reset session progress for the new deck
   return cards;
 }
 
@@ -111,6 +112,7 @@ export function buildWordDeck() {
     return state.activeStatuses.has('left');
   });
   shuffle(cards);
+  state.deckInitial = cards.length;   // reset session progress for the new deck
   return cards;
 }
 
@@ -118,6 +120,20 @@ const deckEl  = document.getElementById('deck');
 const vRest   = document.getElementById('vRest');
 const vKnown  = document.getElementById('vKnown');
 const vRepaso = document.getElementById('vRepaso');
+const deckProgFill = document.getElementById('deckProgFill');
+const deckProgPct  = document.getElementById('deckProgPct');
+
+// Thin progress bar: session progress through the current deck —
+// (initial deck size − cards remaining) / initial. Respects every filter
+// because it's derived from the actual deck, and resets when the deck rebuilds.
+export function updateDeckProgress() {
+  if (!deckProgFill) return;
+  const init = state.deckInitial || 0;
+  const done = Math.max(0, init - state.deck.length);
+  const pct  = init ? Math.min(100, Math.round(done / init * 100)) : 0;
+  deckProgFill.style.width = pct + '%';
+  deckProgPct.textContent  = pct + '%';
+}
 
 export function stats() {
   if (state.groupsContent === 'words') {
@@ -128,6 +144,7 @@ export function stats() {
     vRest.textContent   = leftN;
     vKnown.textContent  = knownN;
     vRepaso.textContent = reviewN;
+    updateDeckProgress();
     const pKnown = document.getElementById('p-known');
     if (pKnown) {
       const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.coverage ?? 0), 0);
@@ -146,6 +163,7 @@ export function stats() {
     vRest.textContent   = leftN;
     vKnown.textContent  = knownN;
     vRepaso.textContent = reviewN;
+    updateDeckProgress();
     const pKnown = document.getElementById('p-known');
     if (pKnown) {
       const cov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
@@ -593,6 +611,7 @@ export function init(src, forceNew) {
     // A saved deck made entirely of word strings (e.g. left over from words mode)
     // maps to nothing here — fall back to a fresh build so we never show an empty deck.
     if (!state.deck.length) state.deck = buildDeck(src);
+    else state.deckInitial = state.deck.length;   // restored mid-session deck
   } else {
     state.deck = buildDeck(src);
   }

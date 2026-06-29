@@ -2,7 +2,7 @@ import { supa } from './config.js';
 import { state } from './state.js';
 import { saveState, saveSettings } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
-import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
+import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord, updateDeckProgress } from './cards.js';
 import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
 
@@ -367,6 +367,7 @@ export function renderGroups() {
             document.getElementById('vKnown').textContent  = _k;
             document.getElementById('vRepaso').textContent = _r;
             document.getElementById('vRest').textContent   = _f.length - _k - _r;
+            updateDeckProgress();
             const pKnown = document.getElementById('p-known');
             if (pKnown) {
               const total = _f.length;
@@ -529,6 +530,7 @@ export function renderGroups() {
             document.getElementById('vKnown').textContent  = _k;
             document.getElementById('vRepaso').textContent = _r;
             document.getElementById('vRest').textContent   = _f.length - _k - _r;
+            updateDeckProgress();
             if (navigator.vibrate) navigator.vibrate(30);
           }, 450);
         }
@@ -1331,7 +1333,6 @@ export function renderProfile() {
     <div class="profile-section">
       <div class="words-title">Game</div>
       <div class="groups-filter-row">${groupsPills}</div>
-      <p class="filter-hint">Select what to show in the Groups tab.</p>
     </div>
 
     <div class="profile-section">

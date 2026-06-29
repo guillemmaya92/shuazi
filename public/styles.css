@@ -191,6 +191,13 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .icon-btn.active { background:var(--blue-bg); border-color:var(--blue); color:var(--blue); }
 
 /* deck */
+/* Thin deck-progress bar: fills with the share of the deck already seen.
+   Bottom-of-screen, kept fine and discreet. */
+.deck-progress { display:flex; align-items:center; gap:7px; padding:0 4px; }
+.deck-progress-track { flex:1; height:2px; border-radius:999px; background:var(--bdr); overflow:hidden; }
+.deck-progress-fill { height:100%; width:0; background:var(--muted); border-radius:999px; transition:width .35s cubic-bezier(.22,1,.36,1); }
+.deck-progress-pct { font-size:.54rem; font-weight:700; color:var(--faint); min-width:26px; text-align:right; letter-spacing:.03em; }
+
 .deck-wrap { position:relative; flex:1; }
 .deck      { position:absolute; inset:0; }
 
@@ -751,7 +758,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 .hsk-filter-pill.active { opacity:1; }
 .hsk-filter-pill:active { transform:scale(.94); }
-.filter-hint { font-size:.66rem; color:var(--faint); margin-top:2px; }
+.filter-hint { font-size:.66rem; color:var(--faint); margin-top:-4px; }
 .status-filter-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .status-filter-pill {
   padding:6px 4px; border-radius:999px; font-size:.66rem; font-weight:700;
@@ -767,6 +774,9 @@ body.account-open .account-scrim { pointer-events: auto; }
 .groups-filter-row { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
 .groups-pill { background:var(--surf); color:var(--muted); border-color:var(--bdr); }
 .profile-section { display:flex; flex-direction:column; gap:8px; }
+/* Profile spacing system: 16px between sections, 8px rhythm inside each, and
+   hints hug the control they describe (negative margin on .filter-hint). */
+#profile-scroll { gap:16px; }
 
 /* ══════════════════════════════
    SCREEN — TRANSLATOR

@@ -32,6 +32,7 @@ export const state = {
   wordsByChar:   {},
   phrasesByWord: {},
   deck:          [],
+  deckInitial:   0,    // deck size when (re)built — for the session progress bar
   known:         new Set(),
   unknown:       new Set(),
   supaUser:      null,
