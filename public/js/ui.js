@@ -738,7 +738,7 @@ function compoundCharsHTML(chars) {
       .slice()
       .sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0))
       .map(c =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
     const open = i === 0;
     return `
