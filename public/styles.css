@@ -188,6 +188,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .sort-btn { width:auto; border-radius:999px; padding:0 10px; gap:4px; display:flex; flex-direction:row; }
 .icon-btn:active { opacity:.6; }
+.icon-btn.active { background:var(--blue-bg); border-color:var(--blue); color:var(--blue); }
 
 /* deck */
 .deck-wrap { position:relative; flex:1; }
@@ -970,6 +971,21 @@ body.account-open .account-scrim { pointer-events: auto; }
   background:var(--muted); border-color:var(--muted);
   color:var(--surf2); -webkit-text-fill-color:var(--surf2);
 }
+
+/* Copy button (next to the Hanzi result title) — grey variant like Listen */
+.tr-copy { width:31px; height:31px; }
+.tr-copy svg { width:15px; height:15px; }
+.tr-copy {
+  background:color-mix(in srgb, var(--muted) 14%, transparent);
+  border-color:color-mix(in srgb, var(--muted) 32%, transparent);
+  color:var(--muted); -webkit-text-fill-color:var(--muted);
+}
+.tr-copy:hover { background:color-mix(in srgb, var(--muted) 24%, transparent); }
+.tr-copy:active { background:var(--muted); border-color:var(--muted); color:var(--surf2); -webkit-text-fill-color:var(--surf2); }
+.tr-copy .ic-copied { display:none; }
+.tr-copy.copied { background:var(--green); border-color:var(--green); color:#fff; -webkit-text-fill-color:#fff; }
+.tr-copy.copied .ic-copied { display:block; }
+.tr-copy.copied .ic-copy { display:none; }
 
 .tr-original-line {
   font-size:1rem; line-height:1.5; color:var(--muted);

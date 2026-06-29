@@ -1674,6 +1674,7 @@ const searchToggleBtn = document.getElementById('searchToggleBtn');
 
 searchToggleBtn.addEventListener('click', () => {
   const open = searchBarWrap.classList.toggle('open');
+  searchToggleBtn.classList.toggle('active', open);
   document.getElementById('searchHint').style.display = open ? 'block' : 'none';
   if (open) searchInput.focus();
   else { searchInput.value = ''; state.gridSearch = ''; renderGroups(); }
@@ -1682,6 +1683,7 @@ searchToggleBtn.addEventListener('click', () => {
 function closeSearchBar() {
   if (!searchBarWrap.classList.contains('open')) return;
   searchBarWrap.classList.remove('open');
+  searchToggleBtn.classList.remove('active');
   document.getElementById('searchHint').style.display = 'none';
   searchInput.value = '';
   state.gridSearch = '';

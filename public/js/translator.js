@@ -332,6 +332,7 @@ export function initTranslator() {
   const emptyEl     = document.getElementById('trEmpty');
   const zhLineEl    = document.getElementById('trZh');
   const speakBtn    = document.getElementById('trSpeak');
+  const copyBtn     = document.getElementById('trCopy');
   const countEl      = document.getElementById('trCount');
   const originalSection = document.getElementById('trOriginalSection');
   const originalEl   = document.getElementById('trOriginal');
@@ -379,6 +380,30 @@ export function initTranslator() {
     });
   }
 
+  // Copy the Hanzi translation to the clipboard, with a brief checkmark.
+  if (copyBtn) {
+    let copiedTimer = null;
+    copyBtn.addEventListener('click', async () => {
+      const text = zhLineEl.textContent;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // Fallback for older / insecure contexts without the async clipboard API.
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+      }
+      copyBtn.classList.add('copied');
+      clearTimeout(copiedTimer);
+      copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 1400);
+    });
+  }
+
   // The eye reveals / hides every English gloss at once.
   if (eyeBtn) {
     eyeBtn.addEventListener('click', () => {
@@ -406,6 +431,7 @@ export function initTranslator() {
       speakBtn.style.display = 'none';
       speakBtn.classList.remove('playing');
     }
+    if (copyBtn) { copyBtn.style.display = 'none'; copyBtn.classList.remove('copied'); }
     if (eyeBtn) { eyeBtn.style.display = 'none'; eyeBtn.classList.remove('showing'); }
     if ('speechSynthesis' in window) speechSynthesis.cancel();
   }
@@ -421,6 +447,7 @@ export function initTranslator() {
     zhSection.style.display = '';
     tokensSection.style.display = '';
     if (canSpeak) speakBtn.style.display = '';
+    if (copyBtn) copyBtn.style.display = '';
   }
 
   async function handleSubmit() {
