@@ -102,6 +102,7 @@ function settingsPayload() {
     hsk:      [...state.activeHskLevels],
     statuses: [...state.activeStatuses],
     theme:    state.theme,
+    showPinyin: state.showPinyin,
   };
 }
 

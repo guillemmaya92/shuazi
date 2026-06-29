@@ -569,6 +569,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   -webkit-text-fill-color:var(--txt);
 }
 .char-tile .tp { font-size:.68rem; color:var(--faint); margin-top:2px; }
+.groups-scroll.hide-pinyin .char-tile .tp { display:none; }
 /* Word tiles hold multi-character words + longer pinyin, so let the content wrap
    and fit the tile width instead of overflowing (being clipped) the square. */
 .char-tile.word-tile { padding:2px 4px; overflow:hidden; }

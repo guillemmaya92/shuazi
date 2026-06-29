@@ -40,6 +40,7 @@ export function renderGroups() {
   const levels = [1, 2, 3, 4, 5, 6];
   const q = state.gridSearch.trim();
   container.innerHTML = '';
+  container.classList.toggle('hide-pinyin', !state.showPinyin);
 
   const sectionTitle = (text, sub, rightHTML = '') => {
     const h = document.createElement('div');
@@ -1648,6 +1649,22 @@ document.getElementById('sortBtn').onclick = () => {
   state.gridSort = SORT_CYCLE[(SORT_CYCLE.indexOf(state.gridSort) + 1) % SORT_CYCLE.length];
   document.getElementById('sortLabel').textContent = SORT_LABELS[state.gridSort];
   renderGroups();
+};
+
+/* ── PINYIN TOGGLE (eye) ── */
+const EYE_SVG     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+const pinyinToggleBtn = document.getElementById('pinyinToggleBtn');
+function syncPinyinToggle() {
+  pinyinToggleBtn.innerHTML = state.showPinyin ? EYE_SVG : EYE_OFF_SVG;
+  pinyinToggleBtn.classList.toggle('active', !state.showPinyin);
+}
+syncPinyinToggle();
+pinyinToggleBtn.onclick = () => {
+  state.showPinyin = !state.showPinyin;
+  syncPinyinToggle();
+  renderGroups();
+  saveSettings();
 };
 
 const searchBarWrap   = document.getElementById('searchBarWrap');
