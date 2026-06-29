@@ -1161,6 +1161,12 @@ tabProfile.onclick   = () => showTab('profile');
 
   barEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // Ignore touches starting in the bottom safe-area (the iOS home-indicator
+    // zone). Swiping along the bottom edge to switch apps lives there and would
+    // otherwise drag the tab pill / switch tabs.
+    const r = barEl.getBoundingClientRect();
+    const padB = parseFloat(getComputedStyle(barEl).paddingBottom) || 0;
+    if (padB > 0 && e.clientY > r.bottom - padB) return;
     const active = document.querySelector('.tab.active');
     if (!active) return;
     dragging = true; moved = false;
