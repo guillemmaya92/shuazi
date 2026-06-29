@@ -4,6 +4,7 @@ import { saveState, saveSettings } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord } from './cards.js';
 import { initTranslator, speak } from './translator.js';
+import { setupPullRefresh } from './pull-refresh.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -36,11 +37,12 @@ let activeComponent = null; // component id
 const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6]);
 
 export function renderGroups() {
-  const container = document.getElementById('groups-scroll');
+  const scrollEl = document.getElementById('groups-scroll');
+  const container = document.getElementById('groups-content');
   const levels = [1, 2, 3, 4, 5, 6];
   const q = state.gridSearch.trim();
   container.innerHTML = '';
-  container.classList.toggle('hide-pinyin', !state.showPinyin);
+  scrollEl.classList.toggle('hide-pinyin', !state.showPinyin);
 
   const sectionTitle = (text, sub, rightHTML = '') => {
     const h = document.createElement('div');
@@ -1690,6 +1692,28 @@ function closeSearchBar() {
 }
 searchInput.addEventListener('input', () => { state.gridSearch = searchInput.value; renderGroups(); });
 searchClear.addEventListener('click', () => { searchInput.value = ''; state.gridSearch = ''; renderGroups(); searchInput.focus(); });
+
+// Pull down from the top of the groups list to clear the active filters
+// (radical / component / search) — same gesture as the translator results.
+function clearGroupFilters() {
+  activeRadical = null;
+  activeComponent = null;
+  radicalsCollapsed = true;     // collapse both Radicals and Components grids
+  componentsCollapsed = true;
+  searchBarWrap.classList.remove('open');
+  searchToggleBtn.classList.remove('active');
+  document.getElementById('searchHint').style.display = 'none';
+  searchInput.value = '';
+  state.gridSearch = '';
+  renderGroups();
+}
+setupPullRefresh({
+  scroll:    document.getElementById('groups-scroll'),
+  disc:      document.getElementById('groupsPull'),
+  content:   document.getElementById('groups-content'),
+  onRefresh: clearGroupFilters,
+  haptic:    () => navigator.vibrate?.(12),
+});
 
 /* ── THEME ── */
 export function setTheme(t) {

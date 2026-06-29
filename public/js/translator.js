@@ -7,6 +7,7 @@
 
 import { SUPA_URL, SUPA_KEY, supa } from './config.js';
 import { state } from './state.js';
+import { setupPullRefresh } from './pull-refresh.js';
 
 const PUNCT_RE   = /^[\s\p{P}]+$/u;
 const CJK_RE     = /[㐀-鿿豈-﫿]/;     // han characters
@@ -356,7 +357,7 @@ export function initTranslator() {
   let currentSourceText = null;
 
   // Clear the current result from the screen and remove it from history.
-  clearBtn?.addEventListener('click', async () => {
+  async function clearResult() {
     const src = currentSourceText;
     currentSourceText = null;
     stopPlayback();
@@ -371,7 +372,8 @@ export function initTranslator() {
     } else {
       try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', src); } catch {}
     }
-  });
+  }
+  clearBtn?.addEventListener('click', clearResult);
 
   // Listen to the full Chinese sentence.
   if (canSpeak) {
@@ -399,8 +401,9 @@ export function initTranslator() {
         ta.remove();
       }
       copyBtn.classList.add('copied');
+      copyBtn.blur();   // drop focus/active so no pressed state lingers on touch
       clearTimeout(copiedTimer);
-      copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 1400);
+      copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 600);
     });
   }
 
@@ -777,6 +780,17 @@ export function initTranslator() {
     if (mode === 'open') settle(dx > width * 0.35);
     else                 settle(dx > -width * 0.35);   // keep open unless dragged far left
   }, { passive: true });
+
+  // ── PULL-TO-REFRESH ──
+  // Dragging down from the very top of the results clears the current
+  // translation (same as the Clear button), with a native-style refresh disc.
+  setupPullRefresh({
+    scroll:    trScreen.querySelector('.translator-scroll'),
+    disc:      document.getElementById('trPull'),
+    content:   document.getElementById('trContent'),
+    onRefresh: clearResult,
+    haptic:    buzz,    // buzz() handles iOS (no Vibration API) via the haptic switch
+  });
 }
 
 // Appends dictated text to whatever is already in the input, then syncs the UI.

@@ -227,7 +227,25 @@
         </button>
       </div>
       <p id="searchHint" style="font-size:.64rem;color:var(--faint);opacity:.6;margin:0;display:none">Use quotes (" ") to search for an exact character</p>
-      <div class="groups-scroll" id="groups-scroll"></div>
+      <div class="groups-scroll" id="groups-scroll">
+        <div id="groupsPull" class="pull-disc" aria-hidden="true">
+          <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <line x1="12" y1="6" x2="12" y2="2.5"/>
+            <line x1="15" y1="6.8" x2="16.75" y2="3.77"/>
+            <line x1="17.2" y1="9" x2="20.23" y2="7.25"/>
+            <line x1="18" y1="12" x2="21.5" y2="12"/>
+            <line x1="17.2" y1="15" x2="20.23" y2="16.75"/>
+            <line x1="15" y1="17.2" x2="16.75" y2="20.23"/>
+            <line x1="12" y1="18" x2="12" y2="21.5"/>
+            <line x1="9" y1="17.2" x2="7.25" y2="20.23"/>
+            <line x1="6.8" y1="15" x2="3.77" y2="16.75"/>
+            <line x1="6" y1="12" x2="2.5" y2="12"/>
+            <line x1="6.8" y1="9" x2="3.77" y2="7.25"/>
+            <line x1="9" y1="6.8" x2="7.25" y2="3.77"/>
+          </svg>
+        </div>
+        <div id="groups-content" class="pull-follow"></div>
+      </div>
     </div>
 
     <!-- ── SCREEN 3: PHRASES ── -->
@@ -270,6 +288,23 @@
         </div>
       </header>
       <div class="translator-scroll">
+        <div id="trPull" class="pull-disc" aria-hidden="true">
+          <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <line x1="12" y1="6" x2="12" y2="2.5"/>
+            <line x1="15" y1="6.8" x2="16.75" y2="3.77"/>
+            <line x1="17.2" y1="9" x2="20.23" y2="7.25"/>
+            <line x1="18" y1="12" x2="21.5" y2="12"/>
+            <line x1="17.2" y1="15" x2="20.23" y2="16.75"/>
+            <line x1="15" y1="17.2" x2="16.75" y2="20.23"/>
+            <line x1="12" y1="18" x2="12" y2="21.5"/>
+            <line x1="9" y1="17.2" x2="7.25" y2="20.23"/>
+            <line x1="6.8" y1="15" x2="3.77" y2="16.75"/>
+            <line x1="6" y1="12" x2="2.5" y2="12"/>
+            <line x1="6.8" y1="9" x2="3.77" y2="7.25"/>
+            <line x1="9" y1="6.8" x2="7.25" y2="3.77"/>
+          </svg>
+        </div>
+        <div id="trContent" class="tr-content pull-follow">
         <div id="trOriginalSection" class="tr-section" style="display:none">
           <div class="words-title" style="display:flex;align-items:center;justify-content:space-between">
             <span>Original text</span>
@@ -303,6 +338,7 @@
           <div id="trResult" class="tr-result"></div>
         </div>
         <div id="trEmpty" class="tr-empty" style="display:none"></div>
+        </div>
       </div>
       <!-- ChatGPT-style composer pinned to the bottom -->
       <div class="tr-composer">

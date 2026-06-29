@@ -462,9 +462,12 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 .groups-scroll {
   flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  display:flex; flex-direction:column; gap:8px;
+  overscroll-behavior-y:contain;   /* suppress the browser's native pull-to-refresh */
+  display:flex; flex-direction:column;
   padding-bottom:4px;
+  position:relative;               /* anchor the pull-to-refresh indicator */
 }
+.groups-scroll > #groups-content { display:flex; flex-direction:column; gap:8px; }
 .groups-legend { display:flex; gap:14px; padding:0 2px 4px; }
 .groups-legend-item { display:flex; align-items:center; gap:5px; font-size:.66rem; color:var(--faint); }
 .groups-legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -771,9 +774,36 @@ body.account-open .account-scrim { pointer-events: auto; }
 .translator-scroll {
   flex:1; min-height:0;
   overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;
-  display:flex; flex-direction:column; gap:12px;
+  overscroll-behavior-y:contain;   /* suppress the browser's native pull-to-refresh */
+  display:flex; flex-direction:column;
   padding-bottom:12px;
+  position:relative;               /* anchor the pull-to-refresh indicator */
 }
+/* Holds the results; translates down with the pull (iOS-style) so the content
+   physically follows the gesture, then snaps back with a soft spring. */
+.tr-content { display:flex; flex-direction:column; gap:12px; }
+
+/* ── Shared pull-to-refresh (translator results, groups filters, …) ── */
+/* Content wrapper that follows the pull and snaps back with a soft spring. */
+.pull-follow:not(.dragging) { transition:transform .34s cubic-bezier(.22,1,.36,1); }
+/* The disc: an iOS segmented spinner that slides down as the user drags, then
+   spins briefly while the refresh action runs. */
+.pull-disc {
+  position:absolute; top:6px; left:50%; margin-left:-16px;
+  width:32px; height:32px;
+  display:grid; place-items:center; border-radius:50%;
+  background:var(--surf2); border:1px solid var(--bdr); color:var(--muted);
+  box-shadow:var(--sh);
+  opacity:0; transform:translateY(-48px);
+  z-index:6; pointer-events:none;
+}
+.pull-disc:not(.dragging) { transition:opacity .2s ease, transform .28s cubic-bezier(.34,1.56,.64,1); }
+.pull-disc .pull-spinner { width:18px; height:18px; }
+.pull-disc .pull-spinner line { opacity:0; }   /* bars revealed progressively by JS */
+.pull-disc.ready { color:var(--green); border-color:var(--green); }
+/* iOS-style ratchet: 12 discrete steps so the bright bar chases around. */
+.pull-disc.spinning .pull-spinner { animation:pull-spin .85s steps(12,end) infinite; }
+@keyframes pull-spin { to { transform:rotate(360deg); } }
 .translator-scroll::-webkit-scrollbar { width:3px; }
 .translator-scroll::-webkit-scrollbar-track { background:transparent; }
 .translator-scroll::-webkit-scrollbar-thumb { background:var(--bdr); border-radius:999px; }
@@ -972,20 +1002,43 @@ body.account-open .account-scrim { pointer-events: auto; }
   color:var(--surf2); -webkit-text-fill-color:var(--surf2);
 }
 
-/* Copy button (next to the Hanzi result title) — grey variant like Listen */
-.tr-copy { width:31px; height:31px; }
-.tr-copy svg { width:15px; height:15px; }
+/* Copy button (next to the Hanzi result title) — grey variant.
+   It carries the .tr-btn class for layout, but .tr-btn's green hover/active
+   fills would otherwise leak in (and stick on touch, where :hover/:active don't
+   clear). So every interactive state is pinned to the same neutral grey here;
+   the green appears ONLY via the JS-toggled .copied class. Desktop adds a subtle
+   hover affordance, scoped to fine pointers so touch never shows a stuck state. */
 .tr-copy {
-  background:color-mix(in srgb, var(--muted) 14%, transparent);
+  width:31px; height:31px; position:relative;
+  --tr-copy-bg:color-mix(in srgb, var(--muted) 14%, transparent);
+}
+.tr-copy,
+.tr-copy:hover,
+.tr-copy:active,
+.tr-copy:focus {
+  background:var(--tr-copy-bg);
   border-color:color-mix(in srgb, var(--muted) 32%, transparent);
   color:var(--muted); -webkit-text-fill-color:var(--muted);
 }
-.tr-copy:hover { background:color-mix(in srgb, var(--muted) 24%, transparent); }
-.tr-copy:active { background:var(--muted); border-color:var(--muted); color:var(--surf2); -webkit-text-fill-color:var(--surf2); }
-.tr-copy .ic-copied { display:none; }
-.tr-copy.copied { background:var(--green); border-color:var(--green); color:#fff; -webkit-text-fill-color:#fff; }
-.tr-copy.copied .ic-copied { display:block; }
-.tr-copy.copied .ic-copy { display:none; }
+/* Both icons stacked; cross-fade + scale between them on copy. */
+.tr-copy svg {
+  width:15px; height:15px;
+  position:absolute; top:50%; left:50%;
+  transition:opacity 200ms ease, transform 260ms cubic-bezier(.34,1.56,.64,1);
+}
+.tr-copy .ic-copy   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+.tr-copy .ic-copied { opacity:0; transform:translate(-50%,-50%) scale(.5); }
+/* Copied confirmation — green check, no fill. Driven only by the JS class so it
+   can never get stuck on a sticky :hover/:active. */
+.tr-copy.copied,
+.tr-copy.copied:hover,
+.tr-copy.copied:active,
+.tr-copy.copied:focus { color:var(--green); -webkit-text-fill-color:var(--green); }
+.tr-copy.copied .ic-copy   { opacity:0; transform:translate(-50%,-50%) scale(.5); }
+.tr-copy.copied .ic-copied { opacity:1; transform:translate(-50%,-50%) scale(1); }
+@media (hover:hover) and (pointer:fine) {
+  .tr-copy:hover { --tr-copy-bg:color-mix(in srgb, var(--muted) 24%, transparent); }
+}
 
 .tr-original-line {
   font-size:1rem; line-height:1.5; color:var(--muted);

@@ -1,0 +1,90 @@
+/* ── PULL-TO-REFRESH ──
+   iOS-style pull gesture: drag down from the very top of a scroll container to
+   trigger an action (e.g. clear results / filters). Shows a segmented spinner
+   that fills bar-by-bar with rubber-band resistance, the content follows the
+   pull and snaps back, and on release the ring spins briefly before `onRefresh`
+   runs (so the content doesn't vanish before the spinner has gone).
+
+   Wiring (see styles.css .pull-disc / .pull-spinner / .pull-follow):
+     setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) */
+export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
+  if (!scroll || !disc) return;
+
+  const TRIGGER = 56;   // pull distance (px, after damping) that fires
+  const MAX     = 92;   // asymptote — the ring can't be dragged past this
+  const DAMP    = 80;   // rubber-band stiffness (higher = looser)
+
+  const bars = Array.from(disc.querySelectorAll('.pull-spinner line'));
+  // Graduated opacity around the ring (comet trail); the brightest bar leads.
+  const barBase = i => 0.14 + (i / (bars.length - 1)) * 0.86;
+  // Reveal the first `frac` (0..1) of bars, iOS-style — they light up one by one.
+  const setBars = frac => {
+    const n = Math.round(frac * bars.length);
+    bars.forEach((b, i) => { b.style.opacity = i < n ? barBase(i).toFixed(2) : '0'; });
+  };
+
+  let startY = 0, startX = 0, active = false, locked = false, ready = false;
+
+  const reset = () => {
+    disc.classList.remove('dragging', 'ready', 'spinning');
+    disc.style.opacity = '';
+    disc.style.transform = '';
+    bars.forEach(b => { b.style.opacity = ''; });
+    if (content) { content.classList.remove('dragging'); content.style.transform = ''; }
+  };
+
+  scroll.addEventListener('touchstart', e => {
+    // Only arm at the very top, single finger, and not mid-refresh.
+    if (e.touches.length !== 1 || scroll.scrollTop > 0 || disc.classList.contains('spinning')) {
+      active = false; return;
+    }
+    startY = e.touches[0].clientY; startX = e.touches[0].clientX;
+    active = true; locked = false; ready = false;
+  }, { passive: true });
+
+  scroll.addEventListener('touchmove', e => {
+    if (!active) return;
+    const dy = e.touches[0].clientY - startY;
+    const dx = e.touches[0].clientX - startX;
+    if (!locked) {
+      if (Math.abs(dy) < 6 && Math.abs(dx) < 6) return;
+      // Engage only on a clear downward pull while pinned at the top.
+      if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || scroll.scrollTop > 0) { active = false; return; }
+      locked = true;
+      disc.classList.add('dragging');
+      if (content) content.classList.add('dragging');
+    }
+    e.preventDefault();                          // own the gesture (non-passive)
+    const dist = MAX * (1 - Math.exp(-dy / DAMP)); // rubber-band resistance
+    const frac = Math.min(1, dist / TRIGGER);
+    const nowReady = dist >= TRIGGER;
+    if (nowReady && !ready) haptic?.();          // tick the instant the threshold is crossed
+    ready = nowReady;
+    disc.style.opacity = frac.toString();
+    disc.style.transform = `translateY(${dist - 40}px)`;
+    disc.classList.toggle('ready', ready);
+    setBars(frac);                               // bars fill in as you pull
+    if (content) content.style.transform = `translateY(${dist}px)`;  // content follows
+  }, { passive: false });
+
+  const end = () => {
+    if (!active) return;
+    active = false;
+    if (!locked) return;
+    if (content) { content.classList.remove('dragging'); content.style.transform = ''; }  // snap content back
+    if (ready) {
+      disc.classList.remove('dragging', 'ready');
+      disc.classList.add('spinning');
+      disc.style.opacity = '1';
+      disc.style.transform = 'translateY(8px)';
+      setBars(1);                                // full ring, then CSS spins it
+      haptic?.();
+      // Spin first, then run the action as the ring retracts.
+      setTimeout(() => { try { onRefresh?.(); } finally { reset(); } }, 600);
+    } else {
+      reset();
+    }
+  };
+  scroll.addEventListener('touchend', end, { passive: true });
+  scroll.addEventListener('touchcancel', end, { passive: true });
+}
