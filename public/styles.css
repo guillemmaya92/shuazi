@@ -584,12 +584,27 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   transition: transform 120ms ease, background 120ms ease;
   user-select:none; -webkit-user-select:none;
   content-visibility: auto;
-  contain-intrinsic-size: 60px;
+  /* `auto` lets the browser remember each tile's real rendered size once it has
+     been on-screen, so off-screen tiles (skipped via content-visibility) keep an
+     accurate height and the scrollbar/scroll position stays stable. 60px is the
+     first-paint fallback. */
+  contain-intrinsic-size: auto 60px;
   /* Let the 1fr grid tracks shrink below a tile's min-content. Without this the
      longest pinyin (e.g. "chuáng") pins every column wide and the whole grid
-     overflows / clips on the right. Word tiles already do this; chars need it too. */
+     overflows / clips on the right — affecting radicals, components and characters
+     alike (word tiles escape it via their own word-break/overflow rules). */
   min-width:0; overflow:hidden;
 }
+/* Virtualized grids (big levels) mount only a screenful of tiles via
+   virtual-grid.js, so content-visibility would only get in the way: buffered
+   tiles must report their real height for the windowing maths to line up. */
+.char-grid.vgrid > .char-tile {
+  content-visibility: visible;   /* visible ⇒ never size-contained, so no intrinsic-size needed */
+}
+/* In a window the physically-first child changes as you scroll, so the
+   `:first-child` label padding must not apply — every label has to keep the same
+   height the windowing maths measured once, or the window would drift. */
+.char-grid.vgrid > .char-grid-label { padding-top: 8px; }
 .char-tile:active { transform:scale(.93); }
 .char-tile .tc {
   font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;

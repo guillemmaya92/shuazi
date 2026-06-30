@@ -5,6 +5,7 @@ import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord, updateDeckProgress } from './cards.js';
 import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
+import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -79,6 +80,24 @@ function gridGroupLabel(item, index, total) {
   return null;
 }
 
+// Tile prototypes cloned per render. cloneNode(true) is much cheaper than parsing
+// `innerHTML` for each of the thousands of tiles in a big level (e.g. HSK7 has
+// ~5000), and we no longer emit the .toggle-btn (it is display:none on every
+// .char-tile, so it was pure dead DOM — two prototypes, ~2 nodes saved per tile).
+const charTileProto = document.createElement('button');
+charTileProto.className = 'char-tile';
+charTileProto.innerHTML = '<div class="tc"></div><div class="tp"></div>';
+const wordTileProto = document.createElement('button');
+wordTileProto.className = 'char-tile word-tile';
+wordTileProto.innerHTML = '<div class="tc"></div><div class="tp"></div>';
+
+// Empty a grid, tearing down its virtual scroller first if it has one (so the
+// scroll/resize listeners are removed instead of leaking).
+function clearGrid(g) {
+  if (g._vgrid) { g._vgrid.destroy(); g._vgrid = null; }
+  else g.replaceChildren();
+}
+
 export function renderGroups() {
   const scrollEl = document.getElementById('groups-scroll');
   const container = document.getElementById('groups-content');
@@ -88,6 +107,9 @@ export function renderGroups() {
   // status (known / review / left) is among the active status filters.
   const passesStatus = key => state.activeStatuses.has(
     state.known.has(key) ? 'know' : state.unknown.has(key) ? 'review' : 'left');
+  // Drop any live virtual grids before we throw away their DOM, so the scroll /
+  // resize listeners they put on the shared scroller don't leak across renders.
+  destroyAllVirtualGrids();
   container.innerHTML = '';
   scrollEl.classList.toggle('hide-pinyin', !state.showPinyin);
 
@@ -455,35 +477,45 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      const CHUNK = 150;
-      function renderChunk(start, lastLabel) {
-        const end = Math.min(start + CHUNK, wtiles.length);
-        let lbl = lastLabel;
-        const frag = document.createDocumentFragment();
-        for (let i = start; i < end; i++) {
-          const word = wtiles[i];
-          const newLbl = gridGroupLabel(word, wgroupIndex.get(word.word) ?? 0, wgroup.length);
-          if (newLbl !== null && newLbl !== lbl) {
-            lbl = newLbl;
-            const sep = document.createElement('div');
-            sep.className = 'char-grid-label';
-            sep.textContent = lbl;
-            frag.appendChild(sep);
-          }
-          const tile = document.createElement('button');
-          const len = [...(word.word || '')].length;
-          const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
-          const pfs = len >= 4 ? '.5rem' : '.6rem';
-          tile.className = 'char-tile word-tile' + (state.known.has(word.word) ? ' known' : state.unknown.has(word.word) ? ' repaso' : '');
-          tile.dataset.word = word.word;
-          tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
-          tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp" style="font-size:${pfs}">${word.pinyin ?? ''}</div><div class="toggle-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div>`;
-          frag.appendChild(tile);
-        }
-        wgrid.appendChild(frag);
-        if (end < wtiles.length) requestAnimationFrame(() => renderChunk(end, lbl));
+      // Ordered cell list: section labels (when the sort groups them) + tiles.
+      const cells = [];
+      let lastLbl = null;
+      for (let i = 0; i < wtiles.length; i++) {
+        const word = wtiles[i];
+        const lbl = gridGroupLabel(word, wgroupIndex.get(word.word) ?? 0, wgroup.length);
+        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl }); }
+        cells.push({ word });
       }
-      renderChunk(0, null);
+      const renderCell = (cell) => {
+        if (cell.label !== undefined) {
+          const sep = document.createElement('div');
+          sep.className = 'char-grid-label';
+          sep.textContent = cell.label;
+          return sep;
+        }
+        const word = cell.word;
+        const tile = wordTileProto.cloneNode(true);
+        const len = [...(word.word || '')].length;
+        const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
+        const pfs = len >= 4 ? '.5rem' : '.6rem';
+        if (state.known.has(word.word)) tile.classList.add('known');
+        else if (state.unknown.has(word.word)) tile.classList.add('repaso');
+        tile.dataset.word = word.word;
+        tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
+        const tc = tile.firstChild, tp = tile.lastChild;
+        tc.textContent = word.word;          tc.style.fontSize = fs;
+        tp.textContent = word.pinyin ?? '';  tp.style.fontSize = pfs;
+        return tile;
+      };
+
+      if (wgrid._vgrid) { wgrid._vgrid.destroy(); wgrid._vgrid = null; }
+      if (cells.length >= VIRTUALIZE_THRESHOLD) {
+        wgrid._vgrid = mountVirtualGrid({ scrollEl, gridEl: wgrid, cells, renderCell });
+      } else {
+        const frag = document.createDocumentFragment();
+        for (const cell of cells) frag.appendChild(renderCell(cell));
+        wgrid.replaceChildren(frag);
+      }
     }
 
     wheader.addEventListener('click', () => {
@@ -492,7 +524,7 @@ export function renderGroups() {
           if (otherHsk !== hsk && !collapsedWordGroups.has(otherHsk) && wordGroupEls[otherHsk]) {
             collapsedWordGroups.add(otherHsk);
             const el = wordGroupEls[otherHsk];
-            el.wgrid.replaceChildren();
+            clearGrid(el.wgrid);
             el.wwrap.style.transition = 'none';
             el.wwrap.classList.add('collapsed');
             el.wchev.classList.remove('open');
@@ -511,7 +543,7 @@ export function renderGroups() {
         wchev.classList.add('open');
       } else {
         collapsedWordGroups.add(hsk);
-        wgrid.replaceChildren();
+        clearGrid(wgrid);
         animateGridWrap(wwrap, false);
         wchev.classList.remove('open');
       }
@@ -653,32 +685,42 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      const CHUNK = 150;
-      function renderChunk(start, lastLabel) {
-        const end = Math.min(start + CHUNK, tiles.length);
-        let lbl = lastLabel;
-        const frag = document.createDocumentFragment();
-        for (let i = start; i < end; i++) {
-          const card = tiles[i];
-          const newLbl = gridGroupLabel(card, groupIndex.get(card.char) ?? 0, group.length);
-          if (newLbl !== null && newLbl !== lbl) {
-            lbl = newLbl;
-            const sep = document.createElement('div');
-            sep.className = 'char-grid-label';
-            sep.textContent = lbl;
-            frag.appendChild(sep);
-          }
-          const tile = document.createElement('button');
-          tile.className = 'char-tile' + (state.known.has(card.char) ? ' known' : state.unknown.has(card.char) ? ' repaso' : '');
-          tile.dataset.char = card.char;
-          tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
-          tile.innerHTML = `<div class="tc">${card.char}</div><div class="tp">${card.pinyin}</div><div class="toggle-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div>`;
-          frag.appendChild(tile);
-        }
-        grid.appendChild(frag);
-        if (end < tiles.length) requestAnimationFrame(() => renderChunk(end, lbl));
+      // Ordered cell list: section labels (when the sort groups them) + tiles.
+      const cells = [];
+      let lastLbl = null;
+      for (let i = 0; i < tiles.length; i++) {
+        const card = tiles[i];
+        const lbl = gridGroupLabel(card, groupIndex.get(card.char) ?? 0, group.length);
+        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl }); }
+        cells.push({ card });
       }
-      renderChunk(0, null);
+      const renderCell = (cell) => {
+        if (cell.label !== undefined) {
+          const sep = document.createElement('div');
+          sep.className = 'char-grid-label';
+          sep.textContent = cell.label;
+          return sep;
+        }
+        const card = cell.card;
+        const tile = charTileProto.cloneNode(true);
+        if (state.known.has(card.char)) tile.classList.add('known');
+        else if (state.unknown.has(card.char)) tile.classList.add('repaso');
+        tile.dataset.char = card.char;
+        tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
+        tile.firstChild.textContent = card.char;
+        tile.lastChild.textContent = card.pinyin;
+        return tile;
+      };
+
+      if (grid._vgrid) { grid._vgrid.destroy(); grid._vgrid = null; }
+      if (cells.length >= VIRTUALIZE_THRESHOLD) {
+        // Big level → window it: only a screenful of tiles ever lives in the DOM.
+        grid._vgrid = mountVirtualGrid({ scrollEl, gridEl: grid, cells, renderCell });
+      } else {
+        const frag = document.createDocumentFragment();
+        for (const cell of cells) frag.appendChild(renderCell(cell));
+        grid.replaceChildren(frag);
+      }
     }
 
     header.addEventListener('click', () => {
@@ -687,7 +729,7 @@ export function renderGroups() {
           if (otherHsk !== hsk && !collapsedGroups.has(otherHsk) && charGroupEls[otherHsk]) {
             collapsedGroups.add(otherHsk);
             const el = charGroupEls[otherHsk];
-            el.grid.replaceChildren();
+            clearGrid(el.grid);
             el.wrap.style.transition = 'none';
             el.wrap.classList.add('collapsed');
             el.chev.classList.remove('open');
@@ -706,7 +748,7 @@ export function renderGroups() {
         chev.classList.add('open');
       } else {
         collapsedGroups.add(hsk);
-        grid.replaceChildren();
+        clearGrid(grid);
         animateGridWrap(wrap, false);
         chev.classList.remove('open');
       }
@@ -1891,9 +1933,10 @@ export function setTheme(t) {
   ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
     document.getElementById(id).innerHTML = icon;
   });
-  // Rebuild groups in the new theme colours (chunked — only first 150 tiles sync)
-  // so there are no thousands of recoloured DOM nodes to repaint.
-  if (state.CHARACTERS?.length || state.WORDS?.length) renderGroups();
+  // No grid rebuild here: every tile colour comes from CSS variables that are
+  // redefined per [data-theme], so flipping the attribute above recolours the
+  // whole grid instantly. Re-rendering would only throw away the user's scroll
+  // position (and needlessly rebuild thousands of tiles).
 }
 
 const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
