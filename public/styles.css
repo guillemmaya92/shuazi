@@ -562,6 +562,12 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .hsk-group-header {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 6px 0;
+  margin: -6px 0;
 }
 .hsk-group-header:active { opacity: .7; }
 .chevron {
@@ -577,6 +583,8 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   position:relative; cursor:pointer;
   transition: transform 120ms ease, background 120ms ease;
   user-select:none; -webkit-user-select:none;
+  content-visibility: auto;
+  contain-intrinsic-size: 60px;
 }
 .char-tile:active { transform:scale(.93); }
 .char-tile .tc {
@@ -617,6 +625,12 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   display:block; font-size:.64rem; font-weight:400; letter-spacing:0;
   text-transform:none; color:var(--faint); opacity:.7; margin-top:2px;
 }
+.char-grid-label {
+  grid-column: 1 / -1;
+  font-size: .58rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--faint); padding: 8px 2px 2px;
+}
+.char-grid-label:first-child { padding-top: 2px; }
 .char-tile.empty { opacity:.4; }
 .char-tile.empty .tc { color:var(--faint); -webkit-text-fill-color:var(--faint); }
 .char-tile.empty .tp { color:var(--faint); }

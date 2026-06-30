@@ -58,6 +58,27 @@ function animateGridWrap(wrap, open) {
   }
 }
 
+function gridGroupLabel(item, index, total) {
+  const s = state.gridSort;
+  if (s === 'pinyin') {
+    const py = (item.pinyin ?? '').trim();
+    if (!py) return '?';
+    const base = py.normalize('NFD')[0];
+    const code = base.charCodeAt(0);
+    if (code >= 65 && code <= 90) return base;
+    if (code >= 97 && code <= 122) return base.toUpperCase();
+    return '?';
+  }
+  if (s === 'productive' || s === 'frequency') {
+    const b = Math.floor(index / 100);
+    const start = b * 100 + 1;
+    const end = total !== undefined ? Math.min(b * 100 + 100, total) : b * 100 + 100;
+    return `${start}–${end}`;
+  }
+  if (s === 'stroke') return String(item.stroke ?? '?');
+  return null;
+}
+
 export function renderGroups() {
   const scrollEl = document.getElementById('groups-scroll');
   const container = document.getElementById('groups-content');
@@ -127,7 +148,17 @@ export function renderGroups() {
 
     const radicalsInChars = new Set(state.CHARACTERS.map(c => c.radical));
     function renderRadicalTiles() {
-      sortedRadicals.forEach(rad => {
+      let lastRadLabel = null;
+      const showRadLabels = !activeRadical && !q;
+      sortedRadicals.forEach((rad, index) => {
+        const lbl = showRadLabels ? gridGroupLabel(rad, index, sortedRadicals.length) : null;
+        if (lbl !== null && lbl !== lastRadLabel) {
+          lastRadLabel = lbl;
+          const sep = document.createElement('div');
+          sep.className = 'char-grid-label';
+          sep.textContent = lbl;
+          radGrid.appendChild(sep);
+        }
         const tile = document.createElement('button');
         const isEmpty = !radicalsInChars.has(rad.radical);
         tile.className = 'char-tile radical-tile' + (rad.radical === activeRadical ? ' active' : '') + (isEmpty ? ' empty' : '');
@@ -218,7 +249,17 @@ export function renderGroups() {
     // Components present in component_char (i.e. used by at least one character).
     const usedComponents = new Set(Object.keys(state.charsByComponent));
     function renderComponentTiles() {
-      sortedComponents.forEach(comp => {
+      let lastCompLabel = null;
+      const showCompLabels = !activeComponent && !q;
+      sortedComponents.forEach((comp, index) => {
+        const lbl = showCompLabels ? gridGroupLabel(comp, index, sortedComponents.length) : null;
+        if (lbl !== null && lbl !== lastCompLabel) {
+          lastCompLabel = lbl;
+          const sep = document.createElement('div');
+          sep.className = 'char-grid-label';
+          sep.textContent = lbl;
+          compGrid.appendChild(sep);
+        }
         const tile = document.createElement('button');
         // Empty = this component's id never appears in component_char.
         const isEmpty = !usedComponents.has(String(comp.id));
@@ -271,6 +312,7 @@ export function renderGroups() {
        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
      </div>`);
 
+  const wordGroupEls = {};
   if (state.groupsContent === 'words') levels.forEach(hsk => {
     let wgroup = state.WORDS.filter(w => w.hsk === hsk);
     if (!wgroup.length) return;
@@ -308,6 +350,7 @@ export function renderGroups() {
     else                                      wgroup = [...wgroup].sort((a, b) => a.id - b.id);
 
     // Tiles shown respect the status filter; counts/progress stay on the full level.
+    const wgroupIndex = new Map(wgroup.map((w, i) => [w.word, i]));
     const wtiles = wgroup.filter(w => passesStatus(w.word));
     if (!wtiles.length) return;
 
@@ -343,6 +386,65 @@ export function renderGroups() {
     const wwrap   = wdiv.querySelector('.char-grid-wrap');
     const wgrid   = wdiv.querySelector(`#wgrid-${hsk}`);
     const wchev   = wdiv.querySelector('.chevron');
+    wordGroupEls[hsk] = { wwrap, wchev, wgrid };
+
+    // One delegated listener set on the grid — no per-tile listeners
+    const wordMap = new Map(wtiles.map(w => [w.word, w]));
+    let wPressTimer = null, wPressTile = null, wPressWord = null;
+    wgrid.addEventListener('pointerdown', e => {
+      const tile = e.target.closest('.char-tile');
+      if (!tile) return;
+      e.stopPropagation();
+      wPressTile = tile; wPressWord = wordMap.get(tile.dataset.word);
+      wPressTimer = setTimeout(() => {
+        wPressTimer = null;
+        const word = wPressWord, t = wPressTile;
+        if (!word || !t) return;
+        if (state.unknown.has(word.word)) {
+          state.unknown.delete(word.word); t.classList.remove('repaso');
+          if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
+        } else if (state.known.has(word.word)) {
+          state.known.delete(word.word); state.unknown.add(word.word);
+          t.classList.remove('known'); t.classList.add('repaso');
+          if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
+        } else {
+          state.known.add(word.word); t.classList.add('known');
+          state.deck = state.deck.filter(c => c.char !== word.word);
+        }
+        saveState();
+        const newKnownCount = wgroup.filter(w => state.known.has(w.word)).length;
+        const newPct = wgroup.length ? Math.round(newKnownCount / wgroup.length * 100) : 0;
+        wdiv.querySelector('.count').textContent = `${newKnownCount}/${wgroup.length} known`;
+        wdiv.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+        wdiv.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
+        const _f = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
+        const _k = _f.filter(w => state.known.has(w.word)).length;
+        const _r = _f.filter(w => state.unknown.has(w.word)).length;
+        document.getElementById('vKnown').textContent = _k;
+        document.getElementById('vRepaso').textContent = _r;
+        document.getElementById('vRest').textContent = _f.length - _k - _r;
+        updateDeckProgress();
+        const pKnown = document.getElementById('p-known');
+        if (pKnown) {
+          const total = _f.length;
+          const pct2 = total ? Math.min(100, Math.round(_k / total * 100)) : 0;
+          pKnown.textContent = _k;
+          document.getElementById('p-review').textContent = _r;
+          document.getElementById('p-left').textContent = total - _k - _r;
+          document.getElementById('p-pct').textContent = pct2 + '%';
+          document.getElementById('p-bar').style.width = pct2 + '%';
+        }
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 450);
+    });
+    wgrid.addEventListener('pointerup', e => {
+      if (!wPressTimer) return;
+      clearTimeout(wPressTimer); wPressTimer = null;
+      if (e.target.closest('.char-tile') && wPressWord) openWordModal(wPressWord);
+    });
+    wgrid.addEventListener('pointercancel', () => { if (wPressTimer) { clearTimeout(wPressTimer); wPressTimer = null; } });
+    wgrid.addEventListener('pointermove', e => { if (wPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(wPressTimer); wPressTimer = null; } });
+    wgrid.addEventListener('contextmenu', e => e.preventDefault());
 
     function renderWordTiles() {
       if (isLocked) {
@@ -353,86 +455,63 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      wtiles.forEach(word => {
-        const tile = document.createElement('button');
-        const len = [...(word.word || '')].length;
-        const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
-        const pfs = len >= 4 ? '.5rem' : '.6rem';
-        const isKnown  = state.known.has(word.word);
-        const isRepaso = state.unknown.has(word.word);
-        tile.className = 'char-tile word-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
-        tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
-        tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp" style="font-size:${pfs}">${word.pinyin ?? ''}</div>
-          <div class="toggle-btn">
-            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="2,6 5,9 10,3"/>
-            </svg>
-          </div>`;
-
-        let pressTimer = null;
-        function startPress() {
-          pressTimer = setTimeout(() => {
-            pressTimer = null;
-            if (state.unknown.has(word.word)) {
-              state.unknown.delete(word.word);
-              tile.classList.remove('repaso');
-              if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
-            } else if (state.known.has(word.word)) {
-              state.known.delete(word.word);
-              state.unknown.add(word.word);
-              tile.classList.remove('known');
-              tile.classList.add('repaso');
-              if (!state.deck.find(c => c.char === word.word)) state.deck.push({ ...word, char: word.word, isWord: true });
-            } else {
-              state.known.add(word.word);
-              tile.classList.add('known');
-              state.deck = state.deck.filter(c => c.char !== word.word);
-            }
-            saveState();
-            const newKnownCount = wgroup.filter(w => state.known.has(w.word)).length;
-            const newPct = wgroup.length ? Math.round(newKnownCount / wgroup.length * 100) : 0;
-            wdiv.querySelector('.count').textContent = `${newKnownCount}/${wgroup.length} known`;
-            wdiv.querySelector('.hsk-prog-fill').style.width = newPct + '%';
-            wdiv.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
-            const _f = state.WORDS.filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk));
-            const _k = _f.filter(w => state.known.has(w.word)).length;
-            const _r = _f.filter(w => state.unknown.has(w.word)).length;
-            document.getElementById('vKnown').textContent  = _k;
-            document.getElementById('vRepaso').textContent = _r;
-            document.getElementById('vRest').textContent   = _f.length - _k - _r;
-            updateDeckProgress();
-            const pKnown = document.getElementById('p-known');
-            if (pKnown) {
-              const total = _f.length;
-              const pct2 = total ? Math.min(100, Math.round(_k / total * 100)) : 0;
-              pKnown.textContent = _k;
-              document.getElementById('p-review').textContent = _r;
-              document.getElementById('p-left').textContent   = total - _k - _r;
-              document.getElementById('p-pct').textContent    = pct2 + '%';
-              document.getElementById('p-bar').style.width    = pct2 + '%';
-            }
-            if (navigator.vibrate) navigator.vibrate(30);
-          }, 450);
+      const CHUNK = 150;
+      function renderChunk(start, lastLabel) {
+        const end = Math.min(start + CHUNK, wtiles.length);
+        let lbl = lastLabel;
+        const frag = document.createDocumentFragment();
+        for (let i = start; i < end; i++) {
+          const word = wtiles[i];
+          const newLbl = gridGroupLabel(word, wgroupIndex.get(word.word) ?? 0, wgroup.length);
+          if (newLbl !== null && newLbl !== lbl) {
+            lbl = newLbl;
+            const sep = document.createElement('div');
+            sep.className = 'char-grid-label';
+            sep.textContent = lbl;
+            frag.appendChild(sep);
+          }
+          const tile = document.createElement('button');
+          const len = [...(word.word || '')].length;
+          const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
+          const pfs = len >= 4 ? '.5rem' : '.6rem';
+          tile.className = 'char-tile word-tile' + (state.known.has(word.word) ? ' known' : state.unknown.has(word.word) ? ' repaso' : '');
+          tile.dataset.word = word.word;
+          tile.setAttribute('aria-label', `${word.word}, ${word.pinyin ?? ''}, ${word.meaning ?? ''}`);
+          tile.innerHTML = `<div class="tc" style="font-size:${fs}">${word.word}</div><div class="tp" style="font-size:${pfs}">${word.pinyin ?? ''}</div><div class="toggle-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div>`;
+          frag.appendChild(tile);
         }
-        function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
-
-        tile.addEventListener('pointerdown',   e => { e.stopPropagation(); startPress(); });
-        tile.addEventListener('pointerup',     () => { if (pressTimer) { cancelPress(); openWordModal(word); } });
-        tile.addEventListener('pointercancel', cancelPress);
-        tile.addEventListener('pointermove',   e => { if (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6) cancelPress(); });
-        tile.addEventListener('contextmenu',   e => e.preventDefault());
-        wgrid.appendChild(tile);
-      });
+        wgrid.appendChild(frag);
+        if (end < wtiles.length) requestAnimationFrame(() => renderChunk(end, lbl));
+      }
+      renderChunk(0, null);
     }
 
     wheader.addEventListener('click', () => {
       if (collapsedWordGroups.has(hsk)) {
+        levels.forEach(otherHsk => {
+          if (otherHsk !== hsk && !collapsedWordGroups.has(otherHsk) && wordGroupEls[otherHsk]) {
+            collapsedWordGroups.add(otherHsk);
+            const el = wordGroupEls[otherHsk];
+            el.wgrid.replaceChildren();
+            el.wwrap.style.transition = 'none';
+            el.wwrap.classList.add('collapsed');
+            el.wchev.classList.remove('open');
+          }
+        });
+        void scrollEl.offsetHeight;
+        requestAnimationFrame(() => {
+          levels.forEach(otherHsk => {
+            if (wordGroupEls[otherHsk]) wordGroupEls[otherHsk].wwrap.style.transition = '';
+          });
+        });
+        scrollEl.scrollTop = wdiv.offsetTop;
         collapsedWordGroups.delete(hsk);
         if (!wgrid.childElementCount) renderWordTiles();
         animateGridWrap(wwrap, true);
         wchev.classList.add('open');
       } else {
         collapsedWordGroups.add(hsk);
+        wgrid.replaceChildren();
         animateGridWrap(wwrap, false);
         wchev.classList.remove('open');
       }
@@ -447,6 +526,7 @@ export function renderGroups() {
        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
      </div>`);
 
+  const charGroupEls = {};
   if (state.groupsContent === 'characters') levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
@@ -479,6 +559,7 @@ export function renderGroups() {
     else group = [...group].sort((a, b) => a.id - b.id);
 
     // Tiles shown respect the status filter; counts/progress stay on the full level.
+    const groupIndex = new Map(group.map((c, i) => [c.char, i]));
     const tiles = group.filter(c => passesStatus(c.char));
     if (!tiles.length) return;
 
@@ -514,6 +595,54 @@ export function renderGroups() {
     const wrap   = div.querySelector('.char-grid-wrap');
     const grid   = div.querySelector(`#grid-${hsk}`);
     const chev   = div.querySelector('.chevron');
+    charGroupEls[hsk] = { wrap, chev, grid };
+
+    // One delegated listener set on the grid — no per-tile listeners
+    const cardMap = new Map(tiles.map(c => [c.char, c]));
+    let cPressTimer = null, cPressTile = null, cPressCard = null;
+    grid.addEventListener('pointerdown', e => {
+      const tile = e.target.closest('.char-tile');
+      if (!tile) return;
+      e.stopPropagation();
+      cPressTile = tile; cPressCard = cardMap.get(tile.dataset.char);
+      cPressTimer = setTimeout(() => {
+        cPressTimer = null;
+        const card = cPressCard, t = cPressTile;
+        if (!card || !t) return;
+        if (state.unknown.has(card.char)) {
+          state.unknown.delete(card.char); t.classList.remove('repaso'); state.deck.push(card);
+        } else if (state.known.has(card.char)) {
+          state.known.delete(card.char); state.unknown.add(card.char);
+          t.classList.remove('known'); t.classList.add('repaso');
+          if (!state.deck.find(c => c.char === card.char)) state.deck.push(card);
+        } else {
+          state.known.add(card.char); t.classList.add('known');
+          state.deck = state.deck.filter(c => c.char !== card.char);
+        }
+        saveState();
+        const newKnownCount = group.filter(c => state.known.has(c.char)).length;
+        const newPct = group.length ? Math.round(newKnownCount / group.length * 100) : 0;
+        div.querySelector('.count').textContent = `${newKnownCount}/${group.length} known`;
+        div.querySelector('.hsk-prog-fill').style.width = newPct + '%';
+        div.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
+        const _f = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
+        const _k = _f.filter(c => state.known.has(c.char)).length;
+        const _r = _f.filter(c => state.unknown.has(c.char)).length;
+        document.getElementById('vKnown').textContent = _k;
+        document.getElementById('vRepaso').textContent = _r;
+        document.getElementById('vRest').textContent = _f.length - _k - _r;
+        updateDeckProgress();
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 450);
+    });
+    grid.addEventListener('pointerup', e => {
+      if (!cPressTimer) return;
+      clearTimeout(cPressTimer); cPressTimer = null;
+      if (e.target.closest('.char-tile') && cPressCard) openModal(cPressCard);
+    });
+    grid.addEventListener('pointercancel', () => { if (cPressTimer) { clearTimeout(cPressTimer); cPressTimer = null; } });
+    grid.addEventListener('pointermove', e => { if (cPressTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) { clearTimeout(cPressTimer); cPressTimer = null; } });
+    grid.addEventListener('contextmenu', e => e.preventDefault());
 
     function renderTiles() {
       if (isLocked) {
@@ -524,75 +653,60 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      tiles.forEach(card => {
-        const tile = document.createElement('button');
-        const isKnown  = state.known.has(card.char);
-        const isRepaso = state.unknown.has(card.char);
-        tile.className = 'char-tile' + (isKnown ? ' known' : isRepaso ? ' repaso' : '');
-        tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
-        tile.innerHTML = `
-          <div class="tc">${card.char}</div>
-          <div class="tp">${card.pinyin}</div>
-          <div class="toggle-btn">
-            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="2,6 5,9 10,3"/>
-            </svg>
-          </div>`;
-
-        let pressTimer = null;
-        function startPress() {
-          pressTimer = setTimeout(() => {
-            pressTimer = null;
-            if (state.unknown.has(card.char)) {
-              state.unknown.delete(card.char);
-              tile.classList.remove('repaso');
-              state.deck.push(card);
-            } else if (state.known.has(card.char)) {
-              state.known.delete(card.char);
-              state.unknown.add(card.char);
-              tile.classList.remove('known');
-              tile.classList.add('repaso');
-              if (!state.deck.find(c => c.char === card.char)) state.deck.push(card);
-            } else {
-              state.known.add(card.char);
-              tile.classList.add('known');
-              state.deck = state.deck.filter(c => c.char !== card.char);
-            }
-            saveState();
-            const newKnownCount = group.filter(c => state.known.has(c.char)).length;
-            const newPct = group.length ? Math.round(newKnownCount / group.length * 100) : 0;
-            div.querySelector('.count').textContent = `${newKnownCount}/${group.length} known`;
-            div.querySelector('.hsk-prog-fill').style.width = newPct + '%';
-            div.querySelector('.hsk-full-bar-fill').style.width = newPct + '%';
-            const _f = state.CHARACTERS.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
-            const _k = _f.filter(c => state.known.has(c.char)).length;
-            const _r = _f.filter(c => state.unknown.has(c.char)).length;
-            document.getElementById('vKnown').textContent  = _k;
-            document.getElementById('vRepaso').textContent = _r;
-            document.getElementById('vRest').textContent   = _f.length - _k - _r;
-            updateDeckProgress();
-            if (navigator.vibrate) navigator.vibrate(30);
-          }, 450);
+      const CHUNK = 150;
+      function renderChunk(start, lastLabel) {
+        const end = Math.min(start + CHUNK, tiles.length);
+        let lbl = lastLabel;
+        const frag = document.createDocumentFragment();
+        for (let i = start; i < end; i++) {
+          const card = tiles[i];
+          const newLbl = gridGroupLabel(card, groupIndex.get(card.char) ?? 0, group.length);
+          if (newLbl !== null && newLbl !== lbl) {
+            lbl = newLbl;
+            const sep = document.createElement('div');
+            sep.className = 'char-grid-label';
+            sep.textContent = lbl;
+            frag.appendChild(sep);
+          }
+          const tile = document.createElement('button');
+          tile.className = 'char-tile' + (state.known.has(card.char) ? ' known' : state.unknown.has(card.char) ? ' repaso' : '');
+          tile.dataset.char = card.char;
+          tile.setAttribute('aria-label', `${card.char}, ${card.pinyin}, ${card.meaning}`);
+          tile.innerHTML = `<div class="tc">${card.char}</div><div class="tp">${card.pinyin}</div><div class="toggle-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div>`;
+          frag.appendChild(tile);
         }
-        function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
-
-        tile.addEventListener('pointerdown',   e => { e.stopPropagation(); startPress(); });
-        tile.addEventListener('pointerup',     () => { if (pressTimer) { cancelPress(); openModal(card); } });
-        tile.addEventListener('pointercancel', cancelPress);
-        tile.addEventListener('pointermove',   e => { if (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6) cancelPress(); });
-        tile.addEventListener('contextmenu',   e => e.preventDefault());
-        grid.appendChild(tile);
-      });
+        grid.appendChild(frag);
+        if (end < tiles.length) requestAnimationFrame(() => renderChunk(end, lbl));
+      }
+      renderChunk(0, null);
     }
 
     header.addEventListener('click', () => {
       if (collapsedGroups.has(hsk)) {
+        levels.forEach(otherHsk => {
+          if (otherHsk !== hsk && !collapsedGroups.has(otherHsk) && charGroupEls[otherHsk]) {
+            collapsedGroups.add(otherHsk);
+            const el = charGroupEls[otherHsk];
+            el.grid.replaceChildren();
+            el.wrap.style.transition = 'none';
+            el.wrap.classList.add('collapsed');
+            el.chev.classList.remove('open');
+          }
+        });
+        void scrollEl.offsetHeight;
+        requestAnimationFrame(() => {
+          levels.forEach(otherHsk => {
+            if (charGroupEls[otherHsk]) charGroupEls[otherHsk].wrap.style.transition = '';
+          });
+        });
+        scrollEl.scrollTop = div.offsetTop;
         collapsedGroups.delete(hsk);
         if (!grid.childElementCount) renderTiles();
         animateGridWrap(wrap, true);
         chev.classList.add('open');
       } else {
         collapsedGroups.add(hsk);
+        grid.replaceChildren();
         animateGridWrap(wrap, false);
         chev.classList.remove('open');
       }
@@ -1774,8 +1888,10 @@ export function setTheme(t) {
   const icon = t === 'dark'
     ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
     : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
-    document.getElementById(id).innerHTML = icon;
+  requestAnimationFrame(() => {
+    ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
+      document.getElementById(id).innerHTML = icon;
+    });
   });
 }
 
