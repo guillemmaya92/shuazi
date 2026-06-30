@@ -585,6 +585,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   user-select:none; -webkit-user-select:none;
   content-visibility: auto;
   contain-intrinsic-size: 60px;
+  /* Let the 1fr grid tracks shrink below a tile's min-content. Without this the
+     longest pinyin (e.g. "chuáng") pins every column wide and the whole grid
+     overflows / clips on the right. Word tiles already do this; chars need it too. */
+  min-width:0; overflow:hidden;
 }
 .char-tile:active { transform:scale(.93); }
 .char-tile .tc {
