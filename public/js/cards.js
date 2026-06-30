@@ -31,7 +31,7 @@ export function fetchWordsForChar(card) {
       .from('words')
       .select('id, word, pinyin, meaning, hsk, frequency, char_word!inner(id_char)')
       .eq('char_word.id_char', card.id)
-      .order('frequency', { ascending: true });
+      .order('frequency', { ascending: false });
     state.wordsByChar[key] = (data || []).map(w => ({
       dbId:    w.id,
       id:      w.word,
@@ -147,7 +147,7 @@ export function stats() {
     updateDeckProgress();
     const pKnown = document.getElementById('p-known');
     if (pKnown) {
-      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.coverage ?? 0), 0);
+      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.frequency ?? 0), 0);
       const pct = Math.min(100, Math.round(knownCov * 100));
       pKnown.textContent = knownN;
       document.getElementById('p-review').textContent = reviewN;
@@ -166,7 +166,7 @@ export function stats() {
     updateDeckProgress();
     const pKnown = document.getElementById('p-known');
     if (pKnown) {
-      const cov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
+      const cov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.frequency ?? 0), 0);
       const pct = Math.min(100, Math.round(cov * 100));
       pKnown.textContent = knownN;
       document.getElementById('p-review').textContent = reviewN;
@@ -269,7 +269,7 @@ function makeCard(card, isStack) {
     await fetchWordsForChar(card);
     wordsList.dataset.loaded = '1';
     // Show the most-used compound words: 2+ characters only, ordered by HSK then
-    // frequency asc (the fetch already returns frequency asc, so a stable sort by
+    // frequency desc (the fetch already returns frequency desc, so a stable sort by
     // HSK keeps the most-frequent word first within each level).
     const cardWords = (state.wordsByChar[card.char] || [])
       .filter(w => [...(w.id || '')].length > 1)
@@ -300,7 +300,7 @@ function makeCard(card, isStack) {
       tapHint.style.visibility = 'hidden';
       await fetchWordsForChar(card);
       // Same criterion as the info page: most-used compound word (2+ characters),
-      // ordered by HSK then frequency asc, so the example isn't just the card char.
+      // ordered by HSK then frequency desc, so the example isn't just the card char.
       const w = (state.wordsByChar[card.char] || [])
         .filter(x => [...(x.id || '')].length > 1)
         .sort((a, b) => (a.hsk ?? 99) - (b.hsk ?? 99))[0];

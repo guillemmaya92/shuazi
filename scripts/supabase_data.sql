@@ -77,7 +77,7 @@ create table components (
     meaning     text,
     stroke      int,
     productive  int,
-    coverage    decimal(18,2)
+    frequency   decimal(18,2)
 );
 
 create table radicals (
@@ -88,7 +88,7 @@ create table radicals (
     meaning     text,
     stroke      int,
     productive  int,
-    coverage    decimal(18,2)
+    frequency   decimal(18,2)
 );
 
 create table chars (
@@ -100,7 +100,6 @@ create table chars (
     hsk         int,
     stroke      int,
     productive  int,
-    coverage    int,
     frequency   decimal(18,2)
 );
 
@@ -109,7 +108,12 @@ create table words (
     word        text not null,
     pinyin      text,
     meaning     text,
-    hsk         int
+    hsk         int,
+	radical	    text,
+	pos         text,
+	strok       int,
+	productive  int,
+	frequency   decimal(18,2)
 );
 
 create table phrases (

@@ -94,7 +94,7 @@
         [...box.children]
           .sort((a, b) => {
             if (key === 'stroke')   return (+a.dataset.stroke   || 0) - (+b.dataset.stroke   || 0) || cmpPy(a, b);
-            if (key === 'coverage') return (+b.dataset.coverage || 0) - (+a.dataset.coverage || 0) || cmpPy(a, b);
+            if (key === 'frequency') return (+b.dataset.frequency || 0) - (+a.dataset.frequency || 0) || cmpPy(a, b);
             return cmpPy(a, b);
           })
           .forEach(t => box.appendChild(t));

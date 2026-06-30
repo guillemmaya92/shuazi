@@ -71,7 +71,7 @@ def load_components():
             'meaning':    r['meaning'],
             'stroke':     int(r['stroke']) if r['stroke'] is not None else None,
             'productive': int(r['productive']) if r['productive'] is not None else None,
-            'coverage':   float(r['coverage']) if r['coverage'] is not None else None,
+            'frequency':  float(r['frequency']) if r['frequency'] is not None else None,
         }
         for r in rows
     ]
@@ -100,7 +100,7 @@ def load_radicals():
             'meaning':     r['meaning'],
             'stroke':      int(r['stroke']) if r['stroke'] is not None else None,
             'productive':  int(r['productive']) if r['productive'] is not None else None,
-            'coverage':    float(r['coverage']) if r['coverage'] is not None else None,
+            'frequency':   float(r['frequency']) if r['frequency'] is not None else None,
         }
         for r in rows
     ]
@@ -118,8 +118,7 @@ def load_chars():
             'hsk':        int(r['hsk']) if r.get('hsk') is not None else None,
             'stroke':     int(r['stroke']) if r.get('stroke') is not None else None,
             'productive': int(r['productive']) if r.get('productive') is not None else None,
-            'coverage':   float(r['coverage']) if r.get('coverage') is not None else None,
-            'frequency':  int(r['frequency']) if r.get('frequency') is not None else None,
+            'frequency':  float(r['frequency']) if r.get('frequency') is not None else None,
         }
         for r in rows
     ]
@@ -147,11 +146,10 @@ def load_words():
             'meaning': r['meaning'],
             'hsk':     int(r['hsk']) if r.get('hsk') is not None else None,
             'radical': r['radical'],
-            'frequency': int(r['frequency']) if r.get('hsk') is not None else None,
             'pos':     r['pos'],
             'stroke':  int(r['stroke']) if r.get('stroke') is not None else None,
             'productive':  int(r['productive']) if r.get('productive') is not None else None,
-            'coverage':  float(r['coverage']) if r.get('coverage') is not None else None,                                       
+            'frequency': float(r['frequency']) if r.get('frequency') is not None else None,
         }
         for r in rows
     ]

@@ -257,6 +257,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .hsk-4 { background:rgba(168,28,38,.16);   color:#c04050; border:1px solid rgba(168,28,38,.30); }
 .hsk-5 { background:rgba(55,90,148,.20);   color:#6890c8; border:1px solid rgba(55,90,148,.38); }
 .hsk-6 { background:rgba(118,60,115,.16);  color:#9e6e9c; border:1px solid rgba(118,60,115,.30); }
+.hsk-7 { background:rgba(70,74,82,.20);    color:#6b6f78; border:1px solid rgba(70,74,82,.40); }
 
 /* hanzi — fills remaining space, always centred */
 .hanzi-wrap {
@@ -524,6 +525,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .hsk-4-fill { background:#c04050; }
 .hsk-5-fill { background:#6890c8; }
 .hsk-6-fill { background:#9e6e9c; }
+.hsk-7-fill { background:#4a4e56; }
 .hsk-full-bar {
   height:5px; background:var(--bdr); border-radius:3px; overflow:hidden; width:100%;
 }
@@ -747,9 +749,9 @@ body.account-open .account-scrim { pointer-events: auto; }
 .modal #modal-content .words-list { margin-top:6px; }
 
 /* HSK filter pills */
-.hsk-filter-row { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+.hsk-filter-row { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
 .hsk-filter-pill {
-  padding:6px 2px; border-radius:999px;
+  padding:6px 1px; border-radius:999px;
   font-size:clamp(.56rem, 2.6vw, .72rem); font-weight:700;
   letter-spacing:.01em; text-transform:uppercase; cursor:pointer; text-align:center;
   opacity:.35; transition: opacity 150ms ease, transform 120ms ease;

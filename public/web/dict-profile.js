@@ -8,7 +8,7 @@
   const BUBBLE_PRICE = 2;
   const DATA = window.__SHUAZI_DATA__ || { c: [], w: [] };
 
-  // rows: [id, name, hsk, coverage×1e6]
+  // rows: [id, name, hsk, frequency×1e6]
   const idName = { char: {}, word: {} };
   DATA.c.forEach(r => { idName.char[r[0]] = r[1]; });
   DATA.w.forEach(r => { idName.word[r[0]] = r[1]; });

@@ -29,18 +29,22 @@ function hanziForReading(glyph, pinyin) {
 }
 
 /* ── GROUPS ── */
-const collapsedGroups = new Set([1, 2, 3, 4, 5, 6]);
+const collapsedGroups = new Set([1, 2, 3, 4, 5, 6, 7]);
 let radicalsCollapsed = true;
 let activeRadical = null;
 let componentsCollapsed = true;
 let activeComponent = null; // component id
-const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6]);
+const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6, 7]);
 
 export function renderGroups() {
   const scrollEl = document.getElementById('groups-scroll');
   const container = document.getElementById('groups-content');
-  const levels = [1, 2, 3, 4, 5, 6];
+  const levels = [1, 2, 3, 4, 5, 6, 7];
   const q = state.gridSearch.trim();
+  // Mirror the deck's status filter on the grid: an item passes when its
+  // status (known / review / left) is among the active status filters.
+  const passesStatus = key => state.activeStatuses.has(
+    state.known.has(key) ? 'know' : state.unknown.has(key) ? 'review' : 'left');
   container.innerHTML = '';
   scrollEl.classList.toggle('hide-pinyin', !state.showPinyin);
 
@@ -95,7 +99,7 @@ export function renderGroups() {
 
     if (state.gridSort === 'pinyin')          sortedRadicals.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') sortedRadicals.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
-    else if (state.gridSort === 'coverage')   sortedRadicals.sort((a, b) => (Number(b.coverage)   || 0) - (Number(a.coverage)   || 0));
+    else if (state.gridSort === 'frequency')  sortedRadicals.sort((a, b) => (Number(b.frequency)  || 0) - (Number(a.frequency)  || 0));
     else if (state.gridSort === 'stroke')     sortedRadicals.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
     else                                      sortedRadicals.sort((a, b) => Number(a.id) - Number(b.id));
 
@@ -185,7 +189,7 @@ export function renderGroups() {
 
     if (state.gridSort === 'pinyin')          sortedComponents.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') sortedComponents.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
-    else if (state.gridSort === 'coverage')   sortedComponents.sort((a, b) => (Number(b.coverage)   || 0) - (Number(a.coverage)   || 0));
+    else if (state.gridSort === 'frequency')  sortedComponents.sort((a, b) => (Number(b.frequency)  || 0) - (Number(a.frequency)  || 0));
     else if (state.gridSort === 'stroke')     sortedComponents.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
     else                                      sortedComponents.sort((a, b) => Number(a.id) - Number(b.id));
 
@@ -274,12 +278,16 @@ export function renderGroups() {
     if (!wgroup.length) return;
     if      (state.gridSort === 'pinyin')     wgroup = [...wgroup].sort((a, b) => (a.pinyin ?? '').localeCompare(b.pinyin ?? ''));
     else if (state.gridSort === 'productive') wgroup = [...wgroup].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
-    else if (state.gridSort === 'coverage')   wgroup = [...wgroup].sort((a, b) => (b.coverage   ?? 0) - (a.coverage   ?? 0));
+    else if (state.gridSort === 'frequency')  wgroup = [...wgroup].sort((a, b) => (b.frequency  ?? 0) - (a.frequency  ?? 0));
     else if (state.gridSort === 'stroke')     wgroup = [...wgroup].sort((a, b) => (a.stroke      ?? 0) - (b.stroke      ?? 0));
     else                                      wgroup = [...wgroup].sort((a, b) => a.id - b.id);
 
-    const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
-    const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill' };
+    // Tiles shown respect the status filter; counts/progress stay on the full level.
+    const wtiles = wgroup.filter(w => passesStatus(w.word));
+    if (!wtiles.length) return;
+
+    const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6', 7: 'hsk-7' };
+    const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill', 7: 'hsk-7-fill' };
     const isLocked    = state.userPlan === 'free' && !isAvailable(hsk);
     const isWCollapsed = (q || activeRadical || activeComponent) ? false : collapsedWordGroups.has(hsk);
     const wKnownCount = wgroup.filter(w => state.known.has(w.word)).length;
@@ -320,7 +328,7 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      wgroup.forEach(word => {
+      wtiles.forEach(word => {
         const tile = document.createElement('button');
         const len = [...(word.word || '')].length;
         const fs  = len <= 1 ? '1.4rem' : len === 2 ? '1.05rem' : len === 3 ? '.82rem' : '.6rem';
@@ -438,14 +446,18 @@ export function renderGroups() {
     if (!group.length) return;
     if (state.gridSort === 'pinyin')      group = [...group].sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') group = [...group].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
-    else if (state.gridSort === 'coverage')   group = [...group].sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0));
+    else if (state.gridSort === 'frequency')  group = [...group].sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
     else if (state.gridSort === 'stroke')     group = [...group].sort((a, b) => (a.stroke ?? 0) - (b.stroke ?? 0));
     else group = [...group].sort((a, b) => a.id - b.id);
 
+    // Tiles shown respect the status filter; counts/progress stay on the full level.
+    const tiles = group.filter(c => passesStatus(c.char));
+    if (!tiles.length) return;
+
     const knownCount = group.filter(c => state.known.has(c.char)).length;
     const pct = group.length ? Math.round(knownCount / group.length * 100) : 0;
-    const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
-    const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill' };
+    const colors    = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6', 7: 'hsk-7' };
+    const fillClass = { 1: 'hsk-1-fill', 2: 'hsk-2-fill', 3: 'hsk-3-fill', 4: 'hsk-4-fill', 5: 'hsk-5-fill', 6: 'hsk-6-fill', 7: 'hsk-7-fill' };
     const isCollapsed = (q || activeRadical || activeComponent) ? false : collapsedGroups.has(hsk);
     const isLocked = state.userPlan === 'free' && !isAvailable(hsk);
 
@@ -484,7 +496,7 @@ export function renderGroups() {
           </div>`;
         return;
       }
-      group.forEach(card => {
+      tiles.forEach(card => {
         const tile = document.createElement('button');
         const isKnown  = state.known.has(card.char);
         const isRepaso = state.unknown.has(card.char);
@@ -620,7 +632,7 @@ export async function openModal(card, backStack = []) {
         const label = g === 'Other' ? 'Other' : `HSK ${g}`;
         const items = groupMap[g]
           .slice()
-          .sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0))
+          .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
           .map(w =>
           `<div class="word-exp" data-word-id="${w.dbId}">
             <button class="word-exp-header">
@@ -741,7 +753,7 @@ function compoundCharsHTML(chars) {
     const label = g === 'Other' ? 'Other' : `HSK ${g}`;
     const items = groupMap[g]
       .slice()
-      .sort((a, b) => (b.coverage ?? 0) - (a.coverage ?? 0))
+      .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
       .map(c =>
         `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
@@ -820,7 +832,7 @@ function openComponentModal(comp, backStack = []) {
 }
 
 export async function openWordModal(word, backStack = []) {
-  const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6' };
+  const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6', 7: 'hsk-7' };
 
   const posDesc = state.POS_TAGS?.[word.pos];
   const posHTML = posDesc
@@ -1230,7 +1242,7 @@ tabProfile.onclick   = () => showTab('profile');
 /* ── PROFILE ── */
 export function renderProfile() {
   const container = document.getElementById('profile-scroll');
-  const levels = [1, 2, 3, 4, 5, 6];
+  const levels = [1, 2, 3, 4, 5, 6, 7];
 
   function computeStats() {
     if (state.groupsContent === 'words') {
@@ -1239,7 +1251,7 @@ export function renderProfile() {
       const knownN  = filtered.filter(w => state.known.has(w.word)).length;
       const reviewN = filtered.filter(w => state.unknown.has(w.word)).length;
       const leftN   = total - knownN - reviewN;
-      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.coverage ?? 0), 0);
+      const knownCov = state.WORDS.filter(w => state.known.has(w.word)).reduce((s, w) => s + (w.frequency ?? 0), 0);
       const pct      = Math.min(100, Math.round(knownCov * 100));
       return { total, knownN, reviewN, leftN, pct };
     }
@@ -1248,7 +1260,7 @@ export function renderProfile() {
     const knownN   = filtered.filter(c => state.known.has(c.char)).length;
     const reviewN  = filtered.filter(c => state.unknown.has(c.char)).length;
     const leftN    = total - knownN - reviewN;
-    const knownCov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.coverage ?? 0), 0);
+    const knownCov = state.CHARACTERS.filter(c => state.known.has(c.char)).reduce((s, c) => s + (c.frequency ?? 0), 0);
     const pct = Math.min(100, Math.round(knownCov * 100));
     return { total, knownN, reviewN, leftN, pct };
   }
@@ -1509,6 +1521,7 @@ export function renderProfile() {
     state.deck = state.groupsContent === 'words' ? buildWordDeck() : buildDeck(state.CHARACTERS);
     render();
     updateStats();
+    renderGroups();
   };
 
   container.querySelectorAll('.hsk-filter-pill:not([disabled])').forEach(btn => {
@@ -1651,8 +1664,8 @@ function attachPhraseSwipe(cardEl, phrase) {
 }
 
 /* ── SORT & SEARCH ── */
-const SORT_CYCLE  = ['pinyin', 'productive', 'coverage', 'stroke'];
-const SORT_LABELS = { pinyin: 'Pinyin', productive: 'Productive', coverage: 'Coverage', stroke: 'Stroke' };
+const SORT_CYCLE  = ['pinyin', 'productive', 'frequency', 'stroke'];
+const SORT_LABELS = { pinyin: 'Pinyin', productive: 'Productive', frequency: 'Frequency', stroke: 'Stroke' };
 
 document.getElementById('sortBtn').onclick = () => {
   state.gridSort = SORT_CYCLE[(SORT_CYCLE.indexOf(state.gridSort) + 1) % SORT_CYCLE.length];

@@ -20,8 +20,7 @@ for _, row in df.iterrows():
         "radical":    str(row["radical"]),
         "stroke":     int(row["stroke"]),
         "hsk":        int(row["hsk"]),
-        "coverage":   round(float(row["coverage"]), 4),
-        "frequency":    int(row["frequency"]),
+        "frequency":  round(float(row["frequency"]), 4),
     }
     data.append(item)
 

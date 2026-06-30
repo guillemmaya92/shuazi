@@ -47,13 +47,13 @@ async function fetchAll(table, columns, orderBy = 'id') {
 // Granular loaders so the boot sequence can put exactly the right table on the
 // critical path: CHARACTERS for "characters" mode, WORDS for "words" mode.
 async function loadChars() {
-  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, coverage, frequency');
+  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, frequency');
   state.CHARACTERS = chars;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
 }
 
 async function loadWords() {
-  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, coverage, stroke, pos');
+  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, frequency, stroke, pos');
 }
 
 // Small lookup table: part-of-speech code → human-readable description.
@@ -69,7 +69,7 @@ async function loadPosTags() {
 
 async function loadRadicalsAndSlang() {
   const [radicals, slang] = await Promise.all([
-    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, coverage'),
+    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, frequency'),
     fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image'),
   ]);
   state.RADICALS = radicals;
@@ -88,7 +88,7 @@ async function loadRadicalsAndSlang() {
 async function loadComponents() {
   try {
     const [components, compChar] = await Promise.all([
-      fetchAll('components', 'id, component, pinyin, meaning, stroke, productive, coverage'),
+      fetchAll('components', 'id, component, pinyin, meaning, stroke, productive, frequency'),
       fetchAll('component_char', 'id_component, id_char', 'id_component')
     ]);
     // Some components have null pinyin/meaning — coalesce so sort/search/render never crash.

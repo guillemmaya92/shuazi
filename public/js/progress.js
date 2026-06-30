@@ -135,7 +135,10 @@ export async function loadSettingsFromSupabase() {
     .eq('user_id', state.supaUser.id)
     .maybeSingle();
   if (!data) {
-    // First sign-in on this account: seed the row from the device's settings.
+    // First sign-in on this account (i.e. just registered): start with every
+    // HSK level active, then seed the row from the device's settings.
+    state.activeHskLevels = new Set([1, 2, 3, 4, 5, 6, 7]);
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsPayload())); } catch (e) {}
     syncSettingsToSupabase();
     return;
   }

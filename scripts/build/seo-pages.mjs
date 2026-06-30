@@ -170,16 +170,16 @@ const normPy = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 // the app's Groups grid). Search is by character/pinyin, so no meaning attr.
 // No mark button — long-press cycles known/review (dict-auth.js); the state is
 // shown purely with colour so unmarked tiles stay clean.
-const charTile = c => `<div class="tile" data-id="${c.id}" data-type="char" data-name="${esc(c.char)}" data-py="${esc(normPy(c.pinyin))}" data-stroke="${c.stroke || 0}" data-coverage="${c.coverage || 0}"><a class="tile-link" href="${hanziPath(c.char)}"><b>${esc(c.char)}</b><span>${esc(c.pinyin ?? '')}</span></a></div>`;
+const charTile = c => `<div class="tile" data-id="${c.id}" data-type="char" data-name="${esc(c.char)}" data-py="${esc(normPy(c.pinyin))}" data-stroke="${c.stroke || 0}" data-frequency="${c.frequency || 0}"><a class="tile-link" href="${hanziPath(c.char)}"><b>${esc(c.char)}</b><span>${esc(c.pinyin ?? '')}</span></a></div>`;
 const wordChip = w => {
   const len = [...w.word].length;
   const fs = len <= 1 ? '1.55rem' : len === 2 ? '1.15rem' : len === 3 ? '.86rem' : '.7rem';
-  return `<div class="tile wd" data-id="${w.id}" data-type="word" data-name="${esc(w.word)}" data-py="${esc(normPy(w.pinyin))}" data-stroke="${w.stroke || 0}" data-coverage="${w.coverage || 0}"><a class="tile-link" href="${wordPath(w.word)}"><b style="font-size:${fs}">${esc(w.word)}</b><span>${esc(w.pinyin ?? '')}</span></a></div>`;
+  return `<div class="tile wd" data-id="${w.id}" data-type="word" data-name="${esc(w.word)}" data-py="${esc(normPy(w.pinyin))}" data-stroke="${w.stroke || 0}" data-frequency="${w.frequency || 0}"><a class="tile-link" href="${wordPath(w.word)}"><b style="font-size:${fs}">${esc(w.word)}</b><span>${esc(w.pinyin ?? '')}</span></a></div>`;
 };
 
 // Search box (toggled by the magnifier) + (optional) HSK level pills + sort.
 const SEARCH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
-const SORT_OPTS = [['pinyin', 'Pinyin'], ['stroke', 'Strokes'], ['coverage', 'Coverage']];
+const SORT_OPTS = [['pinyin', 'Pinyin'], ['stroke', 'Strokes'], ['frequency', 'Frequency']];
 const controls = (levels = []) => `
 <div class="controls">
   <div class="search-wrap" hidden>
@@ -223,9 +223,9 @@ const group = (level, label, count, inner, { collapsed = false, bar = false } = 
 // ── Load everything ─────────────────────────────────────────────────────────
 console.log('Fetching dictionary data from Supabase…');
 const [chars, radicals, words, posTags, charWord, wordPhrase, phrases, components, componentChar] = await Promise.all([
-  fetchAll('chars', 'id,char,pinyin,meaning,radical,hsk,stroke,frequency,coverage'),
+  fetchAll('chars', 'id,char,pinyin,meaning,radical,hsk,stroke,frequency'),
   fetchAll('radicals', 'id,radical,traditional,pinyin,meaning,stroke'),
-  fetchAll('words', 'id,word,pinyin,meaning,hsk,pos,stroke,frequency,coverage'),
+  fetchAll('words', 'id,word,pinyin,meaning,hsk,pos,stroke,frequency'),
   fetchOptional('pos_tags', 'pos,description', 'pos'),
   fetchOptional('char_word', 'id_char,id_word', 'id_char'),
   fetchOptional('word_phrase', 'id_word,id_phrase', 'id_word'),
@@ -296,7 +296,7 @@ const chipList = (items, href, glyphKey, pyKey) => items.length
         it[pyKey] ? `<span>${esc(it[pyKey])}</span>` : ''}</a></li>`).join('')}</ul>`
   : '<p class="empty">—</p>';
 
-// Interactive character browser (search + sort by pinyin/strokes/coverage +
+// Interactive character browser (search + sort by pinyin/strokes/frequency +
 // HSK level filter + collapsible level groups). dict.js wires it up.
 const charBrowse = items => {
   const levels = [...new Set(items.map(c => c.hsk))].sort((a, b) => a - b);
@@ -314,7 +314,7 @@ const wordBrowse = items => {
   const groups = levels.map(n => {
     const ws = items.filter(w => w.hsk === n);
     const inner = `<ul class="phrases tiles">${ws.map(w =>
-      `<li class="tile word-row" data-id="${w.id}" data-type="word" data-name="${esc(w.word)}" data-py="${esc(normPy(w.pinyin))}" data-stroke="${w.stroke || 0}" data-coverage="${w.coverage || 0}"><a class="tile-link" href="${wordPath(w.word)}"><span class="wr-char">${esc(w.word)}</span><span class="wr-info">${w.pinyin ? `<span class="wr-py">${esc(w.pinyin)}</span>` : ''}${w.meaning ? `<span class="wr-mn">${esc(w.meaning)}</span>` : ''}</span></a></li>`).join('')}</ul>`;
+      `<li class="tile word-row" data-id="${w.id}" data-type="word" data-name="${esc(w.word)}" data-py="${esc(normPy(w.pinyin))}" data-stroke="${w.stroke || 0}" data-frequency="${w.frequency || 0}"><a class="tile-link" href="${wordPath(w.word)}"><span class="wr-char">${esc(w.word)}</span><span class="wr-info">${w.pinyin ? `<span class="wr-py">${esc(w.pinyin)}</span>` : ''}${w.meaning ? `<span class="wr-mn">${esc(w.meaning)}</span>` : ''}</span></a></li>`).join('')}</ul>`;
     return group(n, `HSK ${n}`, num(ws.length), inner, { bar: true });
   }).join('');
   return `<div class="browse">${controls(levels)}${groups}</div>`;
@@ -546,10 +546,10 @@ write('words', shell({
 }));
 
 // ── Profile (progress + account) ─────────────────────────────────────────────
-// Compact dataset for client-side stats: [id, name, hsk, coverage×1e6].
+// Compact dataset for client-side stats: [id, name, hsk, frequency×1e6].
 const profileData = {
-  c: chars.filter(c => pathSafe(c.char)).map(c => [c.id, c.char, c.hsk, Math.round((c.coverage || 0) * 1e6)]),
-  w: words.filter(w => pathSafe(w.word)).map(w => [w.id, w.word, w.hsk, Math.round((w.coverage || 0) * 1e6)]),
+  c: chars.filter(c => pathSafe(c.char)).map(c => [c.id, c.char, c.hsk, Math.round((c.frequency || 0) * 1e6)]),
+  w: words.filter(w => pathSafe(w.word)).map(w => [w.id, w.word, w.hsk, Math.round((w.frequency || 0) * 1e6)]),
 };
 
 write('profile', shell({
