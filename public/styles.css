@@ -569,7 +569,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   padding: 6px 0;
   margin: -6px 0;
 }
-.hsk-group-header:active { opacity: .7; }
+.hsk-group-header:active > * { opacity: .65; }
 .chevron {
   width:16px; height:16px; color:var(--faint); flex-shrink:0;
   transition: transform 280ms cubic-bezier(0.4,0,0.2,1);
@@ -1357,8 +1357,12 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 #upgradeBannerBtn:active { color:#fff; -webkit-text-fill-color:#fff; }
 #upgradeBannerBtn #bubbleCTAText { position:relative; z-index:1; }
 
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 200ms; animation-timing-function: ease; }
+
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .01ms; }
 }
 
 /* ══════════════════════════════
@@ -1372,7 +1376,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 @media (hover:hover) and (pointer:fine) {
   .icon-btn:hover { opacity:.7; }
   .tab:not(.active):hover { color:var(--muted); }
-  .hsk-group-header:hover { opacity:.8; }
+  .hsk-group-header:hover > * { opacity: .8; }
   .pill:hover { opacity:.85; }
   .char-tile:hover { background:var(--surf2); }
   .settings-item:hover {
