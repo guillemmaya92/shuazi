@@ -36,6 +36,28 @@ let componentsCollapsed = true;
 let activeComponent = null; // component id
 const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6, 7]);
 
+// Expand/collapse a .char-grid-wrap with a height animation. The expanded
+// steady state is max-height:none (set in CSS) so very tall grids — e.g. HSK7
+// with 5000+ tiles — are never clipped. We only pin a pixel height for the
+// duration of the transition so it can animate to/from 0, then release it.
+function animateGridWrap(wrap, open) {
+  if (open) {
+    wrap.style.maxHeight = '0px';
+    wrap.classList.remove('collapsed');
+    void wrap.offsetHeight;                       // reflow at 0 before growing
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    wrap.addEventListener('transitionend', function done(e) {
+      if (e.target !== wrap || e.propertyName !== 'max-height') return;
+      wrap.style.maxHeight = 'none';              // uncap so content can never clip
+      wrap.removeEventListener('transitionend', done);
+    });
+  } else {
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';  // pin current height
+    void wrap.offsetHeight;
+    wrap.classList.add('collapsed');                  // .collapsed forces max-height:0 (animates)
+  }
+}
+
 export function renderGroups() {
   const scrollEl = document.getElementById('groups-scroll');
   const container = document.getElementById('groups-content');
@@ -138,12 +160,12 @@ export function renderGroups() {
     radHeader.addEventListener('click', () => {
       if (radicalsCollapsed) {
         radicalsCollapsed = false;
-        radWrap.classList.remove('collapsed');
-        radChev.classList.add('open');
         if (!radGrid.childElementCount) renderRadicalTiles();
+        animateGridWrap(radWrap, true);
+        radChev.classList.add('open');
       } else {
         radicalsCollapsed = true;
-        radWrap.classList.add('collapsed');
+        animateGridWrap(radWrap, false);
         radChev.classList.remove('open');
       }
     });
@@ -230,12 +252,12 @@ export function renderGroups() {
     compHeader.addEventListener('click', () => {
       if (componentsCollapsed) {
         componentsCollapsed = false;
-        compWrap.classList.remove('collapsed');
-        compChev.classList.add('open');
         if (!compGrid.childElementCount) renderComponentTiles();
+        animateGridWrap(compWrap, true);
+        compChev.classList.add('open');
       } else {
         componentsCollapsed = true;
-        compWrap.classList.add('collapsed');
+        animateGridWrap(compWrap, false);
         compChev.classList.remove('open');
       }
     });
@@ -252,7 +274,10 @@ export function renderGroups() {
   if (state.groupsContent === 'words') levels.forEach(hsk => {
     let wgroup = state.WORDS.filter(w => w.hsk === hsk);
     if (!wgroup.length) return;
-    if (!state.activeHskLevels.has(hsk)) return;
+    // Locked levels (free plan) always render — shown collapsed with a "Pro"
+    // badge — so users can see what's available. Only hide available levels the
+    // user has actively deselected in the filters.
+    if (!state.activeHskLevels.has(hsk) && isAvailable(hsk)) return;
     if (q) {
       const exact    = q.startsWith('"') && q.endsWith('"') && q.length > 2;
       const term     = exact ? q.slice(1, -1) : q;
@@ -403,12 +428,12 @@ export function renderGroups() {
     wheader.addEventListener('click', () => {
       if (collapsedWordGroups.has(hsk)) {
         collapsedWordGroups.delete(hsk);
-        wwrap.classList.remove('collapsed');
-        wchev.classList.add('open');
         if (!wgrid.childElementCount) renderWordTiles();
+        animateGridWrap(wwrap, true);
+        wchev.classList.add('open');
       } else {
         collapsedWordGroups.add(hsk);
-        wwrap.classList.add('collapsed');
+        animateGridWrap(wwrap, false);
         wchev.classList.remove('open');
       }
     });
@@ -425,7 +450,10 @@ export function renderGroups() {
   if (state.groupsContent === 'characters') levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
-    if (!state.activeHskLevels.has(hsk)) return;
+    // Locked levels (free plan) always render — shown collapsed with a "Pro"
+    // badge — so users can see what's available. Only hide available levels the
+    // user has actively deselected in the filters.
+    if (!state.activeHskLevels.has(hsk) && isAvailable(hsk)) return;
     if (q) {
       const exact = q.startsWith('"') && q.endsWith('"') && q.length > 2;
       const term = exact ? q.slice(1, -1) : q;
@@ -560,12 +588,12 @@ export function renderGroups() {
     header.addEventListener('click', () => {
       if (collapsedGroups.has(hsk)) {
         collapsedGroups.delete(hsk);
-        wrap.classList.remove('collapsed');
-        chev.classList.add('open');
         if (!grid.childElementCount) renderTiles();
+        animateGridWrap(wrap, true);
+        chev.classList.add('open');
       } else {
         collapsedGroups.add(hsk);
-        wrap.classList.add('collapsed');
+        animateGridWrap(wrap, false);
         chev.classList.remove('open');
       }
     });
@@ -1298,8 +1326,10 @@ export function renderProfile() {
   const filterPills = levels.map(hsk => {
     const group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return '';
-    const active = state.activeHskLevels.has(hsk);
     const locked = state.userPlan === 'free' && !isAvailable(hsk);
+    // Locked levels can't be toggled, so always show them as selected (with the
+    // lock) — every level is active by default; Pro just unlocks the locked ones.
+    const active = state.activeHskLevels.has(hsk) || locked;
     return `<button class="hsk-filter-pill hsk-${hsk} ${active ? 'active' : ''} ${locked ? 'locked' : ''}" data-hsk="${hsk}" ${locked ? 'disabled' : ''} style="${locked ? 'opacity:.35;cursor:not-allowed' : ''}" title="${locked ? 'Upgrade to Pro to unlock' : ''}">
       ${locked ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:2px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : ''}HSK ${hsk}
     </button>`;
