@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
   // Remove the user's data rows first (best-effort — keep going on individual
   // failures so a missing table never blocks the auth-user deletion).
   const tables = [
-    `translations?user_id=eq.${user.id}`,
+    `chats?user_id=eq.${user.id}`,
     `auth_events?user_id=eq.${user.id}`,
     `profiles?id=eq.${user.id}`,
   ];

@@ -83,13 +83,23 @@ async function translateToChinese(text) {
   return result;
 }
 
-// Guest history lives in localStorage so Pinned / Recents work without an account
-// (same shape as the Supabase rows). Capped to the latest 100 entries.
-const LOCAL_HIST_KEY = 'shuazi-tr-history';
-function localHistoryGet() {
+// Chat history: each entry is a whole conversation (a list of translations)
+// shown as a single Recents / Pinned item. Guests keep it in localStorage;
+// signed-in users in Supabase. Same row shape in both:
+//   { chat_id, title, messages: [{ source_text, translation, tokens }], pinned, updated_at }
+const LOCAL_HIST_KEY = 'shuazi-tr-chats';
+
+function newChatId() {
+  return crypto.randomUUID?.() || 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+// The Recents preview label for a chat: its first message's source text.
+function chatTitle(messages) {
+  return messages[0]?.source_text || 'New chat';
+}
+function localChatsGet() {
   try { return JSON.parse(localStorage.getItem(LOCAL_HIST_KEY)) || []; } catch { return []; }
 }
-function localHistorySet(rows) {
+function localChatsSet(rows) {
   try { localStorage.setItem(LOCAL_HIST_KEY, JSON.stringify(rows)); } catch { /* quota full */ }
 }
 function sortHistory(rows) {
@@ -97,29 +107,29 @@ function sortHistory(rows) {
     (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
     String(b.updated_at).localeCompare(String(a.updated_at)));
 }
-function localHistoryUpsert(source, translation, tokens) {
-  const rows = localHistoryGet();
-  const i = rows.findIndex(r => r.source_text === source);
-  const now = new Date().toISOString();
-  if (i >= 0) rows[i] = { ...rows[i], translation, tokens: tokens ?? null, updated_at: now };
-  else rows.unshift({ source_text: source, translation, tokens: tokens ?? null, pinned: false, updated_at: now });
-  localHistorySet(rows.slice(0, 100));
+function localChatUpsert(chat) {
+  const rows = localChatsGet();
+  const i = rows.findIndex(r => r.chat_id === chat.chat_id);
+  if (i >= 0) rows[i] = { ...rows[i], ...chat };          // keep pinned & created order
+  else rows.unshift({ pinned: false, ...chat });
+  localChatsSet(rows.slice(0, 100));
 }
 
-// Persists a successful translation. Signed-in users sync to Supabase; guests
-// fall back to localStorage. Never throws.
-async function saveTranslation(source, translation, tokens) {
-  if (!state.supaUser) { localHistoryUpsert(source, translation, tokens); return; }
+// Persists the current chat (create or update in place, keyed by chat_id).
+// Signed-in users sync to Supabase; guests fall back to localStorage. Pinned is
+// never sent, so an autosave never clobbers a pin. Never throws.
+async function saveChat(chat) {
+  if (!state.supaUser) { localChatUpsert(chat); return; }
   try {
-    await supa.from('translations').upsert({
-      user_id:     state.supaUser.id,
-      source_text: source,
-      translation,
-      tokens:      tokens ?? null,
-      updated_at:  new Date().toISOString(),
-    }, { onConflict: 'user_id,source_text' });
+    await supa.from('chats').upsert({
+      user_id:    state.supaUser.id,
+      chat_id:    chat.chat_id,
+      title:      chat.title,
+      messages:   chat.messages,
+      updated_at: chat.updated_at,
+    }, { onConflict: 'user_id,chat_id' });
   } catch (e) {
-    console.warn('Translator: could not save translation:', e);
+    console.warn('Translator: could not save chat:', e);
   }
 }
 
@@ -327,20 +337,14 @@ let wired = false;
 // Wires the DOM once and kicks off the lazy library load. Safe to call on
 // every tab open — only the first call does work.
 export function initTranslator() {
-  const input      = document.getElementById('trInput');
-  const button     = document.getElementById('trGo');
-  const resultEl   = document.getElementById('trResult');
-  const emptyEl     = document.getElementById('trEmpty');
-  const zhLineEl    = document.getElementById('trZh');
-  const speakBtn    = document.getElementById('trSpeak');
-  const copyBtn     = document.getElementById('trCopy');
-  const countEl      = document.getElementById('trCount');
-  const originalSection = document.getElementById('trOriginalSection');
-  const originalEl   = document.getElementById('trOriginal');
-  const clearBtn     = document.getElementById('trClear');
-  const zhSection    = document.getElementById('trZhSection');
-  const tokensSection = document.getElementById('trTokensSection');
-  const eyeBtn       = document.getElementById('trEye');
+  const input        = document.getElementById('trInput');
+  const button       = document.getElementById('trGo');
+  const emptyEl       = document.getElementById('trEmpty');
+  const countEl        = document.getElementById('trCount');
+  const conversationEl = document.getElementById('trConversation');
+  const msgTemplate    = document.getElementById('trMsgTemplate');
+  const newChatBtn     = document.getElementById('trNewChat');
+  const scrollEl       = document.querySelector('#screen-translator .translator-scroll');
   if (!input || !button) return;
 
   // Start loading the library as soon as the tab is first opened.
@@ -349,41 +353,72 @@ export function initTranslator() {
   });
 
   // The listen button only makes sense with speech synthesis available.
-  const canSpeak = !!speakBtn && 'speechSynthesis' in window;
+  const canSpeak = 'speechSynthesis' in window;
 
   if (wired) return;
   wired = true;
 
-  let currentSourceText = null;
+  // Scroll to the newest message (bottom of the conversation).
+  const scrollToBottom = () => requestAnimationFrame(() => { scrollEl.scrollTop = scrollEl.scrollHeight; });
 
-  // Clear the current result from the screen and remove it from history.
-  async function clearResult() {
-    const src = currentSourceText;
-    currentSourceText = null;
+  // The chat currently on screen. Each translation is appended here and the whole
+  // chat is saved as one Recents entry (keyed by chatId). `null` id = not yet
+  // persisted; the first translation mints one.
+  let chatId = null;
+  let messages = [];
+
+  // Starts a fresh conversation: clears the on-screen messages and the input.
+  // The previous chat is already saved, so it just becomes a Recents entry.
+  function newChat() {
     stopPlayback();
-    hideSections();
-    zhLineEl.textContent   = '';
-    resultEl.innerHTML     = '';
-    originalEl.textContent = '';
-    emptyEl.style.display  = 'none';
-    if (!src) return;
+    conversationEl.innerHTML = '';
+    emptyEl.style.display = 'none';
+    input.value = '';
+    chatId = null;
+    messages = [];
+    autoGrow(); syncCount();
+  }
+  newChatBtn?.addEventListener('click', newChat);
+
+  // Like newChat, but also deletes the current chat from Recents (used by the
+  // pull-to-refresh gesture — a pull discards the whole conversation).
+  async function discardChat() {
+    const id = chatId;
+    newChat();
+    if (!id) return;
     if (!state.supaUser) {
-      localHistorySet(localHistoryGet().filter(r => r.source_text !== src));
+      localChatsSet(localChatsGet().filter(x => x.chat_id !== id));
     } else {
-      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', src); } catch {}
+      try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('chat_id', id); } catch {}
     }
-  }
-  clearBtn?.addEventListener('click', clearResult);
-
-  // Listen to the full Chinese sentence.
-  if (canSpeak) {
-    speakBtn.addEventListener('click', () => {
-      speak(zhLineEl.textContent, on => speakBtn.classList.toggle('playing', on));
-    });
+    if (document.body.classList.contains('recents-open')) loadHistory();
   }
 
-  // Copy the Hanzi translation to the clipboard, with a brief checkmark.
-  if (copyBtn) {
+  // Appends one resolved translation as a chat message (Original / Hanzi /
+  // Tokens) with its own listen, copy and reveal-glosses controls.
+  function appendMessage(original, zh, tokens) {
+    const msg = msgTemplate.content.firstElementChild.cloneNode(true);
+    const originalEl = msg.querySelector('.js-original');
+    const zhLineEl   = msg.querySelector('.js-zh');
+    const resultEl   = msg.querySelector('.js-result');
+    const speakBtn   = msg.querySelector('.js-speak');
+    const copyBtn    = msg.querySelector('.js-copy');
+    const eyeBtn     = msg.querySelector('.js-eye');
+
+    originalEl.textContent = original;
+    zhLineEl.textContent   = zh;
+    renderTokens(zh, tokens, resultEl);
+
+    // Listen to the full Chinese sentence.
+    if (canSpeak) {
+      speakBtn.addEventListener('click', () => {
+        speak(zhLineEl.textContent, on => speakBtn.classList.toggle('playing', on));
+      });
+    } else {
+      speakBtn.style.display = 'none';
+    }
+
+    // Copy the Hanzi translation to the clipboard, with a brief checkmark.
     let copiedTimer = null;
     copyBtn.addEventListener('click', async () => {
       const text = zhLineEl.textContent;
@@ -405,84 +440,49 @@ export function initTranslator() {
       clearTimeout(copiedTimer);
       copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 600);
     });
-  }
 
-  // The eye reveals / hides every English gloss at once.
-  if (eyeBtn) {
-    eyeBtn.addEventListener('click', () => {
-      const showing = eyeBtn.classList.toggle('showing');
-      resultEl.querySelectorAll('.tr-token').forEach(t => {
-        if (t.querySelector('.en')) t.classList.toggle('revealed', showing);
+    // The eye reveals / hides every English gloss in this message at once; hide
+    // it entirely when there are no glosses to reveal.
+    if (resultEl.querySelector('.en')) {
+      eyeBtn.addEventListener('click', () => {
+        const showing = eyeBtn.classList.toggle('showing');
+        resultEl.querySelectorAll('.tr-token').forEach(t => {
+          if (t.querySelector('.en')) t.classList.toggle('revealed', showing);
+        });
       });
-    });
-  }
-
-  // Shows the eye only when there are glosses to reveal, and resets it (and any
-  // per-word reveals) to the default hidden state for each new translation.
-  function syncEye() {
-    if (!eyeBtn) return;
-    const hasGlosses = !!resultEl.querySelector('.en');
-    eyeBtn.style.display = hasGlosses ? '' : 'none';
-    eyeBtn.classList.remove('showing');
-  }
-
-  function hideSections() {
-    originalSection.style.display = 'none';
-    zhSection.style.display = 'none';
-    tokensSection.style.display = 'none';
-    if (speakBtn) {
-      speakBtn.style.display = 'none';
-      speakBtn.classList.remove('playing');
+    } else {
+      eyeBtn.style.display = 'none';
     }
-    if (copyBtn) { copyBtn.style.display = 'none'; copyBtn.classList.remove('copied'); }
-    if (eyeBtn) { eyeBtn.style.display = 'none'; eyeBtn.classList.remove('showing'); }
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-  }
 
-  // Renders an already-resolved translation: original text, hanzi, tokens.
-  function showResult(original, zh, tokens) {
-    currentSourceText = original;
-    originalEl.textContent = original;
-    originalSection.style.display = original ? '' : 'none';
-    zhLineEl.textContent = zh;
-    renderTokens(zh, tokens, resultEl);
-    syncEye();
-    zhSection.style.display = '';
-    tokensSection.style.display = '';
-    if (canSpeak) speakBtn.style.display = '';
-    if (copyBtn) copyBtn.style.display = '';
+    emptyEl.style.display = 'none';
+    conversationEl.appendChild(msg);
+    scrollToBottom();
   }
 
   async function handleSubmit() {
     const text = input.value.trim();
-    resultEl.innerHTML = '';
-    zhLineEl.textContent = '';
-    hideSections();
-    if (!text) {
-      emptyEl.textContent = '';
-      emptyEl.className = 'tr-empty';
-      emptyEl.style.display = 'none';
-      return;
-    }
+    if (!text) return;
     emptyEl.style.display = 'none';
     button.disabled = true;
     button.classList.add('tr-loading');
-    // Clear the box right after sending (chat-style); the original shows above.
+    // Clear the box right after sending (chat-style); it reappears as a message.
     input.value = '';
     autoGrow(); syncCount();
     try {
       await ensureLibs();
       const { translation: zh, tokens } = await translateToChinese(text);
-      showResult(text, zh, tokens);
-      // Persist for the signed-in user, then refresh the history if it's open.
-      saveTranslation(text, zh, tokens).then(() => {
-        if (document.body.classList.contains('recents-open')) loadHistory();
-      });
+      appendMessage(text, zh, tokens);
+      // Append to the current chat and save the whole conversation as one entry.
+      if (!chatId) chatId = newChatId();
+      messages.push({ source_text: text, translation: zh, tokens: tokens ?? null });
+      saveChat({ chat_id: chatId, title: chatTitle(messages), messages, updated_at: new Date().toISOString() })
+        .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
       console.error(e);
       emptyEl.textContent = 'Could not translate: ' + e.message;
       emptyEl.className = 'tr-empty err';
       emptyEl.style.display = 'block';
+      scrollToBottom();
     } finally {
       button.classList.remove('tr-loading');
       button.disabled = false;
@@ -561,16 +561,16 @@ export function initTranslator() {
     closeMenu();
     if (!row) return;
     if (!state.supaUser) {
-      const rows = localHistoryGet();
-      const r = rows.find(x => x.source_text === row.source_text);
-      if (r) { r.pinned = !r.pinned; localHistorySet(rows); }
+      const rows = localChatsGet();
+      const r = rows.find(x => x.chat_id === row.chat_id);
+      if (r) { r.pinned = !r.pinned; localChatsSet(rows); }
       loadHistory();
       return;
     }
     try {
-      await supa.from('translations')
+      await supa.from('chats')
         .update({ pinned: !row.pinned })
-        .eq('user_id', state.supaUser.id).eq('source_text', row.source_text);
+        .eq('user_id', state.supaUser.id).eq('chat_id', row.chat_id);
     } catch {}
     loadHistory();   // reorder (pinned first)
   });
@@ -579,10 +579,12 @@ export function initTranslator() {
     closeMenu();
     if (!row) return;
     if (!state.supaUser) {
-      localHistorySet(localHistoryGet().filter(x => x.source_text !== row.source_text));
+      localChatsSet(localChatsGet().filter(x => x.chat_id !== row.chat_id));
     } else {
-      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('source_text', row.source_text); } catch {}
+      try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('chat_id', row.chat_id); } catch {}
     }
+    // If the deleted chat is the one on screen, start a fresh one.
+    if (row.chat_id === chatId) newChat();
     item?.remove();
     if (!historyList.querySelector('.tr-history-item')) renderHistory([]);
   });
@@ -618,11 +620,11 @@ export function initTranslator() {
   function closeHistory() { document.body.classList.remove('recents-open'); historyPanel.setAttribute('aria-hidden', 'true'); }
 
   async function loadHistory() {
-    if (!state.supaUser) { renderHistory(sortHistory(localHistoryGet())); return; }
+    if (!state.supaUser) { renderHistory(sortHistory(localChatsGet())); return; }
     try {
       const { data } = await supa
-        .from('translations')
-        .select('source_text, translation, tokens, pinned, updated_at')
+        .from('chats')
+        .select('chat_id, title, messages, pinned, updated_at')
         .eq('user_id', state.supaUser.id)
         .order('pinned', { ascending: false })
         .order('updated_at', { ascending: false })
@@ -637,10 +639,11 @@ export function initTranslator() {
   function makeHistoryItem(row) {
     const item = document.createElement('div');
     item.className = 'tr-history-item' + (row.pinned ? ' pinned' : '');
+    const preview = row.messages?.[0]?.translation || '';
     item.innerHTML =
       `<button class="tr-history-open" type="button">
-         <span class="tr-history-src">${row.pinned ? '<svg class="tr-history-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3a1 1 0 0 1 0 2 1 1 0 0 0-1 1v4.76a4 4 0 0 0 2.21 3.58l1.79.9V16H5v-.76l1.79-.9A4 4 0 0 0 9 10.76V6a1 1 0 0 0-1-1 1 1 0 0 1 0-2z"/></svg>' : ''}${escapeHtml(row.source_text)}</span>
-         <span class="tr-history-zh">${escapeHtml(row.translation)}</span>
+         <span class="tr-history-src">${row.pinned ? '<svg class="tr-history-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3a1 1 0 0 1 0 2 1 1 0 0 0-1 1v4.76a4 4 0 0 0 2.21 3.58l1.79.9V16H5v-.76l1.79-.9A4 4 0 0 0 9 10.76V6a1 1 0 0 0-1-1 1 1 0 0 1 0-2z"/></svg>' : ''}${escapeHtml(row.title || '')}</span>
+         <span class="tr-history-zh">${escapeHtml(preview)}</span>
        </button>`;
     const openBtn = item.querySelector('.tr-history-open');
 
@@ -668,18 +671,18 @@ export function initTranslator() {
 
   async function clearPinned() {
     if (!state.supaUser) {
-      localHistorySet(localHistoryGet().filter(r => !r.pinned));
+      localChatsSet(localChatsGet().filter(r => !r.pinned));
     } else {
-      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('pinned', true); } catch {}
+      try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('pinned', true); } catch {}
     }
     loadHistory();
   }
 
   async function clearRecents() {
     if (!state.supaUser) {
-      localHistorySet(localHistoryGet().filter(r => r.pinned));
+      localChatsSet(localChatsGet().filter(r => r.pinned));
     } else {
-      try { await supa.from('translations').delete().eq('user_id', state.supaUser.id).eq('pinned', false); } catch {}
+      try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('pinned', false); } catch {}
     }
     loadHistory();
   }
@@ -712,16 +715,22 @@ export function initTranslator() {
     } else {
       const empty = document.createElement('div');
       empty.className = 'tr-history-empty';
-      empty.textContent = 'No translations yet.';
+      empty.textContent = 'No conversations yet.';
       historyList.appendChild(empty);
     }
   }
 
+  // Loads a whole chat back onto the screen and adopts it as the current one, so
+  // further translations continue appending to it.
   async function openFromHistory(row) {
     emptyEl.textContent = ''; emptyEl.className = 'tr-empty'; emptyEl.style.display = 'none';
     closeHistory();
     await ensureLibs();
-    showResult(row.source_text, row.translation, row.tokens);
+    stopPlayback();
+    conversationEl.innerHTML = '';
+    chatId = row.chat_id;
+    messages = (row.messages || []).map(m => ({ ...m }));
+    messages.forEach(m => appendMessage(m.source_text, m.translation, m.tokens));
   }
 
   historyBtn?.addEventListener('click', openHistory);
@@ -782,14 +791,22 @@ export function initTranslator() {
   }, { passive: true });
 
   // ── PULL-TO-REFRESH ──
-  // Dragging down from the very top of the results clears the current
-  // translation (same as the Clear button), with a native-style refresh disc.
+  // Dragging down from the very top of the conversation discards the current
+  // chat — clears the on-screen messages and removes it from Recents — with a
+  // native-style refresh disc.
   setupPullRefresh({
     scroll:    trScreen.querySelector('.translator-scroll'),
     disc:      document.getElementById('trPull'),
     content:   document.getElementById('trContent'),
-    onRefresh: clearResult,
+    onRefresh: discardChat,
     haptic:    buzz,    // buzz() handles iOS (no Vibration API) via the haptic switch
+    // A longer, harder pull than the default so it isn't triggered by accident.
+    trigger:   96,
+    max:       132,
+    damp:      120,
+    label:     document.getElementById('trPullLabel'),
+    pullText:  'Pull to clear',
+    readyText: 'Release to clear',
   });
 }
 

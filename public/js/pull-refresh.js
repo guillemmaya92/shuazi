@@ -6,13 +6,19 @@
    runs (so the content doesn't vanish before the spinner has gone).
 
    Wiring (see styles.css .pull-disc / .pull-spinner / .pull-follow):
-     setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) */
-export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
+     setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
+                        trigger, max, damp, label, pullText, readyText })
+   `trigger`/`max`/`damp` tune the gesture (bigger trigger = a longer, harder
+   pull). `label` is an optional element that shows `pullText`, switching to
+   `readyText` once the threshold is crossed. */
+export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
+                                   trigger = 56, max = 92, damp = 80,
+                                   label = null, pullText = '', readyText = '' }) {
   if (!scroll || !disc) return;
 
-  const TRIGGER = 56;   // pull distance (px, after damping) that fires
-  const MAX     = 92;   // asymptote — the ring can't be dragged past this
-  const DAMP    = 80;   // rubber-band stiffness (higher = looser)
+  const TRIGGER = trigger;   // pull distance (px, after damping) that fires
+  const MAX     = max;       // asymptote — the ring can't be dragged past this
+  const DAMP    = damp;      // rubber-band stiffness (higher = looser)
 
   const bars = Array.from(disc.querySelectorAll('.pull-spinner line'));
   // Graduated opacity around the ring (comet trail); the brightest bar leads.
@@ -23,6 +29,17 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
     bars.forEach((b, i) => { b.style.opacity = i < n ? barBase(i).toFixed(2) : '0'; });
   };
 
+  // Optional caption that sits just above the disc (in the gap opened by the
+  // pull, so it never overlaps the content) and flips text once armed. It shares
+  // the disc's transform (dist - 40) to stay glued to the wheel.
+  const setLabel = (frac, isReady, dist) => {
+    if (!label) return;
+    label.textContent = isReady ? readyText : pullText;
+    label.style.opacity = frac.toString();
+    label.style.transform = `translateY(${dist - 40}px)`;
+    label.classList.toggle('ready', isReady);
+  };
+
   let startY = 0, startX = 0, active = false, locked = false, ready = false;
 
   const reset = () => {
@@ -30,6 +47,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
     disc.style.opacity = '';
     disc.style.transform = '';
     bars.forEach(b => { b.style.opacity = ''; });
+    if (label) { label.classList.remove('dragging', 'ready'); label.style.opacity = ''; label.style.transform = ''; }
     if (content) { content.classList.remove('dragging'); content.style.transform = ''; }
   };
 
@@ -52,6 +70,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
       if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || scroll.scrollTop > 0) { active = false; return; }
       locked = true;
       disc.classList.add('dragging');
+      if (label) label.classList.add('dragging');
       if (content) content.classList.add('dragging');
     }
     e.preventDefault();                          // own the gesture (non-passive)
@@ -64,6 +83,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
     disc.style.transform = `translateY(${dist - 40}px)`;
     disc.classList.toggle('ready', ready);
     setBars(frac);                               // bars fill in as you pull
+    setLabel(frac, ready, dist);                 // caption follows + flips text
     if (content) content.style.transform = `translateY(${dist}px)`;  // content follows
   }, { passive: false });
 
@@ -78,6 +98,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic }) {
       disc.style.opacity = '1';
       disc.style.transform = 'translateY(8px)';
       setBars(1);                                // full ring, then CSS spins it
+      if (label) { label.classList.remove('dragging'); label.style.opacity = '0'; }  // fade the caption, keep the wheel
       haptic?.();
       // Spin first, then run the action as the ring retracts.
       setTimeout(() => { try { onRefresh?.(); } finally { reset(); } }, 600);

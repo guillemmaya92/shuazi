@@ -1919,6 +1919,13 @@ setupPullRefresh({
   content:   document.getElementById('groups-content'),
   onRefresh: clearGroupFilters,
   haptic:    () => navigator.vibrate?.(12),
+  // A longer, harder pull than the default so it isn't triggered by accident.
+  trigger:   96,
+  max:       132,
+  damp:      120,
+  label:     document.getElementById('groupsPullLabel'),
+  pullText:  'Pull to clear filters',
+  readyText: 'Release to clear filters',
 });
 
 /* ── THEME ── */

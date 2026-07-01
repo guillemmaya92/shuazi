@@ -830,6 +830,10 @@ body.account-open .account-scrim { pointer-events: auto; }
 /* Holds the results; translates down with the pull (iOS-style) so the content
    physically follows the gesture, then snaps back with a soft spring. */
 .tr-content { display:flex; flex-direction:column; gap:12px; }
+/* Chat-style stack: each translation is a message; a divider separates them. */
+.tr-conversation { display:flex; flex-direction:column; gap:12px; }
+.tr-message { display:flex; flex-direction:column; gap:12px; }
+.tr-message + .tr-message { border-top:1px solid var(--bdr); padding-top:12px; }
 
 /* ── Shared pull-to-refresh (translator results, groups filters, …) ── */
 /* Content wrapper that follows the pull and snaps back with a soft spring. */
@@ -846,9 +850,23 @@ body.account-open .account-scrim { pointer-events: auto; }
   z-index:6; pointer-events:none;
 }
 .pull-disc:not(.dragging) { transition:opacity .2s ease, transform .28s cubic-bezier(.34,1.56,.64,1); }
+/* Optional caption under the disc (e.g. "Pull to clear" → "Release to clear"). */
+.pull-label {
+  position:absolute; top:-16px; left:0; right:0;
+  text-align:center; font-size:.7rem; font-weight:400;
+  letter-spacing:.02em; color:var(--faint);
+  opacity:0; pointer-events:none; z-index:6;
+}
+.pull-label.ready { color:var(--green); }
+/* Translator pull is a destructive "clear", so its caption arms in red. */
+#trPullLabel.ready { color:var(--red); }
+.pull-label:not(.dragging) { transition:opacity .2s ease, transform .28s cubic-bezier(.34,1.56,.64,1); }
 .pull-disc .pull-spinner { width:18px; height:18px; }
 .pull-disc .pull-spinner line { opacity:0; }   /* bars revealed progressively by JS */
 .pull-disc.ready { color:var(--green); border-color:var(--green); }
+/* Translator pull is a destructive "clear", so its wheel arms in red. On release
+   it spins in the default grey, like groups. */
+#trPull.ready { color:var(--red); border-color:var(--red); }
 /* iOS-style ratchet: 12 discrete steps so the bright bar chases around. */
 .pull-disc.spinning .pull-spinner { animation:pull-spin .85s steps(12,end) infinite; }
 @keyframes pull-spin { to { transform:rotate(360deg); } }
@@ -1088,9 +1106,14 @@ body.account-open .account-scrim { pointer-events: auto; }
   .tr-copy:hover { --tr-copy-bg:color-mix(in srgb, var(--muted) 24%, transparent); }
 }
 
-.tr-original-line {
-  font-size:1rem; line-height:1.5; color:var(--muted);
-  padding:0 2px; white-space:pre-wrap; word-break:break-word;
+/* The user's input as a ChatGPT-style bubble, aligned to the right. */
+.tr-user-msg { display:flex; justify-content:flex-end; }
+.tr-bubble {
+  max-width:85%;
+  background:var(--surf2); border:1px solid var(--bdr); border-radius:18px;
+  padding:8px 14px;
+  font-size:1rem; line-height:1.5; color:var(--txt);
+  white-space:pre-wrap; word-break:break-word;
 }
 .tr-zh-line {
   font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
