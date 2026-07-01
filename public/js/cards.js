@@ -1,4 +1,4 @@
-import { supa, FREE_HSK } from './config.js';
+import { supa, FREE_HSK, hskLabel } from './config.js';
 import { state } from './state.js';
 import { saveState, loadState, saveSettings } from './progress.js';
 import { renderGroups, openWordModal, openModal } from './ui.js';
@@ -215,7 +215,7 @@ function makeCard(card, isStack) {
         <div class="card-bottom">
           <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+            <span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span>
           </div>
         </div>
       </div>
@@ -224,7 +224,7 @@ function makeCard(card, isStack) {
           <div class="info-cell"><div class="lbl">Hanzi</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
           <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
-          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.62rem">HSK ${card.hsk}</span></div></div>
+          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.62rem">${hskLabel(card.hsk)}</span></div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
           <div class="info-cell full"><div class="lbl">Compound words</div><div class="word-phrases-list"></div></div>
         </div>
@@ -364,14 +364,14 @@ function makeWordCard(card, isStack) {
         <div class="card-bottom">
           <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span>
+            <span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span>
           </div>
         </div>
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:1fr 1fr">
           <div class="info-cell"><div class="lbl">Word</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
-          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
           <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
           <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
           <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning ?? '—'}</div></div>

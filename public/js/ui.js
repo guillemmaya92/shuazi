@@ -1,4 +1,4 @@
-import { supa } from './config.js';
+import { supa, hskLabel } from './config.js';
 import { state } from './state.js';
 import { saveState, saveSettings } from './progress.js';
 import { startCheckout, deleteAccount } from './auth.js';
@@ -388,7 +388,7 @@ export function renderGroups() {
     wdiv.innerHTML = `
       <div class="hsk-group-header" ${isLocked ? 'style="opacity:.5;pointer-events:none"' : ''}>
         <div class="hsk-group-label">
-          <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
+          <span class="badge ${colors[hsk]}">${hskLabel(hsk)}</span>
           ${isLocked
             ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : 'Sign up'}</span>`
             : `<span class="count">${wKnownCount}/${wgroup.length} known</span>`
@@ -473,7 +473,7 @@ export function renderGroups() {
         wgrid.innerHTML = `
           <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">HSK ${hsk} is available with shuazi Pro</p>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} is available with shuazi Pro</p>
           </div>`;
         return;
       }
@@ -607,7 +607,7 @@ export function renderGroups() {
     div.innerHTML = `
       <div class="hsk-group-header" ${isLocked ? 'style="opacity:.5;pointer-events:none"' : ''}>
         <div class="hsk-group-label">
-          <span class="badge ${colors[hsk]}">HSK ${hsk}</span>
+          <span class="badge ${colors[hsk]}">${hskLabel(hsk)}</span>
           ${isLocked
             ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : 'Sign up'}</span>`
             : `<span class="count">${knownCount}/${group.length} known</span>`
@@ -681,7 +681,7 @@ export function renderGroups() {
         grid.innerHTML = `
           <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">HSK ${hsk} is available with shuazi Pro</p>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} is available with shuazi Pro</p>
           </div>`;
         return;
       }
@@ -813,7 +813,7 @@ export async function openModal(card, backStack = []) {
   const groupsHTML = groupOrder.length === 0
     ? '<div class="word-item" style="color:var(--faint)">No words found</div>'
     : groupOrder.map((g, i) => {
-        const label = g === 'Other' ? 'Other' : `HSK ${g}`;
+        const label = g === 'Other' ? 'Other' : hskLabel(g);
         const items = groupMap[g]
           .slice()
           .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
@@ -862,7 +862,7 @@ export async function openModal(card, backStack = []) {
       <div class="info-cell"><div class="lbl">Char</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
-      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">HSK ${card.hsk}</span></div></div>
+      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
       <div class="info-cell full"><div class="lbl">Components</div><div class="char-chips stack">${componentsHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Compound words (${cardWords.length})</div><div class="words-list" style="margin-top:6px">${groupsHTML}</div></div>
@@ -934,7 +934,7 @@ function compoundCharsHTML(chars) {
   });
 
   return groupOrder.map((g, i) => {
-    const label = g === 'Other' ? 'Other' : `HSK ${g}`;
+    const label = g === 'Other' ? 'Other' : hskLabel(g);
     const items = groupMap[g]
       .slice()
       .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
@@ -1038,7 +1038,7 @@ export async function openWordModal(word, backStack = []) {
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr">
       <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
-      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">HSK ${word.hsk ?? '?'}</span></div></div>
+      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">${word.hsk == null ? 'HSK ?' : hskLabel(word.hsk)}</span></div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
       <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
@@ -1487,7 +1487,7 @@ export function renderProfile() {
     // lock) — every level is active by default; Pro just unlocks the locked ones.
     const active = state.activeHskLevels.has(hsk) || locked;
     return `<button class="hsk-filter-pill hsk-${hsk} ${active ? 'active' : ''} ${locked ? 'locked' : ''}" data-hsk="${hsk}" ${locked ? 'disabled' : ''} style="${locked ? 'opacity:.35;cursor:not-allowed' : ''}" title="${locked ? 'Upgrade to Pro to unlock' : ''}">
-      ${locked ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:2px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : ''}HSK ${hsk}
+      ${locked ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:2px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : ''}${hskLabel(hsk)}
     </button>`;
   }).join('');
 

@@ -2,6 +2,9 @@ export const SUPA_URL    = 'https://coysmojauucqgdhhxyrz.supabase.co';
 export const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveXNtb2phdXVjcWdkaGh4eXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODAxOTMsImV4cCI6MjA5Njk1NjE5M30.JO6U0TyW5gcnmJMJAvvzSh_ZiMdCKCEtRSz_N8h8adM';
 export const STRIPE_PRICE = 'price_1TlomiBbC7zMbLYpULYnfvr1';
 export const FREE_HSK    = new Set([1, 2]);
+
+// The top HSK band covers levels 7–9 but is stored as 7, so display it as "HSK 7-9".
+export const hskLabel = h => (h === 7 || h === '7') ? 'HSK 7-9' : `HSK ${h}`;
 export const STORE_KEY    = 'shuazi-v1';
 export const SETTINGS_KEY = 'shuazi-settings';
 
