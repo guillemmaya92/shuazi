@@ -8,6 +8,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "handle_links": "preferred",
   "background_color": "#0e1215",
   "theme_color": "#0e1215",
   "orientation": "portrait-primary",

@@ -192,6 +192,26 @@ loadCritical(bootMode).then(() => {
 
   // Auth check in background: updates deck/progress once session is known.
   window._supabaseReady.then(async () => {
+    // Arriving from an email-confirmation link? The custom Supabase template
+    // points at our own domain (in the PWA scope) as
+    //   {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=email
+    // so an installed PWA can open it directly (see manifest launch_handler /
+    // handle_links). Verify the token here, then strip the params so a refresh
+    // is clean. On the browser this simply confirms the email as before.
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get('token_hash');
+    const otpType = params.get('type');
+    if (tokenHash && otpType) {
+      try {
+        await supa.auth.verifyOtp({ type: otpType, token_hash: tokenHash });
+      } catch (e) {
+        console.error('Email confirmation failed:', e);
+      }
+      params.delete('token_hash'); params.delete('type');
+      const qs = params.toString();
+      history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    }
+
     const { data: { session } } = await supa.auth.getSession();
     if (session) {
       state.supaUser = session.user;
