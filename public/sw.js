@@ -20,6 +20,8 @@ const SHELL_ASSETS = [
   '/js/ui.js',
   '/js/translator.js',
   '/js/pwa-install.js',
+  '/js/coach.js',
+  '/js/stroke-order.js',
   '/manifest.json',
 ].map(v);
 

@@ -1454,6 +1454,65 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .coach-tip-x { flex-shrink:0; color:var(--faint); display:grid; place-items:center; width:22px; height:22px; }
 .coach-tip-x svg { width:14px; height:14px; }
 
+/* ── STROKE ORDER (stroke-order.js) ── */
+/* The character in the modal is a button that opens the stroke animation, with a
+   small pencil affordance pinned to the cell's bottom-right corner. */
+.char-cell { position:relative; }
+.char-stroke-btn { cursor:pointer; line-height:1; padding:0 22px 0 0; }
+.char-stroke-btn:active { opacity:.6; }
+.stroke-open-btn {
+  position:absolute; right:5px; bottom:5px;
+  width:22px; height:22px; display:grid; place-items:center;
+  color:var(--blue); opacity:.8; cursor:pointer;
+}
+.stroke-open-btn svg { width:13px; height:13px; }
+.stroke-open-btn:active { transform:scale(.9); }
+
+.stroke-backdrop {
+  position:fixed; inset:0; z-index:210;
+  background:rgba(0,0,0,.55);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+  opacity:0; transition:opacity .2s ease;
+}
+.stroke-backdrop.show { opacity:1; }
+.stroke-sheet {
+  position:relative; width:100%; max-width:360px; text-align:center;
+  background:var(--surf); border-radius:22px; box-shadow:var(--sh);
+  padding:26px 22px calc(20px + var(--safe-b));
+  transform:translateY(10px) scale(.98); transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.stroke-backdrop.show .stroke-sheet { transform:translateY(0) scale(1); }
+.stroke-x {
+  position:absolute; top:12px; right:12px; width:28px; height:28px;
+  display:grid; place-items:center; color:var(--faint); border-radius:50%;
+}
+.stroke-x svg { width:16px; height:16px; }
+.stroke-title { font-size:.95rem; font-weight:800; color:var(--txt); letter-spacing:-.01em; margin-bottom:16px; }
+.stroke-targets { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; min-height:132px; }
+.stroke-target {
+  border-radius:14px; background:var(--surf2); border:1px solid var(--bdr);
+  cursor:pointer; display:grid; place-items:center; overflow:hidden;
+}
+.stroke-missing {
+  font-family:'PingFang SC','Hiragino Sans GB',sans-serif; font-size:2.4rem; color:var(--faint);
+  width:132px; height:132px; display:grid; place-items:center;
+}
+.stroke-error { color:var(--faint); font-size:.85rem; line-height:1.5; padding:26px 8px; }
+.stroke-actions { margin-top:18px; display:flex; justify-content:center; gap:10px; }
+.stroke-btn {
+  width:40px; height:40px; border-radius:50%;
+  display:grid; place-items:center; cursor:pointer;
+  color:var(--faint); background:transparent; border:1px solid var(--bdr);
+  transition:color .15s, border-color .15s, background .15s, transform .1s;
+}
+.stroke-btn svg { width:18px; height:18px; }
+.stroke-btn:active { transform:scale(.94); }
+.stroke-btn:disabled { opacity:.4; cursor:default; }
+.stroke-radical.active {
+  color:var(--blue); background:var(--blue-bg);
+  border-color:color-mix(in srgb, var(--blue) 45%, var(--bdr));
+}
+
 /* ── SUPPORT BUTTON FILL EFFECT ── */
 #upgradeBannerBtn {
   position:relative;

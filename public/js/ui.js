@@ -8,6 +8,7 @@ import { setupPullRefresh } from './pull-refresh.js';
 import { applyLanguage, applyStaticTranslations, t } from './i18n.js';
 import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
 import { maybeShowGroupsCoach } from './coach.js';
+import { openStrokeOrder } from './stroke-order.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -861,7 +862,7 @@ export async function openModal(card, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-      <div class="info-cell"><div class="lbl">${t('lbl.char')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+      <div class="info-cell char-cell"><div class="lbl">${t('lbl.char')}</div><button type="button" class="val char-stroke-btn js-stroke-open" aria-label="${t('stroke.view')}" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</button><button type="button" class="stroke-open-btn js-stroke-open" aria-label="${t('stroke.view')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
@@ -872,6 +873,10 @@ export async function openModal(card, backStack = []) {
   `;
 
   attachModalListen(card.char);
+
+  // Tap the character (or the pencil in its corner) to see the stroke order.
+  modalContent.querySelectorAll('.js-stroke-open')
+    .forEach(el => el.addEventListener('click', () => openStrokeOrder(card.char)));
 
   wireModalBack(backStack);
 

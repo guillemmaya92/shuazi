@@ -204,6 +204,12 @@ const STRINGS = {
     'pwa.andStep3': 'Confirm to finish',
     // Onboarding coach (coach.js)
     'coach.groups': 'Long-press a character to mark',
+    // Stroke order (stroke-order.js)
+    'stroke.title': 'Stroke order',
+    'stroke.view': 'View stroke order',
+    'stroke.replay': 'Replay',
+    'stroke.radical': 'Highlight radical',
+    'stroke.error': 'Could not load the stroke data. Check your connection and try again.',
   },
   es: {
     'app.sub.cards': 'aprende deslizando',
@@ -345,6 +351,12 @@ const STRINGS = {
     'pwa.andStep3': 'Confirma para terminar',
     // Onboarding coach (coach.js)
     'coach.groups': 'Mantén pulsado un carácter para marcar',
+    // Stroke order (stroke-order.js)
+    'stroke.title': 'Orden de trazos',
+    'stroke.view': 'Ver orden de trazos',
+    'stroke.replay': 'Repetir',
+    'stroke.radical': 'Resaltar radical',
+    'stroke.error': 'No se pudieron cargar los trazos. Revisa tu conexión e inténtalo de nuevo.',
   },
 };
 
