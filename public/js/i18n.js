@@ -139,8 +139,8 @@ const STRINGS = {
     'filter.hintStatus': 'Select which card statuses to include in your deck.',
     // groups screen
     'groups.filtersTitle': 'Filters',
-    'groups.filtersHint': 'long-press to filter characters',
-    'groups.markHint': 'long-press to mark known / review',
+    'groups.filtersHint': 'Long-press to filter characters',
+    'groups.markHint': 'Long-press to mark known / review',
     'badge.radicals': 'Radicals',
     'count.radicals': 'radicals',
     'count.components': 'components',
@@ -153,8 +153,8 @@ const STRINGS = {
     'status.left': 'Left',
     'status.know': 'Know',
     'status.review': 'Review',
-    'progress.hintWords': 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.',
-    'progress.hintChars': 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.',
+    'progress.hintWords': 'From a typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.',
+    'progress.hintChars': 'From a typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.',
     // auth
     'auth.google': 'Continue with Google',
     'auth.email': 'Email',
@@ -202,13 +202,15 @@ const STRINGS = {
     'pwa.andStep1': 'Open the browser menu',
     'pwa.andStep2': 'Tap “Install app” / “Add to Home screen”',
     'pwa.andStep3': 'Confirm to finish',
+    // Onboarding coach (coach.js)
+    'coach.groups': 'Long-press a character to mark',
   },
   es: {
     'app.sub.cards': 'aprende deslizando',
     'groups.title': 'Grupos HSK',
     'groups.sub': 'Toca para ver detalles',
     'slang.title': 'Jerga',
-    'slang.sub': 'Cultura y jerga china',
+    'slang.sub': 'Cultura y modismos chinos',
     'translator.title': 'Traductor',
     'translator.sub': 'Cualquier idioma → chino y pinyin',
     'profile.title': 'Perfil',
@@ -284,7 +286,7 @@ const STRINGS = {
     'filter.hintHsk': 'Selecciona los niveles HSK que incluir en tu mazo.',
     'filter.hintStatus': 'Selecciona qué estados de carta incluir en tu mazo.',
     'groups.filtersTitle': 'Filtros',
-    'groups.filtersHint': 'mantén pulsado para filtrar caracteres',
+    'groups.filtersHint': 'Mantén pulsado para filtrar caracteres',
     'groups.markHint': 'Mantén pulsado para marcar',
     'badge.radicals': 'Radicales',
     'count.radicals': 'radicales',
@@ -297,8 +299,8 @@ const STRINGS = {
     'status.left': 'Faltan',
     'status.know': 'Hecho',
     'status.review': 'Repaso',
-    'progress.hintWords': 'del texto chino habitual — las 1000 palabras más frecuentes cubren el 75%. Marca palabras como aprendidas para ver tu progreso.',
-    'progress.hintChars': 'del texto chino habitual — los 500 caracteres más frecuentes cubren el 75%. Marca caracteres como aprendidos para ver tu progreso.',
+    'progress.hintWords': 'Sobre un texto chino común — las 1000 palabras más frecuentes cubren el 75%. Marca palabras como aprendidas para ver tu progreso.',
+    'progress.hintChars': 'Sobre un texto chino común — los 500 caracteres más frecuentes cubren el 75%. Marca caracteres como aprendidos para ver tu progreso.',
     'auth.google': 'Continuar con Google',
     'auth.email': 'Correo',
     'auth.password': 'Contraseña',
@@ -341,6 +343,8 @@ const STRINGS = {
     'pwa.andStep1': 'Abre el menú del navegador',
     'pwa.andStep2': 'Toca “Instalar app” / “Añadir a pantalla de inicio”',
     'pwa.andStep3': 'Confirma para terminar',
+    // Onboarding coach (coach.js)
+    'coach.groups': 'Mantén pulsado un carácter para marcar',
   },
 };
 

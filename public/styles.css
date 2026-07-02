@@ -212,8 +212,8 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .card::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background:
-    radial-gradient(ellipse 55% 30% at 80% 8%,  rgba(217,112,90,.07),transparent),
-    radial-gradient(ellipse 45% 25% at 15% 92%, rgba(104,191,138,.05),transparent);
+    radial-gradient(ellipse 55% 30% at 80% 8%,  rgba(143,164,176,.045),transparent),
+    radial-gradient(ellipse 45% 25% at 15% 92%, rgba(143,164,176,.03),transparent);
 }
 .card.stack-under { transform:scale(.97) translateY(8px); opacity:.5; z-index:0; }
 .card.top   { z-index:1; }
@@ -221,13 +221,21 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .card.snap  { transition:transform 260ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease; }
 
 .tint { position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; opacity:0; }
-.tint-l { background:rgba(143,164,176,.2); }
-.tint-r { background:var(--green-bg); }
-.tint-u { background:var(--blue-bg); }
+/* Gradients spanning the whole card: strongest on the side you're swiping
+   toward, fading edge-to-edge, so the colour is never a flat uniform wash. */
+.tint-l { background:linear-gradient(to right,  rgba(143,164,176,.22), rgba(143,164,176,0)); }
+.tint-r { background:linear-gradient(to left,   rgba(104,191,138,.2),  rgba(104,191,138,0)); }
+.tint-u { background:linear-gradient(to bottom, rgba(100,160,230,.2),  rgba(100,160,230,0)); }
+/* Light theme is tuned per-direction so each colour reads with even weight. */
+[data-theme="light"] .tint-l { background:linear-gradient(to right,  rgba(143,164,176,.3),  rgba(143,164,176,0)); }
+[data-theme="light"] .tint-r { background:linear-gradient(to left,   rgba(58,122,86,.18),   rgba(58,122,86,0)); }
+[data-theme="light"] .tint-u { background:linear-gradient(to bottom, rgba(37,96,176,.16),   rgba(37,96,176,0)); }
+[data-theme="light"] .chip-r { background:rgba(58,122,86,.18); }
+[data-theme="light"] .chip-u { background:rgba(37,96,176,.18); }
 .chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
-.chip-l { left:16px;  background:rgba(143,164,176,.25); color:var(--muted); }
-.chip-r { right:16px; background:var(--green-bg); color:var(--green); }
-.chip-u { left:50%; transform:translateX(-50%); top:18px; background:var(--blue-bg); color:var(--blue); }
+.chip-l { left:34px;  background:rgba(143,164,176,.25); color:var(--muted); }
+.chip-r { right:26px; background:var(--green-bg); color:var(--green); }
+.chip-u { left:50%; transform:translateX(-50%); top:30px; background:var(--blue-bg); color:var(--blue); }
 
 /* story bar */
 .story-bar { position:relative; z-index:4; display:flex; gap:5px; padding:14px 14px 0; }
@@ -766,16 +774,19 @@ body.account-open .account-scrim { pointer-events: auto; }
   flex:0 0 18px; width:18px; text-align:center;
   color:var(--muted); font-size:18px; line-height:1; font-weight:700;
 }
-/* Language toggle — small header pill with the active flag + code (EN / ES) */
+/* Language toggle — compact pill sized to the active language only; EN shows its
+   flag on the left, ES on the right, and a tap flips between them. */
 .lang-toggle {
   height:28px; box-sizing:border-box;
-  display:inline-flex; align-items:center; gap:5px;
-  padding:0 10px 0 5px; border-radius:999px;
+  display:inline-flex; align-items:center;
+  padding:0 9px; border-radius:999px;
   background:var(--surf); border:1px solid var(--bdr); cursor:pointer;
   color:var(--txt); font-size:.72rem; font-weight:700; letter-spacing:.04em;
-  transition:background .15s, border-color .15s;
+  transition:border-color .15s;
 }
 .lang-toggle:active { opacity:.6; }
+.lang-toggle .lang-seg { display:inline-flex; align-items:center; gap:5px; }
+.lang-toggle .lang-seg:not(.active) { display:none; }
 .lang-toggle .lang-flag {
   width:18px; height:18px; flex-shrink:0; border-radius:50%;
   box-shadow:0 0 0 1px rgba(0,0,0,.12); display:block;
@@ -1388,6 +1399,55 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   background:var(--blue); color:#fff; -webkit-text-fill-color:#fff;
   font-size:.85rem; font-weight:700; cursor:pointer;
 }
+
+/* ── SWIPE HINT LABELS (under the deck) ──
+   A quiet, permanent reminder of the swipe outcomes — faint colour-coding,
+   no pills, so it never competes with the card. */
+.deck-hints { display:flex; justify-content:space-between; padding:0 4px; }
+.deck-hint { font-size:.6rem; font-weight:400; letter-spacing:.01em; }
+.dh-left   { color:color-mix(in srgb, var(--red)   38%, var(--faint)); }
+.dh-review { color:color-mix(in srgb, var(--blue)  38%, var(--faint)); }
+.dh-known  { color:color-mix(in srgb, var(--green) 38%, var(--faint)); }
+
+/* ── FIRST-RUN CARD DEMO (coach.js) ──
+   The real top card nudges itself left → right → up once, revealing the same
+   tint/chip overlays a real drag shows, so the gesture is learned by watching. */
+.card.demo-swipe          { animation:demo-swipe-card 3.1s ease-in-out both; }
+.card.demo-swipe .tint-l,
+.card.demo-swipe .chip-l  { animation:demo-l 3.1s ease-in-out both; }
+.card.demo-swipe .tint-r,
+.card.demo-swipe .chip-r  { animation:demo-r 3.1s ease-in-out both; }
+.card.demo-swipe .tint-u,
+.card.demo-swipe .chip-u  { animation:demo-u 3.1s ease-in-out both; }
+
+@keyframes demo-swipe-card {
+  0%,10%   { transform:none; opacity:1; }
+  22%      { transform:translateX(-112px) rotate(-6deg); opacity:.72; }
+  36%,45%  { transform:none; opacity:1; }
+  57%      { transform:translateX(112px) rotate(6deg); opacity:.72; }
+  71%,80%  { transform:none; opacity:1; }
+  90%      { transform:translateY(-108px); opacity:.72; }
+  100%     { transform:none; opacity:1; }
+}
+@keyframes demo-l { 0%,13%{opacity:0} 22%{opacity:.85} 33%,100%{opacity:0} }
+@keyframes demo-r { 0%,48%{opacity:0} 57%{opacity:.85} 68%,100%{opacity:0} }
+@keyframes demo-u { 0%,82%{opacity:0} 90%{opacity:.85} 100%{opacity:0} }
+
+/* Groups: lightweight long-press tip, floats above the tab bar. */
+.coach-tip {
+  position:fixed; left:50%; bottom:calc(72px + var(--safe-b)); z-index:160;
+  transform:translate(-50%, 12px);
+  display:flex; align-items:center; gap:9px;
+  max-width:calc(100% - 32px);
+  padding:10px 10px 10px 14px; border-radius:14px;
+  background:var(--surf); border:1px solid var(--bdr); box-shadow:var(--sh);
+  opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+}
+.coach-tip.show { opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
+.coach-tip > svg { width:20px; height:20px; flex-shrink:0; color:var(--blue); }
+.coach-tip span { font-size:.78rem; font-weight:600; color:var(--txt); line-height:1.3; }
+.coach-tip-x { flex-shrink:0; color:var(--faint); display:grid; place-items:center; width:22px; height:22px; }
+.coach-tip-x svg { width:14px; height:14px; }
 
 /* ── SUPPORT BUTTON FILL EFFECT ── */
 #upgradeBannerBtn {

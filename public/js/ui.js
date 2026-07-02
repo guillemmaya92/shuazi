@@ -7,6 +7,7 @@ import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
 import { applyLanguage, applyStaticTranslations, t } from './i18n.js';
 import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
+import { maybeShowGroupsCoach } from './coach.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -1304,7 +1305,7 @@ export function showTab(tab) {
   [scrCards, scrGroups, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
   [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
   if (tab === 'cards')          { scrCards.classList.add('active');     tabCards.classList.add('active'); }
-  else if (tab === 'groups')    { scrGroups.classList.add('active');    tabGroups.classList.add('active'); renderGroups(); }
+  else if (tab === 'groups')    { scrGroups.classList.add('active');    tabGroups.classList.add('active'); renderGroups(); maybeShowGroupsCoach(); }
   else if (tab === 'slang')     { scrPhrases.classList.add('active');   tabPhrases.classList.add('active'); renderSlang(); }
   else if (tab === 'translator'){ scrTranslate.classList.add('active'); tabTranslate.classList.add('active'); initTranslator(); }
   else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
@@ -1964,10 +1965,15 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
 // reshuffle) — applyLanguage() localizes the live cards too.
 const profileLangBtn = document.getElementById('profileLangBtn');
 const syncLangBtn = () => {
-  if (profileLangBtn) profileLangBtn.innerHTML = `${FLAG_SVG[state.lang] || FLAG_SVG.en}<span>${state.lang.toUpperCase()}</span>`;
+  if (!profileLangBtn) return;
+  // Two-sided switch: EN (flag left) | ES (flag right); the active side is filled.
+  profileLangBtn.innerHTML =
+    `<span class="lang-seg${state.lang === 'en' ? ' active' : ''}" data-lang="en">${FLAG_SVG.en}<span>EN</span></span>` +
+    `<span class="lang-seg${state.lang === 'es' ? ' active' : ''}" data-lang="es"><span>ES</span>${FLAG_SVG.es}</span>`;
 };
 syncLangBtn();
 profileLangBtn?.addEventListener('click', () => {
+  // Only the active side is visible, so any tap simply flips the language.
   state.lang = state.lang === 'es' ? 'en' : 'es';
   syncLangBtn();
   applyLanguage();

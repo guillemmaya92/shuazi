@@ -6,6 +6,7 @@ import { loadProgressFromSupabase, loadSettingsFromSupabase, loadState } from '.
 import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
+import { maybeDemoSwipe } from './js/coach.js';
 
 // Paginated fetch — Supabase caps each request at 1000 rows. Grab the row count
 // first, then fire every page in parallel (≈2 round-trips instead of N
@@ -200,6 +201,9 @@ loadCritical(bootMode).then(() => {
     // neutral state, so we never interrupt a swipe or a revealed answer.
     const top = document.querySelector('#deck .card.top');
     if (top && top.dataset.page === '0' && top.dataset.answer !== '1') render();
+    // First run: the top card demos the swipe by itself. Deferred to here so the
+    // re-render above (which rebuilds the card DOM) can't wipe the animation.
+    if (state.deck && state.deck.length) maybeDemoSwipe();
   });
 
   // Auth check in background: updates deck/progress once session is known.
