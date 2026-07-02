@@ -31,10 +31,13 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
 
   // Optional caption that sits just above the disc (in the gap opened by the
   // pull, so it never overlaps the content) and flips text once armed. It shares
-  // the disc's transform (dist - 40) to stay glued to the wheel.
+  // the disc's transform (dist - 40) to stay glued to the wheel. `pullText` /
+  // `readyText` may be a function (resolved each frame) so a live language change
+  // is reflected without re-wiring.
+  const resolve = v => (typeof v === 'function' ? v() : v);
   const setLabel = (frac, isReady, dist) => {
     if (!label) return;
-    label.textContent = isReady ? readyText : pullText;
+    label.textContent = isReady ? resolve(readyText) : resolve(pullText);
     label.style.opacity = frac.toString();
     label.style.transform = `translateY(${dist - 40}px)`;
     label.classList.toggle('ready', isReady);

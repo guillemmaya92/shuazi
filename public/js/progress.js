@@ -1,5 +1,6 @@
 import { supa, STORE_KEY, SETTINGS_KEY } from './config.js';
 import { state } from './state.js';
+import { applyLanguage, applyStaticTranslations } from './i18n.js';
 
 export async function syncProgressToSupabase() {
   if (!state.supaUser) return;
@@ -103,6 +104,7 @@ function settingsPayload() {
     statuses: [...state.activeStatuses],
     theme:    state.theme,
     showPinyin: state.showPinyin,
+    lang:     state.lang,
   };
 }
 
@@ -114,6 +116,7 @@ export async function syncSettingsToSupabase() {
     hsk_levels: [...state.activeHskLevels],
     statuses:   [...state.activeStatuses],
     theme:      state.theme,
+    lang:       state.lang,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
 }
@@ -131,7 +134,7 @@ export async function loadSettingsFromSupabase() {
   if (!state.supaUser) return;
   const { data } = await supa
     .from('user_settings')
-    .select('game, hsk_levels, statuses, theme')
+    .select('game, hsk_levels, statuses, theme, lang')
     .eq('user_id', state.supaUser.id)
     .maybeSingle();
   if (!data) {
@@ -146,6 +149,13 @@ export async function loadSettingsFromSupabase() {
   if (Array.isArray(data.hsk_levels) && data.hsk_levels.length) state.activeHskLevels = new Set(data.hsk_levels);
   if (Array.isArray(data.statuses) && data.statuses.length)     state.activeStatuses  = new Set(data.statuses);
   if (data.theme === 'dark' || data.theme === 'light')          state.theme = data.theme;
+  // Adopt the account's language and re-localize any already-loaded content, so
+  // the deck/grid the caller renders next is in the right language.
+  if ((data.lang === 'en' || data.lang === 'es') && data.lang !== state.lang) {
+    state.lang = data.lang;
+    applyLanguage();
+    applyStaticTranslations();
+  }
   // Mirror back to localStorage so the next synchronous boot already has them
   // (settings + the standalone theme key the inline boot script reads).
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsPayload())); } catch (e) {}

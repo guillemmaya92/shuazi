@@ -761,9 +761,24 @@ body.account-open .account-scrim { pointer-events: auto; }
 .settings-item > span { flex:1; }
 .settings-item > svg:first-child { color:var(--muted); flex-shrink:0; }
 .settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
+.settings-item > .settings-item-value { flex:0 0 auto; color:var(--muted); font-weight:600; }
 .settings-item > .settings-item-hanzi {
   flex:0 0 18px; width:18px; text-align:center;
   color:var(--muted); font-size:18px; line-height:1; font-weight:700;
+}
+/* Language toggle — small header pill with the active flag + code (EN / ES) */
+.lang-toggle {
+  height:28px; box-sizing:border-box;
+  display:inline-flex; align-items:center; gap:5px;
+  padding:0 10px 0 5px; border-radius:999px;
+  background:var(--surf); border:1px solid var(--bdr); cursor:pointer;
+  color:var(--txt); font-size:.72rem; font-weight:700; letter-spacing:.04em;
+  transition:background .15s, border-color .15s;
+}
+.lang-toggle:active { opacity:.6; }
+.lang-toggle .lang-flag {
+  width:18px; height:18px; flex-shrink:0; border-radius:50%;
+  box-shadow:0 0 0 1px rgba(0,0,0,.12); display:block;
 }
 
 /* Matrix Rain effect overlay */
@@ -1425,6 +1440,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
     background:var(--surf2);
     border-color:color-mix(in srgb, var(--txt) 16%, var(--bdr));
   }
+  .lang-toggle:hover { border-color:color-mix(in srgb, var(--txt) 16%, var(--bdr)); }
   .hsk-filter-pill:not(.active):not([disabled]):hover,
   .status-filter-pill:not(.active):hover { opacity:.7; }
 }

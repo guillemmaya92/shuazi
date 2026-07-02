@@ -1,5 +1,6 @@
 import { supa, FREE_HSK, hskLabel } from './config.js';
 import { state } from './state.js';
+import { localizeRow, t } from './i18n.js';
 import { saveState, loadState, saveSettings } from './progress.js';
 import { renderGroups, openWordModal, openModal } from './ui.js';
 import { speak } from './translator.js';
@@ -29,16 +30,17 @@ export function fetchWordsForChar(card) {
   _wordPromises[key] = (async () => {
     const { data } = await supa
       .from('words')
-      .select('id, word, pinyin, meaning, hsk, frequency, char_word!inner(id_char)')
+      .select('id, word, pinyin, meaning, meaning_es, hsk, frequency, char_word!inner(id_char)')
       .eq('char_word.id_char', card.id)
       .order('frequency', { ascending: false });
-    state.wordsByChar[key] = (data || []).map(w => ({
-      dbId:    w.id,
-      id:      w.word,
-      pinyin:  w.pinyin,
-      meaning: w.meaning,
-      hsk:     w.hsk,
-    }));
+    state.wordsByChar[key] = (data || []).map(w => localizeRow({
+      dbId:       w.id,
+      id:         w.word,
+      pinyin:     w.pinyin,
+      meaning:    w.meaning,
+      meaning_es: w.meaning_es,
+      hsk:        w.hsk,
+    }, ['meaning']));
   })();
   return _wordPromises[key];
 }
@@ -63,14 +65,15 @@ export function fetchPhrasesForWord(wordId) {
     // 2) fetch those phrases
     const { data } = await supa
       .from('phrases')
-      .select('phrase, pinyin, meaning')
+      .select('phrase, pinyin, meaning, meaning_es')
       .in('id', ids)
       .order('id', { ascending: true });
-    state.phrasesByWord[wordId] = (data || []).map(p => ({
-      phrase:  p.phrase,
-      pinyin:  p.pinyin,
-      meaning: p.meaning,
-    }));
+    state.phrasesByWord[wordId] = (data || []).map(p => localizeRow({
+      phrase:     p.phrase,
+      pinyin:     p.pinyin,
+      meaning:    p.meaning,
+      meaning_es: p.meaning_es,
+    }, ['meaning']));
   })();
   return _phrasePromises[wordId];
 }
@@ -205,7 +208,7 @@ function makeCard(card, isStack) {
     <div class="tap-zones">
       <button class="tz tz-left"   tabindex="-1" aria-label="Mark as left"></button>
       <button class="tz tz-center" tabindex="-1" aria-label="Reveal answer"></button>
-      <button class="tz tz-right"  tabindex="-1" aria-label="More info"></button>
+      <button class="tz tz-right"  tabindex="-1" aria-label="${t('card.moreInfoAria')}"></button>
     </div>
     <div class="pages" id="pages">
       <div class="page" style="justify-content:space-between;">
@@ -213,7 +216,7 @@ function makeCard(card, isStack) {
         <div class="hanzi-wrap"><div class="hanzi">${card.char}</div></div>
         <div class="answer-area" id="aa"></div>
         <div class="card-bottom">
-          <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
+          <span class="tap-hint" id="tap-hint">${t('card.tapReveal')}</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span>
           </div>
@@ -221,12 +224,12 @@ function makeCard(card, isStack) {
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-          <div class="info-cell"><div class="lbl">Hanzi</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
-          <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div>
-          <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
-          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.62rem">${hskLabel(card.hsk)}</span></div></div>
-          <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}</div></div>
-          <div class="info-cell full"><div class="lbl">Compound words</div><div class="word-phrases-list"></div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.hanzi')}</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin}</div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="char-chips">${radicalHTML}</div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}" style="font-size:.62rem">${hskLabel(card.hsk)}</span></div></div>
+          <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${card.meaning}</div></div>
+          <div class="info-cell full"><div class="lbl">${t('lbl.compoundWords')}</div><div class="word-phrases-list"></div></div>
         </div>
       </div>
     </div>
@@ -310,8 +313,8 @@ function makeCard(card, isStack) {
       aa.innerHTML = `<div class="answer-block">
         <div class="ans-pinyin">${card.pinyin}</div>
         <div class="ans-meaning">${card.meaning}</div>
-        <div class="ans-example"><span>Example</span>${exHTML}</div>
-        <div class="ans-hint">Tap right → for more info</div>
+        <div class="ans-example"><span>${t('card.example')}</span>${exHTML}</div>
+        <div class="ans-hint">${t('card.moreInfo')}</div>
       </div>`;
     }
   });
@@ -354,7 +357,7 @@ function makeWordCard(card, isStack) {
     <div class="tap-zones">
       <button class="tz tz-left"   tabindex="-1" aria-label="Mark as left"></button>
       <button class="tz tz-center" tabindex="-1" aria-label="Reveal answer"></button>
-      <button class="tz tz-right"  tabindex="-1" aria-label="More info"></button>
+      <button class="tz tz-right"  tabindex="-1" aria-label="${t('card.moreInfoAria')}"></button>
     </div>
     <div class="pages" id="pages">
       <div class="page" style="justify-content:space-between;">
@@ -362,7 +365,7 @@ function makeWordCard(card, isStack) {
         <div class="hanzi-wrap"><div class="hanzi" ${fontSize ? `style="font-size:${fontSize}"` : ''}>${card.char}</div></div>
         <div class="answer-area" id="aa"></div>
         <div class="card-bottom">
-          <span class="tap-hint" id="tap-hint">Tap center to reveal</span>
+          <span class="tap-hint" id="tap-hint">${t('card.tapReveal')}</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span>
           </div>
@@ -370,12 +373,12 @@ function makeWordCard(card, isStack) {
       </div>
       <div class="page info-page" style="padding-top:32px">
         <div class="info-row" style="grid-template-columns:1fr 1fr">
-          <div class="info-cell"><div class="lbl">Word</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
-          <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
-          <div class="info-cell"><div class="lbl">Pinyin</div><div class="val">${card.pinyin ?? '—'}</div></div>
-          <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
-          <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning ?? '—'}</div></div>
-          <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list"></div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.word')}</div><button class="card-word-btn" type="button" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif">${card.char}</button></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin ?? '—'}</div></div>
+          <div class="info-cell"><div class="lbl">${t('lbl.pos')}</div><div class="char-chips">${posHTML}</div></div>
+          <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${card.meaning ?? '—'}</div></div>
+          <div class="info-cell full"><div class="lbl">${t('lbl.phrases')}</div><div class="word-phrases-list"></div></div>
         </div>
       </div>
     </div>
@@ -452,8 +455,8 @@ function makeWordCard(card, isStack) {
       aa.innerHTML = `<div class="answer-block">
         <div class="ans-pinyin">${card.pinyin ?? ''}</div>
         <div class="ans-meaning">${card.meaning ?? ''}</div>
-        <div class="ans-example"><span>Example</span>${exHTML}</div>
-        <div class="ans-hint">Tap right → for more info</div>
+        <div class="ans-example"><span>${t('card.example')}</span>${exHTML}</div>
+        <div class="ans-hint">${t('card.moreInfo')}</div>
       </div>`;
     }
   });

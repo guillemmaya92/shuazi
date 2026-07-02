@@ -7,6 +7,7 @@
 
 import { SUPA_URL, SUPA_KEY, supa } from './config.js';
 import { state } from './state.js';
+import { t, applyStaticTranslations } from './i18n.js';
 import { setupPullRefresh } from './pull-refresh.js';
 
 const PUNCT_RE   = /^[\s\p{P}]+$/u;
@@ -398,6 +399,7 @@ export function initTranslator() {
   // Tokens) with its own listen, copy and reveal-glosses controls.
   function appendMessage(original, zh, tokens) {
     const msg = msgTemplate.content.firstElementChild.cloneNode(true);
+    applyStaticTranslations(msg);   // localize the cloned section titles
     const originalEl = msg.querySelector('.js-original');
     const zhLineEl   = msg.querySelector('.js-zh');
     const resultEl   = msg.querySelector('.js-result');
@@ -479,7 +481,7 @@ export function initTranslator() {
         .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
       console.error(e);
-      emptyEl.textContent = 'Could not translate: ' + e.message;
+      emptyEl.textContent = t('tr.error') + e.message;
       emptyEl.className = 'tr-empty err';
       emptyEl.style.display = 'block';
       scrollToBottom();
@@ -700,22 +702,22 @@ export function initTranslator() {
         const btn = document.createElement('button');
         btn.className = 'tr-section-clear';
         btn.type = 'button';
-        btn.textContent = 'Clear';
+        btn.textContent = t('history.clear');
         btn.addEventListener('click', onClear);
         h.appendChild(btn);
       }
       historyList.appendChild(h);
     };
     // Pinned and Recents headers always show; the empty message lives in Recents.
-    section('Pinned', pinned.length ? clearPinned : null);
+    section(t('history.pinned'), pinned.length ? clearPinned : null);
     pinned.forEach(r => historyList.appendChild(makeHistoryItem(r)));
-    section('Recents', recents.length ? clearRecents : null);
+    section(t('history.recents'), recents.length ? clearRecents : null);
     if (recents.length) {
       recents.forEach(r => historyList.appendChild(makeHistoryItem(r)));
     } else {
       const empty = document.createElement('div');
       empty.className = 'tr-history-empty';
-      empty.textContent = 'No conversations yet.';
+      empty.textContent = t('history.empty');
       historyList.appendChild(empty);
     }
   }
@@ -805,8 +807,8 @@ export function initTranslator() {
     max:       132,
     damp:      120,
     label:     document.getElementById('trPullLabel'),
-    pullText:  'Pull to clear',
-    readyText: 'Release to clear',
+    pullText:  () => t('tr.pullClear'),
+    readyText: () => t('tr.releaseClear'),
   });
 }
 

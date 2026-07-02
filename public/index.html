@@ -180,13 +180,13 @@
           <img class="logo" src="./icons/favicon.svg" alt="刷字" width="34" height="34"/>
           <div>
             <div class="title">shuazi</div>
-            <div class="sub">learn by swiping</div>
+            <div class="sub" data-i18n="app.sub.cards">learn by swiping</div>
           </div>
         </div>
         <div class="hdr-stats">
-          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l">Left</div></div>
-          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l">Known</div></div>
-          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l">Review</div></div>
+          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l" data-i18n="stat.left">Left</div></div>
+          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l" data-i18n="stat.known">Known</div></div>
+          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l" data-i18n="stat.review">Review</div></div>
           <button class="icon-btn" id="themeBtn" aria-label="Theme">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
@@ -198,7 +198,7 @@
         <span class="deck-progress-pct" id="deckProgPct">0%</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span>← Left</span><span>↑ Review</span><span>Known →</span>
+        <span data-i18n="hint.left">← Left</span><span data-i18n="hint.review">↑ Review</span><span data-i18n="hint.known">Known →</span>
       </div>
     </div>
 
@@ -206,13 +206,13 @@
     <div class="screen" id="screen-groups">
       <div class="groups-header">
         <div>
-          <div class="groups-title">HSK Groups</div>
-          <div class="groups-sub">Tap a character to see details</div>
+          <div class="groups-title" data-i18n="groups.title">HSK Groups</div>
+          <div class="groups-sub" data-i18n="groups.sub">Tap a character to see details</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="icon-btn sort-btn" id="sortBtn" aria-label="Sort">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M19 12l-3-3 3 3 3-3"/></svg>
-            <span id="sortLabel" style="font-size:.6rem;font-weight:700;letter-spacing:.04em;margin-left:2px">Pinyin</span>
+            <span id="sortLabel" data-i18n="sort.pinyin" style="font-size:.6rem;font-weight:700;letter-spacing:.04em;margin-left:2px">Pinyin</span>
           </button>
           <button class="icon-btn" id="pinyinToggleBtn" aria-label="Toggle pinyin"></button>
           <button class="icon-btn" id="searchToggleBtn" aria-label="Search">
@@ -225,12 +225,12 @@
       </div>
       <div class="search-bar-wrap" id="searchBarWrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="searchInput" type="text" placeholder="Search…" aria-label="Search characters" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <input id="searchInput" type="text" placeholder="Search…" data-i18n-ph="search.ph" aria-label="Search characters" autocomplete="off" autocorrect="off" spellcheck="false"/>
         <button id="searchClear" aria-label="Clear">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <p id="searchHint" style="font-size:.64rem;color:var(--faint);opacity:.6;margin:0;display:none">Use quotes (" ") to search for an exact character</p>
+      <p id="searchHint" data-i18n="search.hint" style="font-size:.64rem;color:var(--faint);opacity:.6;margin:0;display:none">Use quotes (" ") to search for an exact character</p>
       <div class="groups-scroll" id="groups-scroll">
         <div id="groupsPull" class="pull-disc" aria-hidden="true">
           <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
@@ -258,8 +258,8 @@
       <header class="header">
         <div class="brand">
           <div>
-            <div class="title">Slang</div>
-            <div class="sub">Chinese culture & slang</div>
+            <div class="title" data-i18n="slang.title">Slang</div>
+            <div class="sub" data-i18n="slang.sub">Chinese culture & slang</div>
           </div>
         </div>
         <div class="hdr-stats">
@@ -270,7 +270,7 @@
       </header>
       <div class="deck-wrap"><div class="deck" id="deck-slang"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span>← swipe left</span><span>swipe right →</span>
+        <span data-i18n="hint.swipeLeft">← swipe left</span><span data-i18n="hint.swipeRight">swipe right →</span>
       </div>
     </div>
 
@@ -279,8 +279,8 @@
       <header class="header">
         <div class="brand">
           <div>
-            <div class="title">Translator</div>
-            <div class="sub">Any language → Chinese & pinyin</div>
+            <div class="title" data-i18n="translator.title">Translator</div>
+            <div class="sub" data-i18n="translator.sub">Any language → Chinese & pinyin</div>
           </div>
         </div>
         <div class="hdr-stats">
@@ -327,7 +327,7 @@
           </div>
           <div class="tr-section">
             <div class="words-title tr-zh-head">
-              <span>Hanzi translation</span>
+              <span data-i18n="tr.hanzi">Hanzi translation</span>
               <div class="tr-zh-actions">
                 <button class="tr-btn tr-copy js-copy" aria-label="Copy" type="button">
                   <svg class="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -342,7 +342,7 @@
           </div>
           <div class="tr-section">
             <div class="words-title tr-tokens-head">
-              <span>Tokenized translation</span>
+              <span data-i18n="tr.tokenized">Tokenized translation</span>
               <button class="tr-eye js-eye" aria-label="Show all meanings" type="button">
                 <svg class="ic-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                 <svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -355,7 +355,7 @@
       <!-- ChatGPT-style composer pinned to the bottom -->
       <div class="tr-composer">
         <div class="tr-input-field">
-          <textarea id="trInput" class="tr-input" rows="1" placeholder="Type in any language..." autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
+          <textarea id="trInput" class="tr-input" rows="1" placeholder="Type in any language..." data-i18n-ph="tr.placeholder" autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
           <div class="tr-input-tools">
             <button id="trMic" class="tr-btn tr-mic" aria-label="Dictate" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
@@ -374,10 +374,11 @@
     <div class="screen" id="screen-profile">
       <div class="groups-header">
         <div>
-          <div class="groups-title">Profile</div>
-          <div class="groups-sub">Your progress overview</div>
+          <div class="groups-title" data-i18n="profile.title">Profile</div>
+          <div class="groups-sub" data-i18n="profile.sub">Your progress overview</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
+          <button class="lang-toggle" id="profileLangBtn" aria-label="Language"></button>
           <button class="icon-btn" id="settingsBtnP" aria-label="Settings">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
@@ -402,7 +403,7 @@
       <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
         <path d="M4 3h16a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm4 6a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H8Zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8Z"/>
       </svg>
-      <span>Cards</span>
+      <span data-i18n="tab.cards">Cards</span>
     </button>
     <button class="tab" id="tab-groups" aria-label="HSK Groups">
       <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -417,7 +418,7 @@
         <rect x="3"  y="13" width="8" height="8" rx="2"/>
         <rect x="13" y="13" width="8" height="8" rx="2"/>
       </svg>
-      <span>Groups</span>
+      <span data-i18n="tab.groups">Groups</span>
     </button>
     <button class="tab" id="tab-slang" aria-label="Slang">
       <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -426,7 +427,7 @@
       <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor">
         <path d="M4 3h16a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9.4l-4.6 3.8A1 1 0 0 1 3 21V6a3 3 0 0 1 1-3Z"/>
       </svg>
-      <span>Slang</span>
+      <span data-i18n="tab.slang">Slang</span>
     </button>
     <button class="tab" id="tab-translator" aria-label="Translator">
       <svg class="ic-line" viewBox="0 0 24 24">
@@ -442,7 +443,7 @@
         </defs>
         <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="currentColor" mask="url(#trIconMask)"/>
       </svg>
-      <span>Translate</span>
+      <span data-i18n="tab.translate">Translate</span>
     </button>
     <button class="tab" id="tab-profile" aria-label="Profile">
       <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -453,7 +454,7 @@
         <circle cx="12" cy="8" r="4"/>
         <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8Z"/>
       </svg>
-      <span>Profile</span>
+      <span data-i18n="tab.profile">Profile</span>
     </button>
   </nav>
 </div>
@@ -484,13 +485,13 @@
     <div class="modal-handle"></div>
     <div style="text-align:center;font-size:2rem">⚠️</div>
     <div style="text-align:center">
-      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px">Reset all progress?</div>
-      <div style="font-size:.75rem;color:var(--faint);line-height:1.6">This will permanently delete all your Known and Review marks. This action cannot be undone.</div>
+      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px" data-i18n="reset.title">Reset all progress?</div>
+      <div style="font-size:.75rem;color:var(--faint);line-height:1.6" data-i18n="reset.desc">This will permanently delete all your Known and Review marks. This action cannot be undone.</div>
     </div>
     <div id="reset-stats" style="background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-around;text-align:center"></div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="resetConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer">Yes, reset everything</button>
-      <button id="resetCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer">Cancel</button>
+      <button id="resetConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer" data-i18n="reset.confirm">Yes, reset everything</button>
+      <button id="resetCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer" data-i18n="common.cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -501,18 +502,18 @@
     <button class="icon-btn" id="accountPanelClose" aria-label="Back">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
     </button>
-    <span>Account</span>
+    <span data-i18n="settings.account">Account</span>
   </div>
   <div class="settings-panel-body">
     <div id="accountUserSection"></div>
     <button class="settings-item" id="resetBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-      <span>Reset progress</span>
+      <span data-i18n="account.reset">Reset progress</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     <button class="settings-item" id="deleteAccountBtn" style="background:rgba(186,13,31,.1);border-color:rgba(186,13,31,.22);color:#c04050">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      <span>Delete account</span>
+      <span data-i18n="account.delete">Delete account</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
   </div>
@@ -525,13 +526,13 @@
     <div class="modal-handle"></div>
     <div style="text-align:center;font-size:2rem">⚠️</div>
     <div style="text-align:center">
-      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px">Delete your account?</div>
-      <div style="font-size:.75rem;color:var(--faint);line-height:1.6">This permanently deletes your account, progress and saved translations. This action cannot be undone.</div>
+      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px" data-i18n="delacct.title">Delete your account?</div>
+      <div style="font-size:.75rem;color:var(--faint);line-height:1.6" data-i18n="delacct.desc">This permanently deletes your account, progress and saved translations. This action cannot be undone.</div>
     </div>
     <div id="delacct-error" style="font-size:.7rem;color:#c04050;text-align:center;min-height:.9rem"></div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="delacctConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer">Yes, delete my account</button>
-      <button id="delacctCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer">Cancel</button>
+      <button id="delacctConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer" data-i18n="delacct.confirm">Yes, delete my account</button>
+      <button id="delacctCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer" data-i18n="common.cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -539,7 +540,7 @@
 <!-- SETTINGS PANEL -->
 <aside class="settings-panel" id="settingsPanel" role="dialog" aria-label="Settings" aria-hidden="true">
   <div class="settings-panel-head">
-    <span>Settings</span>
+    <span data-i18n="settings.title">Settings</span>
     <button class="icon-btn" id="settingsPanelClose" aria-label="Close">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
@@ -547,32 +548,32 @@
   <div class="settings-panel-body">
     <button class="settings-item" id="settingsAccountBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span>Account</span>
+      <span data-i18n="settings.account">Account</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     <button class="settings-item" id="settingsInviteBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-      <span>Invite a friend</span>
+      <span data-i18n="settings.invite">Invite a friend</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     <button class="settings-item" id="settingsContactBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-      <span>Contact</span>
+      <span data-i18n="settings.contact">Contact</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     <a class="settings-item" id="settingsTermsBtn" href="./terms.html" target="_blank" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
-      <span>Terms &amp; Conditions</span>
+      <span data-i18n="settings.terms">Terms &amp; Conditions</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </a>
     <a class="settings-item" id="settingsPrivacyBtn" href="./privacy.html" target="_blank" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span>Privacy Policy</span>
+      <span data-i18n="settings.privacy">Privacy Policy</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </a>
     <button class="settings-item" id="settingsMatrixBtn">
       <span class="settings-item-hanzi" aria-hidden="true">雨</span>
-      <span>Hanzi</span>
+      <span data-i18n="settings.hanzi">Hanzi</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
   </div>

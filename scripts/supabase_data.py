@@ -69,6 +69,7 @@ def load_components():
             'component':  r['component'],
             'pinyin':     r['pinyin'],
             'meaning':    r['meaning'],
+            'meaning_es':    r['meaning_es'],
             'stroke':     int(r['stroke']) if r['stroke'] is not None else None,
             'productive': int(r['productive']) if r['productive'] is not None else None,
             'frequency':  float(r['frequency']) if r['frequency'] is not None else None,
@@ -98,6 +99,7 @@ def load_radicals():
             'traditional': r.get('traditional'),
             'pinyin':      r['pinyin'],
             'meaning':     r['meaning'],
+            'meaning_es':     r['meaning_es'],
             'stroke':      int(r['stroke']) if r['stroke'] is not None else None,
             'productive':  int(r['productive']) if r['productive'] is not None else None,
             'frequency':   float(r['frequency']) if r['frequency'] is not None else None,
@@ -114,6 +116,7 @@ def load_chars():
             'char':       r['char'],
             'pinyin':     r['pinyin'],
             'meaning':    r['meaning'],
+            'meaning_es':    r['meaning_es'],
             'radical':    r.get('radical'),
             'hsk':        int(r['hsk']) if r.get('hsk') is not None else None,
             'stroke':     int(r['stroke']) if r.get('stroke') is not None else None,
@@ -144,6 +147,7 @@ def load_words():
             'word':    r['word'],
             'pinyin':  r['pinyin'],
             'meaning': r['meaning'],
+            'meaning_es': r['meaning_es'],
             'hsk':     int(r['hsk']) if r.get('hsk') is not None else None,
             'radical': r['radical'],
             'pos':     r['pos'],
@@ -173,6 +177,7 @@ def load_phrases():
             'phrase':  r['phrase'],
             'pinyin':  r['pinyin'],
             'meaning': r['meaning'],
+            'meaning_es': r['meaning_es'],
             'count':   int(r['count']) if r.get('count') is not None else None,
         }
         for r in rows
@@ -188,6 +193,9 @@ def load_slang():
             'literal': r.get('literal'),
             'meaning': r.get('meaning'),
             'origin':  r.get('origin'),
+            'literal_es': r.get('literal_es'),
+            'meaning_es': r.get('meaning_es'),
+            'origin_es':  r.get('origin_es'),
             'image':   r.get('image'),
         }
         for r in rows

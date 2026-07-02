@@ -7,12 +7,21 @@ let _initialHsk        = [1, 2, 3, 4, 5, 6, 7];
 let _initialStatuses   = ['left', 'know', 'review'];
 let _initialTheme      = 'light';
 let _initialShowPinyin = true;
+// Default to the system/browser language (Spanish → 'es', anything else → 'en')
+// for first-time / logged-out visitors. A saved preference or a signed-in
+// account's language (see loadSettingsFromSupabase) overrides this below.
+let _initialLang = 'en';
+try {
+  const sys = (navigator.language || (navigator.languages && navigator.languages[0]) || 'en').toLowerCase();
+  if (sys.startsWith('es')) _initialLang = 'es';
+} catch (e) {}
 try {
   const s = JSON.parse(localStorage.getItem('shuazi-settings') || '{}');
   if (s.game === 'words' || s.game === 'characters') _initialMode = s.game;
   if (Array.isArray(s.hsk) && s.hsk.length)          _initialHsk = s.hsk;
   if (Array.isArray(s.statuses) && s.statuses.length) _initialStatuses = s.statuses;
   if (typeof s.showPinyin === 'boolean')             _initialShowPinyin = s.showPinyin;
+  if (s.lang === 'en' || s.lang === 'es')            _initialLang = s.lang;
 } catch (e) {}
 try {
   // Theme lives in its own key (read pre-paint by the inline boot script).
@@ -27,6 +36,7 @@ export const state = {
   RADICALS:      [],
   COMPONENTS:    [],
   POS_TAGS:      {},
+  _posTags:      [],   // raw pos-tag rows, so the pos→description map can be rebuilt per language
   charsByComponent: {},
   charById:      {},
   wordsByChar:   {},
@@ -43,6 +53,7 @@ export const state = {
   gridSearch:    '',
   showPinyin:    _initialShowPinyin,
   theme:         _initialTheme,
+  lang:          _initialLang,   // UI content language: 'en' | 'es'
   groupsContent: _initialMode,
   slangDeck:     [],
   syncTimer:     null,

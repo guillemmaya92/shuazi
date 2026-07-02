@@ -1,5 +1,6 @@
 import { supa } from './js/config.js';
 import { state } from './js/state.js';
+import { localizeRow, L, LANG_FIELDS, applyStaticTranslations } from './js/i18n.js';
 import { loadUserPlan, syncUserProfile } from './js/auth.js';
 import { loadProgressFromSupabase, loadSettingsFromSupabase, loadState } from './js/progress.js';
 import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
@@ -47,21 +48,25 @@ async function fetchAll(table, columns, orderBy = 'id') {
 // Granular loaders so the boot sequence can put exactly the right table on the
 // critical path: CHARACTERS for "characters" mode, WORDS for "words" mode.
 async function loadChars() {
-  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, radical, hsk, stroke, productive, frequency');
+  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, meaning_es, radical, hsk, stroke, productive, frequency');
+  chars.forEach(c => localizeRow(c, LANG_FIELDS.chars));
   state.CHARACTERS = chars;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
 }
 
 async function loadWords() {
-  state.WORDS = await fetchAll('words', 'id, word, pinyin, meaning, hsk, productive, frequency, stroke, pos');
+  const words = await fetchAll('words', 'id, word, pinyin, meaning, meaning_es, hsk, productive, frequency, stroke, pos');
+  words.forEach(w => localizeRow(w, LANG_FIELDS.words));
+  state.WORDS = words;
 }
 
 // Small lookup table: part-of-speech code → human-readable description.
 // Shown on the word card's info page, so it's never on the critical path.
 async function loadPosTags() {
   try {
-    const tags = await fetchAll('pos_tags', 'pos, description', 'pos');
-    state.POS_TAGS = Object.fromEntries(tags.map(t => [t.pos, t.description]));
+    const tags = await fetchAll('pos_tags', 'pos, description, description_es', 'pos');
+    state._posTags = tags;   // keep raw rows so the map can be rebuilt per language
+    state.POS_TAGS = Object.fromEntries(tags.map(t => [t.pos, L(t, 'description')]));
   } catch (e) {
     console.error('pos_tags failed to load (cards unaffected):', e);
   }
@@ -69,35 +74,39 @@ async function loadPosTags() {
 
 async function loadRadicalsAndSlang() {
   const [radicals, slang] = await Promise.all([
-    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, stroke, productive, frequency'),
-    fetchAll('slang', 'id, slang, pinyin, literal, meaning, origin, image'),
+    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, meaning_es, stroke, productive, frequency'),
+    fetchAll('slang', 'id, slang, pinyin, literal, literal_es, meaning, meaning_es, origin, origin_es, image'),
   ]);
+  radicals.forEach(r => localizeRow(r, LANG_FIELDS.radicals));
   state.RADICALS = radicals;
   // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
-  state.PHRASES  = slang.map(s => ({
-    id:      s.slang,
-    pinyin:  s.pinyin,
-    literal: s.literal,
-    meaning: s.meaning,
-    origin:  s.origin,
-    image:   s.image,
-  }));
+  state.PHRASES  = slang.map(s => localizeRow({
+    id:         s.slang,
+    pinyin:     s.pinyin,
+    literal:    s.literal,
+    literal_es: s.literal_es,
+    meaning:    s.meaning,
+    meaning_es: s.meaning_es,
+    origin:     s.origin,
+    origin_es:  s.origin_es,
+    image:      s.image,
+  }, LANG_FIELDS.phrases));
 }
 
 // Components are optional — a failure here must never block chars/cards.
 async function loadComponents() {
   try {
     const [components, compChar] = await Promise.all([
-      fetchAll('components', 'id, component, pinyin, meaning, stroke, productive, frequency'),
+      fetchAll('components', 'id, component, pinyin, meaning, meaning_es, stroke, productive, frequency'),
       fetchAll('component_char', 'id_component, id_char', 'id_component')
     ]);
     // Some components have null pinyin/meaning — coalesce so sort/search/render never crash.
-    state.COMPONENTS = components.map(c => ({
+    state.COMPONENTS = components.map(c => localizeRow({
       ...c,
       component: c.component ?? '',
       pinyin:    c.pinyin    ?? '',
       meaning:   c.meaning   ?? '',
-    }));
+    }, LANG_FIELDS.components));
     // component_char is many-to-many — build component id → set of char ids for filtering.
     const byComp = {};
     compChar.forEach(({ id_component, id_char }) => {
@@ -146,6 +155,9 @@ try {
   const t = localStorage.getItem('shuazi-theme');
   if (t) setTheme(t);
 } catch (e) {}
+
+// Translate the static chrome to the saved language before first paint.
+applyStaticTranslations();
 
 // Handle return from Stripe payment
 if (new URLSearchParams(window.location.search).get('upgraded') === '1') {

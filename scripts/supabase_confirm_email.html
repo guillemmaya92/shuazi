@@ -1,0 +1,83 @@
+<!--
+  Supabase → Authentication → Email Templates → "Confirm signup" → Message body.
+  Bilingual (English / Spanish) via Go-template conditionals on the user's
+  language, stored in user metadata at sign-up (options.data.lang, see ui.js).
+  Missing metadata (Google OAuth / older accounts) falls back to English.
+  The button links to our own domain with the token_hash so an installed PWA
+  can open it (see app.js verifyOtp + manifest launch_handler).
+-->
+{{ if eq .Data.lang "es" }}
+<h1 style="color: #111827; margin-bottom: 16px;">
+  Bienvenido a ShuaziApp
+</h1>
+
+<p style="font-size: 16px; color: #374151;">
+  Hola {{ .Email }},
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Gracias por unirte a <strong>ShuaziApp</strong>, tu espacio personal para explorar el chino a través de sus caracteres.
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Lleva la cuenta de los Hanzi (汉字) que ya conoces, descubre nuevos para estudiar y crea tu propia biblioteca de caracteres mientras entiendes mejor cómo se estructura el chino (中文).
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Confirma tu cuenta para empezar a organizar tu conocimiento de Hanzi y explorar las conexiones que forman la lengua china.
+</p>
+
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=email"
+    style="background-color: #ef4444; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+    Confirmar cuenta
+  </a>
+</div>
+
+<p style="font-size: 14px; color: #6b7280;">
+  Si no creaste ninguna cuenta, puedes ignorar este correo con total tranquilidad.
+</p>
+
+<hr style="margin: 24px 0;" />
+
+<p style="font-size: 12px; color: #9ca3af;">
+  <strong>ShuaziApp</strong> — Aprende chino paso a paso, un Hanzi cada vez.
+</p>
+{{ else }}
+<h1 style="color: #111827; margin-bottom: 16px;">
+  Welcome to ShuaziApp
+</h1>
+
+<p style="font-size: 16px; color: #374151;">
+  Hi {{ .Email }},
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Thank you for joining <strong>ShuaziApp</strong>, your personal space for exploring Chinese through its characters.
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Track the Hanzi (汉字) you already know, discover new ones to study, and build your own personal character library while gaining a deeper understanding of how Chinese (中文) is structured.
+</p>
+
+<p style="font-size: 16px; color: #374151;">
+  Confirm your account to start organizing your Hanzi knowledge and exploring the connections that make up the Chinese language.
+</p>
+
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=email"
+    style="background-color: #ef4444; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+    Confirm Account
+  </a>
+</div>
+
+<p style="font-size: 14px; color: #6b7280;">
+  If you did not create an account, you can safely ignore this email.
+</p>
+
+<hr style="margin: 24px 0;" />
+
+<p style="font-size: 12px; color: #9ca3af;">
+  <strong>ShuaziApp</strong> — Learn Chinese step by step, one Hanzi at a time.
+</p>
+{{ end }}

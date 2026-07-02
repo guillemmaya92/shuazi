@@ -5,6 +5,7 @@ import { startCheckout, deleteAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord, updateDeckProgress } from './cards.js';
 import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
+import { applyLanguage, applyStaticTranslations, t } from './i18n.js';
 import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
@@ -124,7 +125,7 @@ export function renderGroups() {
   const radClosed  = activeComponent ? true : (q ? false : radicalsCollapsed);
   const compClosed = activeRadical   ? true : (q ? false : componentsCollapsed);
 
-  if (state.RADICALS?.length || state.COMPONENTS?.length) sectionTitle('Filters', 'long-press to filter characters');
+  if (state.RADICALS?.length || state.COMPONENTS?.length) sectionTitle(t('groups.filtersTitle'), t('groups.filtersHint'));
 
   if (state.RADICALS?.length) {
     let sortedRadicals = [...state.RADICALS];
@@ -144,9 +145,9 @@ export function renderGroups() {
     radDiv.innerHTML = `
       <div class="hsk-group-header">
         <div class="hsk-group-label">
-          <span class="badge radical">Radicals</span>
+          <span class="badge radical">${t('badge.radicals')}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--faint);flex-shrink:0"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          <span class="count">${q ? `${sortedRadicals.length} / ${state.RADICALS.length}` : `${state.RADICALS.length}`} radicals</span>
+          <span class="count">${q ? `${sortedRadicals.length} / ${state.RADICALS.length}` : `${state.RADICALS.length}`} ${t('count.radicals')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <svg class="chevron ${radClosed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -244,9 +245,9 @@ export function renderGroups() {
     compDiv.innerHTML = `
       <div class="hsk-group-header">
         <div class="hsk-group-label">
-          <span class="badge component">Components</span>
+          <span class="badge component">${t('badge.components')}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--faint);flex-shrink:0"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          <span class="count">${q ? `${sortedComponents.length} / ${state.COMPONENTS.length}` : `${state.COMPONENTS.length}`} components</span>
+          <span class="count">${q ? `${sortedComponents.length} / ${state.COMPONENTS.length}` : `${state.COMPONENTS.length}`} ${t('count.components')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <svg class="chevron ${compClosed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -328,10 +329,10 @@ export function renderGroups() {
     if (!compClosed) renderComponentTiles();
   }
 
-  if (state.WORDS?.length && state.groupsContent === 'words') sectionTitle('Words', 'long-press to mark known / review',
+  if (state.WORDS?.length && state.groupsContent === 'words') sectionTitle(t('groups.words'), t('groups.markHint'),
     `<div class="groups-legend">
-       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
-       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>${t('stat.known')}</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>${t('stat.review')}</span>
      </div>`);
 
   const wordGroupEls = {};
@@ -390,8 +391,8 @@ export function renderGroups() {
         <div class="hsk-group-label">
           <span class="badge ${colors[hsk]}">${hskLabel(hsk)}</span>
           ${isLocked
-            ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : 'Sign up'}</span>`
-            : `<span class="count">${wKnownCount}/${wgroup.length} known</span>`
+            ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : t('badge.signUp')}</span>`
+            : `<span class="count">${wKnownCount}/${wgroup.length} ${t('msg.known')}</span>`
           }
         </div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -473,7 +474,7 @@ export function renderGroups() {
         wgrid.innerHTML = `
           <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} is available with shuazi Pro</p>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} ${t('msg.availablePro')}</p>
           </div>`;
         return;
       }
@@ -552,10 +553,10 @@ export function renderGroups() {
     if (!isWCollapsed) renderWordTiles();
   });
 
-  if (state.groupsContent === 'characters' && state.CHARACTERS?.length) sectionTitle('Characters', 'long-press to mark known / review',
+  if (state.groupsContent === 'characters' && state.CHARACTERS?.length) sectionTitle(t('groups.characters'), t('groups.markHint'),
     `<div class="groups-legend">
-       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>Known</span>
-       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>Review</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>${t('stat.known')}</span>
+       <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>${t('stat.review')}</span>
      </div>`);
 
   const charGroupEls = {};
@@ -609,8 +610,8 @@ export function renderGroups() {
         <div class="hsk-group-label">
           <span class="badge ${colors[hsk]}">${hskLabel(hsk)}</span>
           ${isLocked
-            ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : 'Sign up'}</span>`
-            : `<span class="count">${knownCount}/${group.length} known</span>`
+            ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : t('badge.signUp')}</span>`
+            : `<span class="count">${knownCount}/${group.length} ${t('msg.known')}</span>`
           }
         </div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -681,7 +682,7 @@ export function renderGroups() {
         grid.innerHTML = `
           <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} is available with shuazi Pro</p>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${hskLabel(hsk)} ${t('msg.availablePro')}</p>
           </div>`;
         return;
       }
@@ -859,13 +860,13 @@ export async function openModal(card, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-      <div class="info-cell"><div class="lbl">Char</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
-      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
-      <div class="info-cell"><div class="lbl">Radical</div><div class="char-chips">${radicalHTML}</div></div>
-      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
-      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
-      <div class="info-cell full"><div class="lbl">Components</div><div class="char-chips stack">${componentsHTML}</div></div>
-      <div class="info-cell full"><div class="lbl">Compound words (${cardWords.length})</div><div class="words-list" style="margin-top:6px">${groupsHTML}</div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.char')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="char-chips">${radicalHTML}</div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.components')}</div><div class="char-chips stack">${componentsHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.compoundWords')} (${cardWords.length})</div><div class="words-list" style="margin-top:6px">${groupsHTML}</div></div>
     </div>
   `;
 
@@ -977,11 +978,11 @@ function openRadicalModal(rad, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="info-cell"><div class="lbl">Radical</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
-      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
-      <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${rad.stroke}</div></div>
-      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${rad.meaning}</div></div>
-      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.strokes')}</div><div class="val">${rad.stroke}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${rad.meaning}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.compoundChars')} (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
     </div>
   `;
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
@@ -1002,11 +1003,11 @@ function openComponentModal(comp, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="info-cell"><div class="lbl">Component</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
-      <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">Pinyin</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
-      <div class="info-cell"><div class="lbl">Strokes</div><div class="val">${comp.stroke}</div></div>
-      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${comp.meaning}</div></div>
-      <div class="info-cell full"><div class="lbl">Compound characters (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.component')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
+      <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">${t('lbl.pinyin')}</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
+      <div class="info-cell"><div class="lbl">${t('lbl.strokes')}</div><div class="val">${comp.stroke}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${comp.meaning}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.compoundChars')} (${chars.length})</div><div class="words-list" style="margin-top:6px">${charsHTML}</div></div>
     </div>
   `;
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
@@ -1037,13 +1038,13 @@ export async function openWordModal(word, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr">
-      <div class="info-cell"><div class="lbl">Word</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
-      <div class="info-cell"><div class="lbl">Level</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">${word.hsk == null ? 'HSK ?' : hskLabel(word.hsk)}</span></div></div>
-      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">Pinyin</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
-      <div class="info-cell"><div class="lbl">POS</div><div class="char-chips">${posHTML}</div></div>
-      <div class="info-cell full"><div class="lbl">Meaning</div><div class="val">${word.meaning ?? '—'}</div></div>
-      <div class="info-cell full"><div class="lbl">Characters</div><div class="char-chips stack">${charsHTML}</div></div>
-      <div class="info-cell full"><div class="lbl">Phrases</div><div class="word-phrases-list" id="wm-phrases"><span style="color:var(--faint);font-size:.75rem">Loading…</span></div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.word')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">${word.hsk == null ? 'HSK ?' : hskLabel(word.hsk)}</span></div></div>
+      <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
+      <div class="info-cell"><div class="lbl">${t('lbl.pos')}</div><div class="char-chips">${posHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${word.meaning ?? '—'}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.characters')}</div><div class="char-chips stack">${charsHTML}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.phrases')}</div><div class="word-phrases-list" id="wm-phrases"><span style="color:var(--faint);font-size:.75rem">${t('word.loading')}</span></div></div>
     </div>
   `;
   attachModalListen(word.word);
@@ -1424,6 +1425,13 @@ tabProfile.onclick   = () => showTab('profile');
 })();
 
 /* ── PROFILE ── */
+// Circular inline SVG flags for the language toggle (emoji flags don't render on
+// Windows/Chrome, so we draw them). Simplified marks — legible at ~18px.
+const FLAG_SVG = {
+  en: `<svg class="lang-flag" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><defs><clipPath id="fl-en"><circle cx="12" cy="12" r="12"/></clipPath></defs><g clip-path="url(#fl-en)"><rect width="24" height="24" fill="#012169"/><path d="M0 0 24 24M24 0 0 24" stroke="#fff" stroke-width="4.8"/><path d="M0 0 24 24M24 0 0 24" stroke="#C8102E" stroke-width="2.4"/><path d="M12 0V24M0 12H24" stroke="#fff" stroke-width="8"/><path d="M12 0V24M0 12H24" stroke="#C8102E" stroke-width="4.8"/></g></svg>`,
+  es: `<svg class="lang-flag" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><defs><clipPath id="fl-es"><circle cx="12" cy="12" r="12"/></clipPath></defs><g clip-path="url(#fl-es)"><rect width="24" height="24" fill="#AA151B"/><rect y="6" width="24" height="12" fill="#F1BF00"/></g></svg>`,
+};
+
 export function renderProfile() {
   const container = document.getElementById('profile-scroll');
   const levels = [1, 2, 3, 4, 5, 6, 7];
@@ -1456,17 +1464,15 @@ export function renderProfile() {
     container.querySelector('#p-left').textContent   = leftN;
     container.querySelector('#p-pct').textContent    = pct + '%';
     container.querySelector('#p-bar').style.width    = pct + '%';
-    container.querySelector('#p-hint').textContent   = state.groupsContent === 'words'
-      ? 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.'
-      : 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.';
+    container.querySelector('#p-hint').textContent   = t(state.groupsContent === 'words' ? 'progress.hintWords' : 'progress.hintChars');
   }
 
   const { knownN, reviewN, leftN, pct } = computeStats();
 
   const STATUS_CONFIG = [
-    { key: 'left',   label: 'Left',   cls: 'status-left'   },
-    { key: 'know',   label: 'Know',   cls: 'status-know'   },
-    { key: 'review', label: 'Review', cls: 'status-review' },
+    { key: 'left',   label: t('status.left'),   cls: 'status-left'   },
+    { key: 'know',   label: t('status.know'),   cls: 'status-know'   },
+    { key: 'review', label: t('status.review'), cls: 'status-review' },
   ];
   const statusPills = STATUS_CONFIG.map(({ key, label, cls }) => {
     const active = state.activeStatuses.has(key);
@@ -1475,7 +1481,7 @@ export function renderProfile() {
 
   const groupsPills = ['words', 'characters'].map(key => {
     const active = state.groupsContent === key;
-    const label  = key === 'characters' ? 'Characters' : 'Words';
+    const label  = t(key === 'characters' ? 'groups.characters' : 'groups.words');
     return `<button class="status-filter-pill groups-pill ${active ? 'active' : ''}" data-groups="${key}">${label}</button>`;
   }).join('');
 
@@ -1486,40 +1492,40 @@ export function renderProfile() {
     // Locked levels can't be toggled, so always show them as selected (with the
     // lock) — every level is active by default; Pro just unlocks the locked ones.
     const active = state.activeHskLevels.has(hsk) || locked;
-    return `<button class="hsk-filter-pill hsk-${hsk} ${active ? 'active' : ''} ${locked ? 'locked' : ''}" data-hsk="${hsk}" ${locked ? 'disabled' : ''} style="${locked ? 'opacity:.35;cursor:not-allowed' : ''}" title="${locked ? 'Upgrade to Pro to unlock' : ''}">
+    return `<button class="hsk-filter-pill hsk-${hsk} ${active ? 'active' : ''} ${locked ? 'locked' : ''}" data-hsk="${hsk}" ${locked ? 'disabled' : ''} style="${locked ? 'opacity:.35;cursor:not-allowed' : ''}" title="${locked ? t('pro.upgradeTooltip') : ''}">
       ${locked ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:2px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : ''}${hskLabel(hsk)}
     </button>`;
   }).join('');
 
   const accountHTML = state.supaUser
     ? `<div class="profile-section">
-        <div class="words-title">Account</div>
+        <div class="words-title">${t('settings.account')}</div>
         <div class="info-cell full" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
           <div>
-            <div class="lbl">Signed in as</div>
+            <div class="lbl">${t('lbl.signedInAs')}</div>
             <div class="val" style="font-size:.8rem;margin-top:2px">${state.supaUser.email}</div>
           </div>
-          <button id="signOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Sign out</button>
+          <button id="signOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">${t('btn.signOut')}</button>
         </div>
         ${state.userPlan === 'pro' ? `
         <div class="info-cell full" style="display:flex;align-items:center;gap:8px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><polyline points="20 6 9 17 4 12"/></svg>
-          <span style="font-size:.75rem;color:var(--green);font-weight:600">Pro — all levels unlocked</span>
+          <span style="font-size:.75rem;color:var(--green);font-weight:600">${t('pro.unlockedAll')}</span>
         </div>` : ''}
       </div>`
     : `<div class="profile-section">
-        <div class="words-title">Account</div>
+        <div class="words-title">${t('settings.account')}</div>
         <div class="info-cell full" style="display:flex;flex-direction:column;gap:10px">
           <button id="signInGoogleBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.8rem;font-weight:600;cursor:pointer;width:100%;box-sizing:border-box">
             <svg width="15" height="15" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.1-9.9 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.5 42.5 14.6 48 24 48z"/></svg>
-            Continue with Google
+            ${t('auth.google')}
           </button>
           <div style="display:flex;align-items:center;gap:8px;color:var(--faint);font-size:.68rem">
-            <div style="flex:1;height:1px;background:var(--bdr)"></div>or<div style="flex:1;height:1px;background:var(--bdr)"></div>
+            <div style="flex:1;height:1px;background:var(--bdr)"></div>${t('auth.or')}<div style="flex:1;height:1px;background:var(--bdr)"></div>
           </div>
-          <input id="authEmail" type="email" placeholder="Email" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+          <input id="authEmail" type="email" placeholder="${t('auth.email')}" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
           <div style="position:relative;width:100%">
-            <input id="authPass" type="password" placeholder="Password" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 40px 9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
+            <input id="authPass" type="password" placeholder="${t('auth.password')}" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 40px 9px 12px;font:inherit;font-size:.8rem;color:var(--txt);outline:none;width:100%;box-sizing:border-box"/>
             <button id="togglePass" type="button" tabindex="-1" aria-label="Show password" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;background:none;border:none;color:var(--muted);cursor:pointer">
               <svg id="eyeOpen" width="17" height="17" viewBox="0 0 16 16" fill="currentColor" style="display:none"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>
               <svg id="eyeOff" width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/></svg>
@@ -1527,69 +1533,66 @@ export function renderProfile() {
           </div>
           <div id="authError" style="font-size:.68rem;color:#c04050;min-height:.8rem;margin-top:-4px"></div>
           <div style="display:flex;gap:8px">
-            <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">Sign in</button>
-            <button id="signUpBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer">Register</button>
+            <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">${t('btn.signIn')}</button>
+            <button id="signUpBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer">${t('btn.register')}</button>
           </div>
         </div>
       </div>`;
 
   container.innerHTML = `
     <div class="profile-section">
-      <div class="words-title">Game</div>
+      <div class="words-title">${t('profile.game')}</div>
       <div class="groups-filter-row">${groupsPills}</div>
     </div>
 
     <div class="profile-section">
-      <div class="words-title">Progress</div>
+      <div class="words-title">${t('profile.progress')}</div>
       <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="info-cell" style="text-align:center">
-          <div class="lbl">Known</div>
+          <div class="lbl">${t('stat.known')}</div>
           <div class="val" style="color:var(--green);font-size:1.5rem" id="p-known">${knownN}</div>
         </div>
         <div class="info-cell" style="text-align:center">
-          <div class="lbl">Review</div>
+          <div class="lbl">${t('stat.review')}</div>
           <div class="val" style="color:var(--blue);font-size:1.5rem" id="p-review">${reviewN}</div>
         </div>
         <div class="info-cell" style="text-align:center">
-          <div class="lbl">Left</div>
+          <div class="lbl">${t('stat.left')}</div>
           <div class="val" style="font-size:1.5rem" id="p-left">${leftN}</div>
         </div>
       </div>
       <div class="info-cell full" style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="lbl">Overall progress</div>
+          <div class="lbl">${t('lbl.overallProgress')}</div>
           <div class="lbl" id="p-pct">${pct}%</div>
         </div>
         <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
-        <p id="p-hint" style="font-size:.66rem;color:var(--faint);line-height:1.5;margin:0">${state.groupsContent === 'words'
-          ? 'of typical Chinese text — Top 1000 words cover 75%. Mark words as learned to see your progress.'
-          : 'of typical Chinese text — Top 500 chars cover 75%. Mark characters as learned to see your progress.'
-        }</p>
+        <p id="p-hint" style="font-size:.66rem;color:var(--faint);line-height:1.5;margin:0">${t(state.groupsContent === 'words' ? 'progress.hintWords' : 'progress.hintChars')}</p>
       </div>
     </div>
 
     <div class="profile-section">
-      <div class="words-title">Filters</div>
+      <div class="words-title">${t('profile.filters')}</div>
       <div class="hsk-filter-row">${filterPills}</div>
-      <p class="filter-hint">Select the HSK levels to include in your card deck.</p>
+      <p class="filter-hint">${t('filter.hintHsk')}</p>
       <div class="status-filter-row">${statusPills}</div>
-      <p class="filter-hint">Select which card statuses to include in your deck.</p>
+      <p class="filter-hint">${t('filter.hintStatus')}</p>
     </div>
 
     ${state.supaUser && state.userPlan !== 'pro' ? `
     <div class="profile-section">
-      <div class="words-title">Shuazi Pro</div>
+      <div class="words-title">${t('pro.title')}</div>
       <div class="info-cell full" style="padding:0;overflow:hidden">
         <div style="background:var(--green-bg);padding:10px 18px;border-bottom:1px solid rgba(104,191,138,.18)">
-          <div style="font-size:.92rem;font-weight:800;color:var(--green);letter-spacing:-.01em">Grab me a bubble tea</div>
-          <div style="font-size:.68rem;color:var(--green);opacity:.75;margin-top:3px">Unlocks HSK 1–6</div>
+          <div style="font-size:.92rem;font-weight:800;color:var(--green);letter-spacing:-.01em">${t('pro.bubbleTitle')}</div>
+          <div style="font-size:.68rem;color:var(--green);opacity:.75;margin-top:3px">${t('msg.unlocksHsk')}</div>
         </div>
         <div style="padding:14px 18px;display:flex;flex-direction:column;gap:14px">
-          <p style="font-size:.75rem;color:var(--muted);line-height:1.55;margin:0 0 8px">Help keep Shuazi alive (and me awake 😅) — grab us a sweet bubble tea and unlock:</p>
+          <p style="font-size:.75rem;color:var(--muted);line-height:1.55;margin:0 0 8px">${t('pro.bubbleDesc')}</p>
           <div style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted)">
-            <div>• HSK 1–6 — all 1,500+ characters, forever</div>
-            <div>• Cross-device sync — pick up where you left off</div>
-            <div>• Built-in translator — with word segmentation</div>
+            <div>• ${t('pro.perk1')}</div>
+            <div>• ${t('pro.perk2')}</div>
+            <div>• ${t('pro.perk3')}</div>
           </div>
           <div style="display:flex;align-items:center;gap:7px">
             <img src="./images/bubbletea-brown.png" alt="" style="height:36px;width:auto;flex-shrink:0"/>
@@ -1600,7 +1603,7 @@ export function renderProfile() {
             <input id="bubbleQtyCustom" type="number" min="1" max="100" value="1" style="width:52px;height:36px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-size:.82rem;font-weight:700;text-align:center;padding:0;outline:none;-moz-appearance:textfield;flex-shrink:0"/>
           </div>
           <button id="upgradeBannerBtn" style="padding:13px;border-radius:12px;font-size:.88rem;font-weight:800;cursor:pointer;width:100%;letter-spacing:-.01em">
-            <span id="bubbleCTAText">Support · €2</span>
+            <span id="bubbleCTAText">${t('pro.support')} · €2</span>
           </button>
         </div>
       </div>
@@ -1619,7 +1622,7 @@ export function renderProfile() {
     const updateBubbleQty = (qty, fromCustom = false) => {
       bubbleQty = qty;
       const total = qty * PRICE;
-      if (ctaEl) ctaEl.textContent = `Support · €${total}`;
+      if (ctaEl) ctaEl.textContent = `${t('pro.support')} · €${total}`;
       qtyBtns.forEach(b => {
         const active = !fromCustom && Number(b.dataset.qty) === qty;
         b.style.border     = active ? '1.5px solid var(--green)' : '1.5px solid var(--bdr)';
@@ -1685,21 +1688,23 @@ export function renderProfile() {
       const { data, error } = await supa.auth.signUp({
         email: emailEl.value.trim(),
         password: passEl.value,
-        options: { emailRedirectTo: window.location.href }
+        // Store the UI language in user metadata so the confirmation email
+        // template can render in the right language ({{ .Data.lang }}).
+        options: { emailRedirectTo: window.location.href, data: { lang: state.lang } }
       });
       if (error) {
         console.error('signUp error:', error);
-        errEl.textContent = error.message || 'Sign up failed. Please try again.';
+        errEl.textContent = error.message || t('msg.signUpFailed');
         return;
       }
       // Supabase returns a user with an empty identities array when the email
       // is already registered (to prevent email enumeration) — surface that.
       if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-        errEl.textContent = 'This email is already registered. Try signing in.';
+        errEl.textContent = t('msg.emailRegistered');
         return;
       }
       errEl.style.color = 'var(--green)';
-      errEl.textContent = 'Check your email to confirm!';
+      errEl.textContent = t('msg.checkEmail');
     });
   }
 
@@ -1748,6 +1753,8 @@ export function renderProfile() {
       renderGroups();
     });
   });
+
+  syncLangBtn();   // keep the header flag/code in sync (e.g. language adopted from account)
 }
 
 /* ── SLANG ── */
@@ -1851,11 +1858,11 @@ function attachPhraseSwipe(cardEl, phrase) {
 
 /* ── SORT & SEARCH ── */
 const SORT_CYCLE  = ['pinyin', 'productive', 'frequency', 'stroke'];
-const SORT_LABELS = { pinyin: 'Pinyin', productive: 'Productive', frequency: 'Frequency', stroke: 'Stroke' };
+export const sortLabelText = mode => t('sort.' + mode);
 
 document.getElementById('sortBtn').onclick = () => {
   state.gridSort = SORT_CYCLE[(SORT_CYCLE.indexOf(state.gridSort) + 1) % SORT_CYCLE.length];
-  document.getElementById('sortLabel').textContent = SORT_LABELS[state.gridSort];
+  document.getElementById('sortLabel').textContent = sortLabelText(state.gridSort);
   renderGroups();
 };
 
@@ -1924,8 +1931,8 @@ setupPullRefresh({
   max:       132,
   damp:      120,
   label:     document.getElementById('groupsPullLabel'),
-  pullText:  'Pull to clear filters',
-  readyText: 'Release to clear filters',
+  pullText:  () => t('filters.pullClear'),
+  readyText: () => t('filters.releaseClear'),
 });
 
 /* ── THEME ── */
@@ -1949,6 +1956,30 @@ export function setTheme(t) {
 const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
   document.getElementById(id).onclick = toggleTheme;
+});
+
+// Language toggle in the profile header (EN ⇄ ES). Shows the active language's
+// flag + code; a tap flips it, re-localizes every loaded row in place, then
+// repaints the deck, grid, slang and profile. The deck isn't rebuilt (no
+// reshuffle) — applyLanguage() localizes the live cards too.
+const profileLangBtn = document.getElementById('profileLangBtn');
+const syncLangBtn = () => {
+  if (profileLangBtn) profileLangBtn.innerHTML = `${FLAG_SVG[state.lang] || FLAG_SVG.en}<span>${state.lang.toUpperCase()}</span>`;
+};
+syncLangBtn();
+profileLangBtn?.addEventListener('click', () => {
+  state.lang = state.lang === 'es' ? 'en' : 'es';
+  syncLangBtn();
+  applyLanguage();
+  applyStaticTranslations();
+  // The sort label is dynamic (reflects the current sort mode), so set it from state.
+  const sortLabelEl = document.getElementById('sortLabel');
+  if (sortLabelEl) sortLabelEl.textContent = sortLabelText(state.gridSort);
+  saveSettings();
+  render();
+  renderGroups();
+  if (state.PHRASES.length) renderSlang();
+  renderProfile();
 });
 
 /* ── SETTINGS PANEL ── */
@@ -2087,10 +2118,10 @@ function openAccountMenu() {
       section.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 14px 14px;border-bottom:1px solid var(--bdr);margin-bottom:6px">
           <div>
-            <div class="lbl">Signed in as</div>
+            <div class="lbl">${t('lbl.signedInAs')}</div>
             <div class="val" style="font-size:.78rem;margin-top:2px;word-break:break-all">${state.supaUser.email}</div>
           </div>
-          <button id="accountSignOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Sign out</button>
+          <button id="accountSignOutBtn" style="padding:6px 14px;border-radius:999px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">${t('btn.signOut')}</button>
         </div>`;
       section.querySelector('#accountSignOutBtn').addEventListener('click', async () => {
         await supa.auth.signOut();
@@ -2127,9 +2158,9 @@ function openAccountMenu() {
     const knownN  = filtered.filter(c => state.known.has(c.char)).length;
     const reviewN = filtered.filter(c => state.unknown.has(c.char)).length;
     document.getElementById('reset-stats').innerHTML = `
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)">${knownN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Known</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)">${reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Review</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700">${knownN + reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Total</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)">${knownN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${t('stat.known')}</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)">${reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${t('stat.review')}</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700">${knownN + reviewN}</div><div style="font-size:.6rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${t('common.total')}</div></div>
     `;
     const rb = document.getElementById('reset-backdrop');
     rb.style.display = 'flex';
