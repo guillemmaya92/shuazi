@@ -183,8 +183,9 @@ loadCritical(bootMode).then(() => {
     // known/review marks from localStorage, then build a fresh word deck.
     const saved = loadState();
     if (saved) {
-      state.known   = new Set(saved.known   || []);
-      state.unknown = new Set(saved.unknown || []);
+      state.known    = new Set(saved.known   || []);
+      state.unknown  = new Set(saved.unknown || []);
+      state.schedule = saved.schedule || {};
     }
     state.deck = buildWordDeck();
     render();

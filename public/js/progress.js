@@ -2,6 +2,18 @@ import { supa, STORE_KEY, SETTINGS_KEY } from './config.js';
 import { state } from './state.js';
 import { applyLanguage, applyStaticTranslations } from './i18n.js';
 
+// SRS scheduling columns for an item (empty when it was never graded).
+function srsCols(name) {
+  const s = state.schedule[name];
+  return {
+    due_at:        s?.due  ? new Date(s.due).toISOString()  : null,
+    interval_days: s?.interval ?? null,
+    ease:          s?.ease ?? null,
+    reps:          s?.reps ?? null,
+    last_reviewed: s?.last ? new Date(s.last).toISOString() : null,
+  };
+}
+
 export async function syncProgressToSupabase() {
   if (!state.supaUser) return;
 
@@ -9,9 +21,9 @@ export async function syncProgressToSupabase() {
   const knownRows = [], reviewRows = [], leftIds = [];
   state.CHARACTERS.forEach(c => {
     if (state.known.has(c.char))
-      knownRows.push({ user_id: state.supaUser.id, char_id: c.id, state: 'known',  updated_at: new Date().toISOString() });
+      knownRows.push({ user_id: state.supaUser.id, char_id: c.id, state: 'known',  updated_at: new Date().toISOString(), ...srsCols(c.char) });
     else if (state.unknown.has(c.char))
-      reviewRows.push({ user_id: state.supaUser.id, char_id: c.id, state: 'review', updated_at: new Date().toISOString() });
+      reviewRows.push({ user_id: state.supaUser.id, char_id: c.id, state: 'review', updated_at: new Date().toISOString(), ...srsCols(c.char) });
     else
       leftIds.push(c.id);
   });
@@ -25,9 +37,9 @@ export async function syncProgressToSupabase() {
   const wKnownRows = [], wReviewRows = [], wLeftIds = [];
   state.WORDS.forEach(w => {
     if (state.known.has(w.word))
-      wKnownRows.push({ user_id: state.supaUser.id, word_id: w.id, state: 'known',  updated_at: new Date().toISOString() });
+      wKnownRows.push({ user_id: state.supaUser.id, word_id: w.id, state: 'known',  updated_at: new Date().toISOString(), ...srsCols(w.word) });
     else if (state.unknown.has(w.word))
-      wReviewRows.push({ user_id: state.supaUser.id, word_id: w.id, state: 'review', updated_at: new Date().toISOString() });
+      wReviewRows.push({ user_id: state.supaUser.id, word_id: w.id, state: 'review', updated_at: new Date().toISOString(), ...srsCols(w.word) });
     else
       wLeftIds.push(w.id);
   });
@@ -41,12 +53,25 @@ export async function syncProgressToSupabase() {
 export async function loadProgressFromSupabase() {
   if (!state.supaUser) return;
 
+  const cols = 'state, due_at, interval_days, ease, reps, last_reviewed';
   const [{ data: charData }, { data: wordData }] = await Promise.all([
-    supa.from('progress').select('char_id, state').eq('user_id', state.supaUser.id),
-    supa.from('word_progress').select('word_id, state').eq('user_id', state.supaUser.id),
+    supa.from('progress').select(`char_id, ${cols}`).eq('user_id', state.supaUser.id),
+    supa.from('word_progress').select(`word_id, ${cols}`).eq('user_id', state.supaUser.id),
   ]);
 
-  state.known.clear(); state.unknown.clear();
+  state.known.clear(); state.unknown.clear(); state.schedule = {};
+
+  // Rehydrate the SRS record for an item from its remote row (if it has one).
+  const applySched = (name, row) => {
+    if (!row.due_at) return;
+    state.schedule[name] = {
+      interval: row.interval_days ?? 0,
+      ease:     row.ease ?? 2.3,
+      reps:     row.reps ?? 0,
+      due:      Date.parse(row.due_at),
+      last:     row.last_reviewed ? Date.parse(row.last_reviewed) : 0,
+    };
+  };
 
   if (charData) {
     charData.forEach(row => {
@@ -54,6 +79,7 @@ export async function loadProgressFromSupabase() {
       if (!c) return;
       if (row.state === 'known')  state.known.add(c.char);
       if (row.state === 'review') state.unknown.add(c.char);
+      applySched(c.char, row);
     });
   }
 
@@ -64,6 +90,7 @@ export async function loadProgressFromSupabase() {
       if (!w) return;
       if (row.state === 'known')  state.known.add(w.word);
       if (row.state === 'review') state.unknown.add(w.word);
+      applySched(w.word, row);
     });
   }
 }
@@ -79,6 +106,7 @@ export function saveState() {
     localStorage.setItem(STORE_KEY, JSON.stringify({
       known:     [...state.known],
       unknown:   [...state.unknown],
+      schedule:  state.schedule,
       deckChars: state.deck.map(c => c.char)
     }));
   } catch (e) {}

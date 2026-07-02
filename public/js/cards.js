@@ -2,6 +2,7 @@ import { supa, FREE_HSK, hskLabel } from './config.js';
 import { state } from './state.js';
 import { localizeRow, t } from './i18n.js';
 import { saveState, loadState, saveSettings } from './progress.js';
+import { reschedule, isDue } from './srs.js';
 import { renderGroups, openWordModal, openModal } from './ui.js';
 import { speak } from './translator.js';
 
@@ -93,14 +94,26 @@ export function isAvailable(hsk) {
   return state.userPlan === 'pro' || FREE_HSK.has(hsk);
 }
 
-export function buildDeck(src) {
-  const filtered = src.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
-  const cards = filtered.filter(c => {
-    if (state.known.has(c.char))   return state.activeStatuses.has('know');
-    if (state.unknown.has(c.char)) return state.activeStatuses.has('review');
+// Apply the status filters + SRS due-gating, then order the deck: due (scheduled)
+// items first, soonest-due first, with new/unscheduled items shuffled after.
+// Known/Review items that aren't due yet rest out of the deck until their date.
+function srsSelect(cards) {
+  const now = Date.now();
+  const sel = cards.filter(c => {
+    if (state.known.has(c.char))   return state.activeStatuses.has('know')   && isDue(state.schedule[c.char], now);
+    if (state.unknown.has(c.char)) return state.activeStatuses.has('review') && isDue(state.schedule[c.char], now);
     return state.activeStatuses.has('left');
   });
-  shuffle(cards);
+  const scheduled = sel.filter(c => state.schedule[c.char]);
+  const fresh     = sel.filter(c => !state.schedule[c.char]);
+  scheduled.sort((a, b) => state.schedule[a.char].due - state.schedule[b.char].due);
+  shuffle(fresh);
+  return [...scheduled, ...fresh];
+}
+
+export function buildDeck(src) {
+  const filtered = src.filter(c => state.activeHskLevels.has(c.hsk) && isAvailable(c.hsk));
+  const cards = srsSelect(filtered);
   state.deckInitial = cards.length;   // reset session progress for the new deck
   return cards;
 }
@@ -109,12 +122,7 @@ export function buildWordDeck() {
   const filtered = state.WORDS
     .filter(w => state.activeHskLevels.has(w.hsk) && isAvailable(w.hsk))
     .map(w => ({ ...w, char: w.word, isWord: true }));
-  const cards = filtered.filter(c => {
-    if (state.known.has(c.char))   return state.activeStatuses.has('know');
-    if (state.unknown.has(c.char)) return state.activeStatuses.has('review');
-    return state.activeStatuses.has('left');
-  });
-  shuffle(cards);
+  const cards = srsSelect(filtered);
   state.deckInitial = cards.length;   // reset session progress for the new deck
   return cards;
 }
@@ -483,6 +491,8 @@ export function classifyKnown() {
   top.style.opacity = '0';
   const card = state.deck.shift();
   state.known.add(card.char); state.unknown.delete(card.char);
+  state.schedule[card.char] = reschedule(state.schedule[card.char], 'good');
+  saveState();
   setTimeout(render, 210);
 }
 
@@ -494,6 +504,8 @@ export function classifyLeft() {
   top.style.opacity = '0';
   const card = state.deck.shift();
   state.known.delete(card.char); state.unknown.delete(card.char);
+  delete state.schedule[card.char];   // "Left" → back to new/unscheduled
+  saveState();
   const pos = state.deck.length > 1 ? 1 + Math.floor(Math.random() * state.deck.length) : state.deck.length;
   state.deck.splice(pos, 0, card);
   setTimeout(render, 210);
@@ -507,6 +519,8 @@ export function classifyReview() {
   top.style.opacity = '0';
   const card = state.deck.shift();
   state.unknown.add(card.char); state.known.delete(card.char);
+  state.schedule[card.char] = reschedule(state.schedule[card.char], 'hard');
+  saveState();
   const pos = state.deck.length > 1 ? 1 + Math.floor(Math.random() * state.deck.length) : state.deck.length;
   state.deck.splice(pos, 0, card);
   setTimeout(render, 210);
@@ -604,8 +618,9 @@ function attachDrag(cardEl) {
 }
 
 export function init(src, forceNew) {
-  if (forceNew) { state.known = new Set(); state.unknown = new Set(); }
+  if (forceNew) { state.known = new Set(); state.unknown = new Set(); state.schedule = {}; }
   const saved = !forceNew && loadState();
+  if (saved && saved.schedule) state.schedule = saved.schedule;
   if (saved && saved.deckChars && saved.deckChars.length) {
     const charMap = Object.fromEntries(state.CHARACTERS.map(c => [c.char, c]));
     state.deck    = saved.deckChars.map(ch => charMap[ch]).filter(Boolean).filter(c => isAvailable(c.hsk));

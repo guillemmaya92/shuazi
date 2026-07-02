@@ -45,6 +45,7 @@ export const state = {
   deckInitial:   0,    // deck size when (re)built — for the session progress bar
   known:         new Set(),
   unknown:       new Set(),
+  schedule:      {},   // SRS: item name (char/word) → { interval, ease, reps, due, last }
   supaUser:      null,
   userPlan:      'free',
   activeHskLevels: new Set(_initialHsk),
