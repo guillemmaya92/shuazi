@@ -3,6 +3,23 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left,   0px);
   --safe-r: env(safe-area-inset-right,  0px);
+  /* CJK stack. 'ShuaziExtB' (see @font-face below) is a tiny bundled subset that
+     covers the rare CJK Extension B components (𠂇 𢆶 𢛳) the app uses; its
+     unicode-range limits it to astral-plane glyphs, so normal hanzi still use the
+     system fonts. The Windows-only SimSun-ExtB / MingLiU-ExtB stay as a native
+     fallback. Without any of these, Ext-B glyphs render as tofu — notably on iOS,
+     which ships no glyph for them at all. */
+  --cjk: 'ShuaziExtB','PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei','SimSun-ExtB','MingLiU-ExtB',sans-serif;
+}
+
+/* Bundled Ext-B subset (~900 B). unicode-range covers the whole CJK Extension B
+   block so the browser only fetches/uses it for those code points; every other
+   character falls straight through to the system fonts in --cjk. */
+@font-face {
+  font-family: 'ShuaziExtB';
+  src: url('/fonts/shuazi-extb.woff2') format('woff2');
+  font-display: swap;
+  unicode-range: U+20000-2A6DF;
 }
 [data-theme="dark"] {
   --bg:        #11161a; /* lifted off near-black to soften the harsh edge contrast */
@@ -277,7 +294,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   flex:1; display:flex; align-items:center; justify-content:center;
 }
 .hanzi {
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
   font-size:clamp(118px, 34vw, 190px); font-weight:400; line-height:1;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
 }
@@ -364,7 +381,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 }
 .char-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
 .char-chip { display:inline-flex; align-items:center; gap:5px; background:var(--surf2); border:1px solid var(--bdr); border-radius:10px; padding:3px 9px; }
-.char-chip .cc-glyph { font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; font-size:1.05rem; font-weight:600; color:var(--txt); line-height:1.2; }
+.char-chip .cc-glyph { font-family:var(--cjk); font-size:1.05rem; font-weight:600; color:var(--txt); line-height:1.2; }
 .char-chip .cc-py { font-size:.66rem; color:var(--muted); }
 .char-chips.stack .char-chip { flex-direction:column; gap:1px; padding:4px 8px; }
 .char-chips.stack .char-chip .cc-py { text-align:center; }
@@ -384,7 +401,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chip-component:active { background:rgba(120,120,130,.30); }
 .modal-back { display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:999px; color:var(--blue); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
 .modal-back svg { stroke:var(--blue); }
-.modal-back span { font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; color:var(--blue); }
+.modal-back span { font-family:var(--cjk); color:var(--blue); }
 @media (hover:hover) and (pointer:fine) { .modal-back:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
 .modal-back:active { transform:scale(.96); background:color-mix(in srgb, var(--blue) 30%, transparent); }
 .cc-desc { font-weight:500; color:var(--muted); }
@@ -392,7 +409,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
 .word-item { padding:9px 13px; font-size:.78rem; color:var(--muted); line-height:1.4; border-bottom:1px solid var(--bdr); display:flex; flex-direction:column; gap:1px; }
 .word-item:last-child { border-bottom:none; }
-.word-item strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+.word-item strong { color:var(--txt); font-size:.9rem; font-family:var(--cjk); }
 
 /* collapsible word groups in modal */
 .word-group { border-bottom:1px solid var(--bdr); }
@@ -422,7 +439,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   padding:7px 9px; text-align:left; cursor:pointer; background:transparent;
 }
 .word-exp-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
-.word-exp-info strong { color:var(--txt); font-size:.9rem; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+.word-exp-info strong { color:var(--txt); font-size:.9rem; font-family:var(--cjk); }
 .word-exp-chev { transition:transform 200ms ease; flex-shrink:0; margin-top:4px; color:var(--faint); }
 .word-exp-chev.open { transform:rotate(180deg); }
 .phrase-body { overflow:hidden; transition:max-height 250ms ease, opacity 200ms ease; max-height:1500px; opacity:1; }
@@ -431,7 +448,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   padding:7px 11px 7px 18px; border-top:1px solid var(--bdr);
   background:var(--surf2); display:flex; flex-direction:column; gap:1px;
 }
-.wp-hanzi   { color:var(--txt); font-size:.9rem; font-weight:600; line-height:1.35; font-family:'PingFang SC','Hiragino Sans GB',sans-serif; }
+.wp-hanzi   { color:var(--txt); font-size:.9rem; font-weight:600; line-height:1.35; font-family:var(--cjk); }
 .wp-pinyin  { font-size:.74rem; color:var(--muted); line-height:1.3; }
 .wp-meaning { font-size:.74rem; color:var(--faint); line-height:1.3; }
 
@@ -456,7 +473,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   overflow:hidden;
 }
 .phrase-hanzi {
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
   font-size:2.8rem; font-weight:400; line-height:1; color:var(--txt); flex-shrink:0;
 }
 .phrase-pinyin { font-size:1.0rem; color:var(--muted); font-weight:300; flex-shrink:0; }
@@ -620,7 +637,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-grid.vgrid > .char-grid-label { padding-top: 8px; }
 .char-tile:active { transform:scale(.93); }
 .char-tile .tc {
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
   font-size:26px; line-height:1; color:var(--txt);
   -webkit-text-fill-color:var(--txt);
 }
@@ -1147,7 +1164,7 @@ body.account-open .account-scrim { pointer-events: auto; }
   white-space:pre-wrap; word-break:break-word;
 }
 .tr-zh-line {
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
   font-size:1.3rem; line-height:1.5; color:var(--txt);
   padding:0 2px;
 }
@@ -1185,7 +1202,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 .tr-token .zh {
   display:block; font-size:1.4rem; line-height:1.2;
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
   color:var(--txt); -webkit-text-fill-color:var(--txt);
 }
 /* Tokenized header: title + the show-all-meanings eye toggle. */
@@ -1326,7 +1343,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .tr-history-zh {
   font-size:.72rem; color:var(--faint);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;
+  font-family:var(--cjk);
 }
 .tr-history-del {
   flex:0 0 auto; width:30px; align-self:center;
@@ -1487,7 +1504,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   cursor:pointer; display:grid; place-items:center; overflow:hidden;
 }
 .stroke-missing {
-  font-family:'PingFang SC','Hiragino Sans GB',sans-serif; font-size:2.8rem; color:var(--faint);
+  font-family:var(--cjk); font-size:2.8rem; color:var(--faint);
   width:100%; height:100%; display:grid; place-items:center;
 }
 .stroke-error { color:var(--faint); font-size:.85rem; line-height:1.5; padding:26px 8px; }

@@ -24,6 +24,7 @@ const SHELL_ASSETS = [
   '/js/stroke-order.js',
   '/js/srs.js',
   '/js/password-reset.js',
+  '/fonts/shuazi-extb.woff2',
   '/manifest.json',
 ].map(v);
 

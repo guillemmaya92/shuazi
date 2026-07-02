@@ -944,7 +944,7 @@ function compoundCharsHTML(chars) {
       .slice()
       .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
       .map(c =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:var(--cjk);font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
     const open = i === 0;
     return `
@@ -979,7 +979,7 @@ function wireCompoundGroups() {
 const STROKE_PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 function strokeCellHTML(label, glyph) {
   return `<div class="info-cell char-cell"><div class="lbl">${label}</div>`
-    + `<button type="button" class="val char-stroke-btn js-stroke-open" aria-label="${t('stroke.view')}" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${glyph}</button>`
+    + `<button type="button" class="val char-stroke-btn js-stroke-open" aria-label="${t('stroke.view')}" style="font-family:var(--cjk);font-size:1.6rem">${glyph}</button>`
     + `<button type="button" class="stroke-open-btn js-stroke-open" aria-label="${t('stroke.view')}">${STROKE_PENCIL_SVG}</button></div>`;
 }
 function wireStrokeOpen(glyph) {
@@ -1091,7 +1091,7 @@ export async function openWordModal(word, backStack = []) {
   phrasesEl.innerHTML = phrases.length === 0
     ? '<span style="color:var(--faint);font-size:.75rem">No phrases found</span>'
     : phrases.map(p =>
-        `<div style="position:relative;display:flex;flex-direction:column;gap:2px;padding:7px 34px 7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:'PingFang SC','Hiragino Sans GB',sans-serif;font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span><button class="cell-listen-btn phrase-listen-btn" data-phrase="${p.phrase}" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>`
+        `<div style="position:relative;display:flex;flex-direction:column;gap:2px;padding:7px 34px 7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:var(--cjk);font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${p.phrase}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${p.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${p.meaning ?? ''}</span><button class="cell-listen-btn phrase-listen-btn" data-phrase="${p.phrase}" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>`
       ).join('');
 
   phrasesEl.querySelectorAll('.phrase-listen-btn').forEach(btn => {
