@@ -208,7 +208,10 @@ const STRINGS = {
     'stroke.title': 'Stroke order',
     'stroke.view': 'View stroke order',
     'stroke.replay': 'Replay',
+    'stroke.write': 'Practice writing',
     'stroke.radical': 'Highlight radical',
+    'stroke.prev': 'Previous character',
+    'stroke.next': 'Next character',
     'stroke.error': 'Could not load the stroke data. Check your connection and try again.',
   },
   es: {
@@ -355,7 +358,10 @@ const STRINGS = {
     'stroke.title': 'Orden de trazos',
     'stroke.view': 'Ver orden de trazos',
     'stroke.replay': 'Repetir',
+    'stroke.write': 'Practicar escritura',
     'stroke.radical': 'Resaltar radical',
+    'stroke.prev': 'Carácter anterior',
+    'stroke.next': 'Carácter siguiente',
     'stroke.error': 'No se pudieron cargar los trazos. Revisa tu conexión e inténtalo de nuevo.',
   },
 };

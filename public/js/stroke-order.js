@@ -30,38 +30,57 @@ const isCJK = ch => /[㐀-鿿豈-﫿]/.test(ch);
 export async function openStrokeOrder(char) {
   const chars = [...String(char || '')].filter(isCJK);
   if (!chars.length) return;
+  if (document.querySelector('.stroke-backdrop')) return;   // only one overlay at a time
 
+  const prevFocus = document.activeElement;
   const backdrop = document.createElement('div');
   backdrop.className = 'stroke-backdrop';
   backdrop.setAttribute('role', 'dialog');
   backdrop.setAttribute('aria-modal', 'true');
   backdrop.setAttribute('aria-label', t('stroke.title'));
   backdrop.innerHTML = `
-    <div class="stroke-sheet">
-      <button class="stroke-x" type="button" aria-label="${t('pwa.dismiss')}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <div class="stroke-title">${t('stroke.title')}</div>
+    <div class="stroke-sheet" tabindex="-1">
       <div class="stroke-targets"></div>
       <div class="stroke-actions">
+        <button class="stroke-nav stroke-prev" type="button" aria-label="${t('stroke.prev')}" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
         <button class="stroke-btn stroke-replay" type="button" aria-label="${t('stroke.replay')}" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button class="stroke-btn stroke-write" type="button" aria-label="${t('stroke.write')}" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
         </button>
         <button class="stroke-btn stroke-radical" type="button" aria-label="${t('stroke.radical')}" aria-pressed="false" disabled>
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.7s6.5 6 6.5 10.8a6.5 6.5 0 0 1-13 0C5.5 8.7 12 2.7 12 2.7Z"/></svg>
         </button>
+        <button class="stroke-nav stroke-next" type="button" aria-label="${t('stroke.next')}" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
     </div>`;
   document.body.appendChild(backdrop);
-  requestAnimationFrame(() => backdrop.classList.add('show'));
 
-  const close = () => { backdrop.classList.remove('show'); setTimeout(() => backdrop.remove(), 220); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  const close = () => {
+    document.removeEventListener('keydown', onKey);
+    backdrop.classList.remove('show');
+    setTimeout(() => backdrop.remove(), 220);
+    prevFocus?.focus?.();
+  };
+  document.addEventListener('keydown', onKey);
   backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
-  backdrop.querySelector('.stroke-x').addEventListener('click', close);
+  requestAnimationFrame(() => { backdrop.classList.add('show'); backdrop.querySelector('.stroke-sheet').focus(); });
 
   const targetsWrap = backdrop.querySelector('.stroke-targets');
   const replayBtn   = backdrop.querySelector('.stroke-replay');
+  const writeBtn    = backdrop.querySelector('.stroke-write');
   const radicalBtn  = backdrop.querySelector('.stroke-radical');
+  const prevBtn     = backdrop.querySelector('.stroke-prev');
+  const nextBtn     = backdrop.querySelector('.stroke-next');
+
+  // Fit the canvas to the sheet so it never overflows on small phones: the sheet
+  // is min(384, viewport − backdrop padding); subtract its own padding and the
+  // room the side button column needs, then cap by the number of characters.
+  const sheetInner = Math.min(440, window.innerWidth - 32) - 40;
+  const size = Math.round(Math.max(96, Math.min(288, sheetInner)));
+  targetsWrap.style.minHeight = size + 'px';
 
   let HW;
   try {
@@ -78,41 +97,82 @@ export async function openStrokeOrder(char) {
   const cs = getComputedStyle(document.documentElement);
   const light = document.documentElement.dataset.theme !== 'dark';
   const strokeColor  = light ? '#1c1510' : (cs.getPropertyValue('--txt').trim() || '#e8f0f4');
-  const outlineColor = light ? 'rgba(28,21,16,.12)' : 'rgba(232,240,244,.14)';
+  // Unpainted silhouette: a solid light tint (not transparency) so it reads evenly.
+  const outlineColor = light ? '#ddd7cf' : '#39434c';
   const accentColor  = cs.getPropertyValue('--blue').trim() || '#64a0e6';
   const radicalColor = strokeColor;   // uniform by default; the radical button tints it
-  const size = chars.length > 2 ? 96 : 132;
 
-  const writers = chars.map(ch => {
+  let idx = 0;
+  let quizzing = false;
+  let radicalOn = false;
+
+  // One target/writer per character; only the current one is visible (words step
+  // through them with the side arrows, so we never show more than one glyph).
+  const targetEls = [];
+  const writers = chars.map((ch, i) => {
     const target = document.createElement('div');
     target.className = 'stroke-target';
     target.style.width = target.style.height = size + 'px';
+    if (i !== 0) target.style.display = 'none';
     targetsWrap.appendChild(target);
+    targetEls.push(target);
     const writer = HW.create(target, ch, {
       width: size, height: size, padding: 6,
       showOutline: true,
-      strokeColor, outlineColor, radicalColor,
+      strokeColor, outlineColor, radicalColor, drawingColor: accentColor,
+      drawingWidth: Math.round(size * 0.11),
       strokeAnimationSpeed: 1, delayBetweenStrokes: 220,
       onLoadCharDataError: () => { target.innerHTML = `<span class="stroke-missing">${ch}</span>`; },
     });
-    target.addEventListener('click', () => writer.animateCharacter());   // tap a glyph to replay it
+    target.addEventListener('click', () => { if (!quizzing) writer.animateCharacter(); });
     return writer;
   });
 
-  const playAll = () => writers.forEach((w, i) => setTimeout(() => w.animateCharacter(), i * 140));
-  replayBtn.disabled = false;
-  replayBtn.addEventListener('click', playAll);
+  const current = () => writers[idx];
+  const setWriting = on => {
+    quizzing = on;
+    writeBtn.classList.toggle('active', on);
+    writeBtn.setAttribute('aria-pressed', String(on));
+  };
+  const setRadical = on => {
+    radicalOn = on;
+    current().updateColor('radicalColor', on ? accentColor : strokeColor);
+    radicalBtn.classList.toggle('active', on);
+    radicalBtn.setAttribute('aria-pressed', String(on));
+  };
+  const stopQuiz = () => { if (quizzing) { current().cancelQuiz(); current().showCharacter(); setWriting(false); } };
+  const play = () => { stopQuiz(); current().animateCharacter(); };
 
-  // Radical toggle: recolour the radical strokes on/off (uniform ⇄ accent).
-  let radicalOn = false;
-  radicalBtn.disabled = false;
-  radicalBtn.addEventListener('click', () => {
-    radicalOn = !radicalOn;
-    const col = radicalOn ? accentColor : strokeColor;
-    writers.forEach(w => w.updateColor('radicalColor', col));
-    radicalBtn.classList.toggle('active', radicalOn);
-    radicalBtn.setAttribute('aria-pressed', String(radicalOn));
+  replayBtn.disabled = false;
+  replayBtn.addEventListener('click', play);
+
+  writeBtn.disabled = false;
+  writeBtn.addEventListener('click', () => {
+    if (quizzing) { stopQuiz(); return; }
+    setWriting(true);
+    current().quiz({ showHintAfterMisses: 2, onComplete: () => setWriting(false) });
   });
 
-  playAll();
+  radicalBtn.disabled = false;
+  radicalBtn.addEventListener('click', () => setRadical(!radicalOn));
+
+  // Multi-character words: step through one glyph at a time with the side arrows.
+  if (chars.length > 1) {
+    prevBtn.hidden = nextBtn.hidden = false;
+    const show = i => {
+      stopQuiz();
+      if (radicalOn) setRadical(false);
+      targetEls[idx].style.display = 'none';
+      idx = i;
+      targetEls[idx].style.display = '';
+      prevBtn.disabled = idx === 0;
+      nextBtn.disabled = idx === chars.length - 1;
+      current().animateCharacter();
+    };
+    prevBtn.addEventListener('click', () => { if (idx > 0) show(idx - 1); });
+    nextBtn.addEventListener('click', () => { if (idx < chars.length - 1) show(idx + 1); });
+    prevBtn.disabled = true;
+  }
+
+  play();
 }

@@ -862,7 +862,7 @@ export async function openModal(card, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:0.82fr 0.82fr 1.18fr 1.18fr">
-      <div class="info-cell char-cell"><div class="lbl">${t('lbl.char')}</div><button type="button" class="val char-stroke-btn js-stroke-open" aria-label="${t('stroke.view')}" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${card.char}</button><button type="button" class="stroke-open-btn js-stroke-open" aria-label="${t('stroke.view')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>
+      ${strokeCellHTML(t('lbl.char'), card.char)}
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
@@ -874,9 +874,7 @@ export async function openModal(card, backStack = []) {
 
   attachModalListen(card.char);
 
-  // Tap the character (or the pencil in its corner) to see the stroke order.
-  modalContent.querySelectorAll('.js-stroke-open')
-    .forEach(el => el.addEventListener('click', () => openStrokeOrder(card.char)));
+  wireStrokeOpen(card.char);   // tap the character or the pencil to see stroke order
 
   wireModalBack(backStack);
 
@@ -975,6 +973,20 @@ function wireCompoundGroups() {
   });
 }
 
+// Shared glyph cell: the character opens the stroke-order animation, with a
+// pencil pinned to the cell's corner. Used by the char / radical / component /
+// word modals. `glyph` may be multi-character (words → one writer per char).
+const STROKE_PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+function strokeCellHTML(label, glyph) {
+  return `<div class="info-cell char-cell"><div class="lbl">${label}</div>`
+    + `<button type="button" class="val char-stroke-btn js-stroke-open" aria-label="${t('stroke.view')}" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${glyph}</button>`
+    + `<button type="button" class="stroke-open-btn js-stroke-open" aria-label="${t('stroke.view')}">${STROKE_PENCIL_SVG}</button></div>`;
+}
+function wireStrokeOpen(glyph) {
+  modalContent.querySelectorAll('.js-stroke-open')
+    .forEach(el => el.addEventListener('click', () => openStrokeOrder(glyph)));
+}
+
 function openRadicalModal(rad, backStack = []) {
   const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
   const charsHTML = compoundCharsHTML(chars);
@@ -984,7 +996,7 @@ function openRadicalModal(rad, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${rad.radical}</div></div>
+      ${strokeCellHTML(t('lbl.radical'), rad.radical)}
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${rad.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">${t('lbl.strokes')}</div><div class="val">${rad.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${rad.meaning}</div></div>
@@ -994,6 +1006,7 @@ function openRadicalModal(rad, backStack = []) {
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
   wireModalBack(backStack);
   wireCompoundGroups();
+  wireStrokeOpen(rad.radical);
   openModalSheet();
 }
 
@@ -1009,7 +1022,7 @@ function openComponentModal(comp, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="info-cell"><div class="lbl">${t('lbl.component')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${comp.component}</div></div>
+      ${strokeCellHTML(t('lbl.component'), comp.component)}
       <div class="info-cell${hasPinyin ? ' cell-listen' : ''}">${hasPinyin ? '<div class="cell-listen-main">' : ''}<div class="lbl">${t('lbl.pinyin')}</div><div class="val">${comp.pinyin || '—'}</div>${hasPinyin ? `</div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button>` : ''}</div>
       <div class="info-cell"><div class="lbl">${t('lbl.strokes')}</div><div class="val">${comp.stroke}</div></div>
       <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${comp.meaning}</div></div>
@@ -1019,6 +1032,7 @@ function openComponentModal(comp, backStack = []) {
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
   wireModalBack(backStack);
   wireCompoundGroups();
+  wireStrokeOpen(comp.component);
   openModalSheet();
 }
 
@@ -1044,7 +1058,7 @@ export async function openWordModal(word, backStack = []) {
   modalContent.innerHTML = `
     ${backHTML}
     <div class="info-row" style="grid-template-columns:1fr 1fr">
-      <div class="info-cell"><div class="lbl">${t('lbl.word')}</div><div class="val" style="font-family:'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:1.6rem">${word.word}</div></div>
+      ${strokeCellHTML(t('lbl.word'), word.word)}
       <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill ${hskColors[word.hsk] ?? ''}">${word.hsk == null ? 'HSK ?' : hskLabel(word.hsk)}</span></div></div>
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${word.pinyin ?? '—'}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">${t('lbl.pos')}</div><div class="char-chips">${posHTML}</div></div>
@@ -1055,6 +1069,7 @@ export async function openWordModal(word, backStack = []) {
   `;
   attachModalListen(word.word);
   wireModalBack(backStack);
+  wireStrokeOpen(word.word);
 
   const deeper = [...backStack, { kind: 'word', data: word }];
   modalContent.querySelectorAll('.char-chip-link').forEach(btn => {
