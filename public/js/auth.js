@@ -1,5 +1,23 @@
-import { supa, SUPA_URL, STRIPE_PRICE } from './config.js';
+import { supa, SUPA_URL, SUPA_KEY, STRIPE_PRICE } from './config.js';
 import { state } from './state.js';
+
+// Looks up an email before sending a reset link: is there an account, does it
+// have a password, and which providers does it use? Backed by the check-account
+// Edge Function (service role). Returns null if the lookup is unavailable, so
+// callers fall back to just sending the reset email.
+export async function checkAccount(email) {
+  try {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/check-account`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!resp.ok) return null;
+    return await resp.json();   // { exists, hasPassword, providers }
+  } catch {
+    return null;
+  }
+}
 
 export async function loadUserPlan() {
   if (!state.supaUser) { state.userPlan = 'free'; return; }

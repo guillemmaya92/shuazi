@@ -1519,6 +1519,37 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   border-color:color-mix(in srgb, var(--blue) 45%, var(--bdr));
 }
 
+/* ── PASSWORD RESET (password-reset.js) ── */
+.pwreset-backdrop {
+  position:fixed; inset:0; z-index:220;
+  background:rgba(0,0,0,.5); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; transition:opacity .2s ease;
+}
+.pwreset-backdrop.show { opacity:1; }
+.pwreset-sheet {
+  width:100%; max-width:340px;
+  background:var(--surf); border-radius:20px; box-shadow:var(--sh);
+  padding:22px 20px calc(20px + var(--safe-b));
+  display:flex; flex-direction:column; gap:12px;
+  transform:translateY(10px) scale(.98); transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.pwreset-backdrop.show .pwreset-sheet { transform:translateY(0) scale(1); }
+.pwreset-title { font-size:1rem; font-weight:800; color:var(--txt); letter-spacing:-.01em; text-align:center; }
+.pwreset-input {
+  background:var(--bg); border:1px solid var(--bdr); border-radius:10px;
+  padding:10px 12px; font:inherit; font-size:.85rem; color:var(--txt); outline:none;
+  width:100%; box-sizing:border-box;
+}
+.pwreset-error { font-size:.7rem; color:#c04050; min-height:.85rem; text-align:center; }
+.pwreset-save {
+  width:100%; padding:11px; border-radius:12px;
+  background:var(--blue); color:#fff; -webkit-text-fill-color:#fff;
+  font-size:.85rem; font-weight:800; cursor:pointer;
+}
+.pwreset-save:disabled { opacity:.5; cursor:default; }
+.pwreset-save:active { transform:scale(.98); }
+
 /* ── SUPPORT BUTTON FILL EFFECT ── */
 #upgradeBannerBtn {
   position:relative;

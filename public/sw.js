@@ -23,6 +23,7 @@ const SHELL_ASSETS = [
   '/js/coach.js',
   '/js/stroke-order.js',
   '/js/srs.js',
+  '/js/password-reset.js',
   '/manifest.json',
 ].map(v);
 

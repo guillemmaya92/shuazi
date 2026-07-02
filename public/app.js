@@ -7,6 +7,7 @@ import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
 import { maybeDemoSwipe } from './js/coach.js';
+import { showPasswordReset } from './js/password-reset.js';
 
 // Paginated fetch — Supabase caps each request at 1000 rows. Grab the row count
 // first, then fire every page in parallel (≈2 round-trips instead of N
@@ -219,14 +220,20 @@ loadCritical(bootMode).then(() => {
     const tokenHash = params.get('token_hash');
     const otpType = params.get('type');
     if (tokenHash && otpType) {
+      let ok = true;
       try {
         await supa.auth.verifyOtp({ type: otpType, token_hash: tokenHash });
       } catch (e) {
-        console.error('Email confirmation failed:', e);
+        ok = false;
+        console.error('Token verification failed:', e);
       }
       params.delete('token_hash'); params.delete('type');
       const qs = params.toString();
       history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+      // Password-recovery link → collect a new password (custom email template
+      // points here with type=recovery, mirroring the confirm-signup flow). The
+      // token is single-use: a reused/expired link fails verify → show that.
+      if (otpType === 'recovery') showPasswordReset({ expired: !ok });
     }
 
     const { data: { session } } = await supa.auth.getSession();
@@ -248,6 +255,7 @@ loadCritical(bootMode).then(() => {
   window._supabaseReady.then(() => {
     supa.auth.onAuthStateChange(async (event, session) => {
       state.supaUser = session?.user ?? null;
+      if (event === 'PASSWORD_RECOVERY') showPasswordReset();
       if (event === 'SIGNED_IN') {
         syncUserProfile();
         await loadUserPlan();

@@ -1,7 +1,7 @@
 import { supa, hskLabel } from './config.js';
 import { state } from './state.js';
 import { saveState, saveSettings } from './progress.js';
-import { startCheckout, deleteAccount } from './auth.js';
+import { startCheckout, deleteAccount, checkAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord, updateDeckProgress } from './cards.js';
 import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
@@ -1557,6 +1557,7 @@ export function renderProfile() {
             <button id="signInBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);font-size:.78rem;font-weight:600;cursor:pointer">${t('btn.signIn')}</button>
             <button id="signUpBtn" style="flex:1;padding:9px;border-radius:10px;background:var(--green-bg);border:1px solid rgba(104,191,138,.25);color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer">${t('btn.register')}</button>
           </div>
+          <button id="forgotBtn" type="button" style="align-self:center;background:none;border:none;color:var(--faint);font-size:.68rem;cursor:pointer;text-decoration:underline;padding:2px 4px">${t('auth.forgot')}</button>
         </div>
       </div>`;
 
@@ -1588,7 +1589,7 @@ export function renderProfile() {
           <div class="lbl" id="p-pct">${pct}%</div>
         </div>
         <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-2-fill" id="p-bar" style="width:${pct}%"></div></div>
-        <p id="p-hint" style="font-size:.66rem;color:var(--faint);line-height:1.5;margin:0">${t(state.groupsContent === 'words' ? 'progress.hintWords' : 'progress.hintChars')}</p>
+        <p id="p-hint" style="font-size:.66rem;color:var(--faint);line-height:1.5;margin:0;white-space:pre-line">${t(state.groupsContent === 'words' ? 'progress.hintWords' : 'progress.hintChars')}</p>
       </div>
     </div>
 
@@ -1726,6 +1727,23 @@ export function renderProfile() {
       }
       errEl.style.color = 'var(--green)';
       errEl.textContent = t('msg.checkEmail');
+    });
+    container.querySelector('#forgotBtn')?.addEventListener('click', async () => {
+      errEl.textContent = ''; errEl.style.color = '#c04050';
+      const email = emailEl.value.trim();
+      if (!email) { errEl.textContent = t('auth.enterEmail'); return; }
+      // Look the account up first so we can give a useful message. If the lookup
+      // is unavailable (null), fall through and just send the reset email.
+      const info = await checkAccount(email);
+      if (info && !info.exists) { errEl.textContent = t('auth.noAccount'); return; }
+      if (info && info.exists && !info.hasPassword && info.providers?.includes('google')) {
+        errEl.textContent = t('auth.useGoogle'); return;
+      }
+      // Recovery email template points back with type=recovery (see app.js).
+      const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+      if (error) { errEl.textContent = error.message; return; }
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = t('auth.resetSent');
     });
   }
 
