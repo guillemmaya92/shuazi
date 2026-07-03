@@ -101,6 +101,19 @@ export function scheduleSyncToSupabase() {
   state.syncTimer = setTimeout(syncProgressToSupabase, 1500);
 }
 
+// Reset progress → wipe the account's rows immediately. The debounced sync above
+// isn't durable enough here: if the app is closed within its 1.5s window the
+// delete never runs, so on next open loadProgressFromSupabase() would restore the
+// cleared marks. A direct, awaited delete of every row makes the reset stick.
+export async function clearProgressInSupabase() {
+  if (!state.supaUser) return;
+  clearTimeout(state.syncTimer);   // cancel any pending partial sync
+  await Promise.all([
+    supa.from('progress').delete().eq('user_id', state.supaUser.id),
+    supa.from('word_progress').delete().eq('user_id', state.supaUser.id),
+  ]);
+}
+
 export function saveState() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({

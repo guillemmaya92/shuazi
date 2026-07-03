@@ -1,10 +1,11 @@
 import { supa, hskLabel } from './config.js';
 import { state } from './state.js';
-import { saveState, saveSettings } from './progress.js';
+import { saveState, saveSettings, clearProgressInSupabase } from './progress.js';
 import { startCheckout, deleteAccount, checkAccount } from './auth.js';
 import { buildDeck, buildWordDeck, render, classifyKnown, classifyLeft, classifyReview, stats, init, isAvailable, normalizePinyin, fetchWordsForChar, fetchPhrasesForWord, updateDeckProgress } from './cards.js';
 import { initTranslator, speak } from './translator.js';
 import { setupPullRefresh } from './pull-refresh.js';
+import { refreshGroupsScrollbar } from './groups-scrollbar.js';
 import { applyLanguage, applyStaticTranslations, t } from './i18n.js';
 import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
 import { maybeShowGroupsCoach } from './coach.js';
@@ -759,6 +760,8 @@ export function renderGroups() {
 
     if (!isCollapsed) renderTiles();
   });
+
+  refreshGroupsScrollbar();
 }
 
 /* ── MODAL ── */
@@ -866,7 +869,7 @@ export async function openModal(card, backStack = []) {
       <div class="info-cell cell-listen"><div class="cell-listen-main"><div class="lbl">${t('lbl.pinyin')}</div><div class="val">${card.pinyin}</div></div><button class="cell-listen-btn" aria-label="Listen to pronunciation">${MODAL_LISTEN_SVG}</button></div>
       <div class="info-cell"><div class="lbl">${t('lbl.radical')}</div><div class="char-chips">${radicalHTML}</div></div>
       <div class="info-cell"><div class="lbl">${t('lbl.level')}</div><div class="val"><span class="hsk-pill hsk-${card.hsk}">${hskLabel(card.hsk)}</span></div></div>
-      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${card.meaning}${radInfo?.meaning ? ` <span class="cc-desc">· ${radInfo.meaning} (radical)</span>` : ''}</div></div>
+      <div class="info-cell full"><div class="lbl">${t('lbl.meaning')}</div><div class="val">${card.meaning}</div></div>
       <div class="info-cell full"><div class="lbl">${t('lbl.components')}</div><div class="char-chips stack">${componentsHTML}</div></div>
       <div class="info-cell full"><div class="lbl">${t('lbl.compoundWords')} (${cardWords.length})</div><div class="words-list" style="margin-top:6px">${groupsHTML}</div></div>
     </div>
@@ -1330,6 +1333,7 @@ export function showTab(tab) {
   else if (tab === 'translator'){ scrTranslate.classList.add('active'); tabTranslate.classList.add('active'); initTranslator(); }
   else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
   movePill();
+  refreshGroupsScrollbar();   // shows on Groups, hides itself on every other tab
 }
 // Position the pill once layout is ready, and keep it aligned on resize.
 requestAnimationFrame(movePill);
@@ -2213,11 +2217,14 @@ function openAccountMenu() {
 
   document.getElementById('resetCancelBtn').onclick  = () => closeResetModal();
   document.getElementById('resetConfirmBtn').onclick = () => {
-    state.known.clear(); state.unknown.clear();
+    state.known.clear(); state.unknown.clear(); state.schedule = {};
     state.deck = buildDeck(state.CHARACTERS);
     render(); saveState();
     closeResetModal();
     setTimeout(() => renderProfile(), 200);
+    // Wipe the server rows now (awaited), so the reset survives closing the app
+    // before the debounced sync would have fired.
+    clearProgressInSupabase().catch(e => console.error('Reset sync failed:', e));
   };
   document.getElementById('reset-backdrop').onclick = e => {
     if (e.target === document.getElementById('reset-backdrop')) closeResetModal();

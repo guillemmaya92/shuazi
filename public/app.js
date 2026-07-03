@@ -286,12 +286,22 @@ loadCritical(bootMode).then(() => {
 });
 
 
-if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+// Treat localhost AND private-LAN IPs (the dev server reached from a phone via
+// https://192.168.x.x:8000) as development. The service worker serves CSS/JS
+// stale-while-revalidate, so on a dev host it hands back the previous build and
+// changes only show up a reload late — misleading while iterating. In dev we skip
+// registration and tear down any worker + caches left over from an earlier visit.
+const isDevHost = /^(localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
+
+if ('serviceWorker' in navigator && !isDevHost) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('SW registered', reg))
       .catch(err => console.log('SW fail', err));
   });
+} else if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
 }
 
 window.addEventListener('appinstalled', () => {
