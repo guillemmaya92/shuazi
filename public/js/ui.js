@@ -1808,17 +1808,24 @@ function makeSlangCardEl(phrase, isStack) {
   card.className = 'card phrase-card ' + (isStack ? 'stack-under' : 'top');
   card.innerHTML = `
     <div class="phrase-inner">
-      <div class="phrase-hanzi">${phrase.id}</div>
-      <div class="phrase-pinyin">${phrase.pinyin}</div>
-      <div class="phrase-literal">${phrase.literal}</div>
-      <div class="phrase-divider"></div>
-      <div class="phrase-meaning">${phrase.meaning}</div>
-      ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
+      <div class="phrase-text">
+        <div class="phrase-hanzi">${phrase.id}</div>
+        <div class="phrase-pinyin">${phrase.pinyin}</div>
+        <div class="phrase-literal">${phrase.literal}</div>
+        <div class="phrase-divider"></div>
+        <div class="phrase-meaning">${phrase.meaning}</div>
+        ${phrase.origin ? `<div class="phrase-origin">${phrase.origin}</div>` : ''}
+      </div>
       ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" draggable="false" onerror="this.style.display='none'"/>` : ''}
     </div>
   `;
   return card;
 }
+
+// Text sizing is pure CSS: .phrase-inner is a size container and .phrase-text's
+// font-size is a clamp() in container-query (cqh) units — so every card is the same
+// size on a given device and scales across devices, with no JS measuring, observers
+// or reflows. Long phrases that exceed the box are clipped (graceful fade in CSS).
 
 // Mirrors cards.js render(): a 2-card stack (top + one underneath) styled purely
 // via the shared .card.top / .card.stack-under CSS — same look as the main deck.

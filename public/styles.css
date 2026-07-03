@@ -465,24 +465,44 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .phrase-card {
   position:absolute; inset:0;
   background:var(--surf); border:1px solid var(--bdr); border-radius:24px;
-  display:flex; align-items:stretch; justify-content:center;
+  display:flex; align-items:center; justify-content:center;
   cursor:grab; user-select:none; -webkit-user-select:none;
   will-change:transform; overflow:hidden;
 }
+/* Cap the content on tall/wide desktop windows so it keeps phone-like proportions
+   (centred column) instead of the text ballooning to fill an 860px-wide, full-height
+   card. On a phone these caps rarely bind, so mobile is unchanged. */
+/* Size container: text sizes below are expressed in cqh (1% of this box's height),
+   so they scale with the card and are identical across every card on a device — no
+   JS. Its own size is fixed by the flex/height rules, independent of its content. */
 .phrase-inner {
-  padding:24px 24px; display:flex; flex-direction:column; gap:8px; width:100%;
+  padding:24px 14px; display:flex; flex-direction:column; gap:12px;
+  width:100%; max-width:520px; height:100%; max-height:560px; margin:0 auto;
   overflow:hidden;
+  container-type:size;
+}
+/* Top 2/3 of the card: the text, vertically centred. Bottom 1/3: the image. The 2:1
+   flex split holds regardless of content length. One base font (clamp in cqh) drives
+   the block; children are `em` multiples of it, so the whole thing scales together.
+   A soft top/bottom mask fades the edges only when a rare long phrase overflows the
+   centred box (short phrases don't reach the edges, so the fade is invisible). */
+.phrase-text {
+  flex:2; min-height:0; overflow:hidden;
+  display:flex; flex-direction:column; gap:.5em; justify-content:center;
+  font-size:clamp(.8rem, 3cqh, 1.2rem);
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+          mask-image:linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
 }
 .phrase-hanzi {
   font-family:var(--cjk);
-  font-size:2.8rem; font-weight:400; line-height:1; color:var(--txt); flex-shrink:0;
+  font-size:2.8em; font-weight:400; line-height:1; color:var(--txt); flex-shrink:0;
 }
-.phrase-pinyin { font-size:1.0rem; color:var(--muted); font-weight:300; flex-shrink:0; }
-.phrase-literal { font-size:.82rem; color:var(--faint); font-style:italic; flex-shrink:0; }
-.phrase-divider { height:1px; background:var(--bdr); margin:2px 0; flex-shrink:0; }
-.phrase-meaning { font-size:.9rem; color:var(--txt); line-height:1.65; font-weight:300; flex-shrink:0; }
-.phrase-origin { font-size:.78rem; color:var(--faint); line-height:1.55; flex-shrink:0; }
-.phrase-img { width:100%; border-radius:12px; object-fit:contain; flex:1; min-height:0; max-height:200px; margin-top:4px; mix-blend-mode:multiply; user-select:none; -webkit-user-select:none; -webkit-user-drag:none; pointer-events:none; }
+.phrase-pinyin { font-size:1em; color:var(--muted); font-weight:300; flex-shrink:0; }
+.phrase-literal { font-size:.82em; color:var(--faint); font-style:italic; flex-shrink:0; }
+.phrase-divider { height:1px; background:var(--bdr); margin:.13em 0; flex-shrink:0; }
+.phrase-meaning { font-size:.92em; color:var(--txt); line-height:1.65; font-weight:300; flex-shrink:0; }
+.phrase-origin { font-size:.78em; color:var(--faint); line-height:1.55; flex-shrink:0; }
+.phrase-img { width:100%; border-radius:12px; object-fit:contain; flex:1; min-height:0; margin-top:0; mix-blend-mode:multiply; user-select:none; -webkit-user-select:none; -webkit-user-drag:none; pointer-events:none; }
 [data-theme="dark"] .phrase-img { mix-blend-mode:screen; }
 .done h2 { font-size:1.2rem; font-weight:700; }
 .done p  { font-size:.84rem; color:var(--muted); }
