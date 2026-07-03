@@ -112,6 +112,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   position:relative;
   display:flex;
   touch-action:none;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
   background: var(--tabbar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -516,6 +517,23 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
    custom fast-scroll thumb below (see js/groups-scrollbar.js). */
 .groups-scroll::-webkit-scrollbar { width:0; height:0; }
 .groups-scroll { scrollbar-width:none; }
+
+/* Cards, Groups, Slang, Profile and Translator are touch-only surfaces: no
+   accidental text selection or iOS long-press callout on any text or tile. */
+#screen-cards, #screen-groups, #screen-slang, #screen-profile, #screen-translator {
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+}
+/* Opt selectable content back in: form fields everywhere, plus — on the Translator
+   — the sent message (.js-original) and the hanzi translation (.js-zh), the only
+   two things meant to be copied. */
+#screen-cards input, #screen-cards textarea,
+#screen-groups input, #screen-groups textarea,
+#screen-slang input, #screen-slang textarea,
+#screen-profile input, #screen-profile textarea,
+#screen-translator input, #screen-translator textarea,
+#screen-translator .js-original, #screen-translator .js-zh {
+  user-select:text; -webkit-user-select:text; -webkit-touch-callout:default;
+}
 
 /* Custom fast-scroll thumb: a wide, always-grabbable pill pinned to the right
    edge of the groups scroller. The 22px box is the touch target; the visible bar
