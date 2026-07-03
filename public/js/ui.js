@@ -1975,6 +1975,7 @@ setupPullRefresh({
   disc:      document.getElementById('groupsPull'),
   content:   document.getElementById('groups-content'),
   onRefresh: clearGroupFilters,
+  exitUp:    true,    // wheel + caption glide up and fade instead of spinning in place
   haptic:    () => navigator.vibrate?.(12),
   // A longer, harder pull than the default so it isn't triggered by accident.
   trigger:   96,

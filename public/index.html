@@ -286,7 +286,7 @@
         <div class="brand">
           <div>
             <div class="title" data-i18n="translator.title">Translator</div>
-            <div class="sub" data-i18n="translator.sub">Any language → Chinese & pinyin</div>
+            <div class="sub"><span data-i18n="translator.subPrefix">Any language → </span><span id="trSubLang">中文</span></div>
           </div>
         </div>
         <div class="hdr-stats">
@@ -361,6 +361,9 @@
       <!-- ChatGPT-style composer pinned to the bottom -->
       <div class="tr-composer">
         <div class="tr-input-field">
+          <button id="trLang" class="tr-lang-add" type="button" aria-label="Output language">
+            <span id="trLangCode">zh</span>
+          </button>
           <textarea id="trInput" class="tr-input" rows="1" placeholder="Type in any language..." data-i18n-ph="tr.placeholder" autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
           <div class="tr-input-tools">
             <button id="trMic" class="tr-btn tr-mic" aria-label="Dictate" type="button">

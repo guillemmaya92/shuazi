@@ -946,6 +946,12 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-content { display:flex; flex-direction:column; gap:12px; }
 /* Chat-style stack: each translation is a message; a divider separates them. */
 .tr-conversation { display:flex; flex-direction:column; gap:12px; }
+/* Pull-to-clear: the messages glide up and fade before being removed, instead of
+   vanishing abruptly (see discardChat in translator.js). */
+.tr-conversation.clearing {
+  transition:transform .3s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  transform:translateY(-28px); opacity:0;
+}
 .tr-message { display:flex; flex-direction:column; gap:12px; }
 .tr-message + .tr-message { border-top:1px solid var(--bdr); padding-top:12px; }
 
@@ -975,6 +981,11 @@ body.account-open .account-scrim { pointer-events: auto; }
 /* Translator pull is a destructive "clear", so its caption arms in red. */
 #trPullLabel.ready { color:var(--red); }
 .pull-label:not(.dragging) { transition:opacity .2s ease, transform .28s cubic-bezier(.34,1.56,.64,1); }
+/* Exit-up (pull-to-clear): the wheel + caption slide up and fade, in sync with the
+   cleared content. A plain ease-out (no spring overshoot) reads as "lifting away". */
+.pull-disc.exiting, .pull-label.exiting {
+  transition:transform .34s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+}
 .pull-disc .pull-spinner { width:18px; height:18px; }
 .pull-disc .pull-spinner line { opacity:0; }   /* bars revealed progressively by JS */
 .pull-disc.ready { color:var(--green); border-color:var(--green); }
@@ -1000,6 +1011,44 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-input-tools { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
 /* Grow while held (press-and-hold), like the bottom tab bar. */
 .tr-input-tools .tr-btn:active:not(:disabled) { transform:scale(1.18); }
+
+/* Language-code button on the left of the composer (no circle): shows the current
+   output language (zh / en / es) and opens the picker popover. Plain theme-ink
+   colour — near-black in light, near-white in dark. The 34px box is just a
+   comfortable tap target — no background or border. */
+.tr-lang-add {
+  flex:0 0 auto; align-self:flex-start; height:34px; padding:0 4px; margin-right:-3px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  background:none; border:0;
+  color:var(--txt); -webkit-text-fill-color:var(--txt);
+  font-size:.92rem; font-weight:700; letter-spacing:.02em; text-transform:lowercase;
+  transition:transform 200ms cubic-bezier(.34,1.56,.64,1), opacity 160ms ease;
+}
+.tr-lang-add:hover { opacity:.65; }
+.tr-lang-add:active { transform:scale(.9); }
+.tr-lang-add.open { opacity:.65; }
+
+/* Popover with the language options (built in translator.js, appended to body). */
+.tr-lang-menu {
+  position:absolute; left:0; bottom:calc(100% + 8px); z-index:130; min-width:132px;
+  background:var(--surf2); border:1px solid var(--bdr); border-radius:14px;
+  box-shadow:var(--sh); padding:5px;
+  opacity:0; transform:scale(.92); transform-origin:bottom left;
+  pointer-events:none; transition:opacity .14s ease, transform .14s ease;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+}
+.tr-lang-menu.open { opacity:1; transform:scale(1); pointer-events:auto; }
+.tr-lang-opt {
+  display:flex; align-items:center; width:100%;
+  padding:9px 11px; border-radius:9px;
+  font-size:.86rem; font-weight:600; cursor:pointer;
+  color:var(--txt); -webkit-text-fill-color:var(--txt);
+}
+.tr-lang-opt:hover { background:var(--surf); }
+.tr-lang-opt.active {
+  background:var(--surf);
+  color:var(--txt); -webkit-text-fill-color:var(--txt); font-weight:700;
+}
 
 /* Send button: fill completely on hover (pointer devices only, so the
    fill doesn't "stick" after a tap on touchscreens). */

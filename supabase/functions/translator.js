@@ -10,21 +10,84 @@
 // The browser calls this with the public Supabase anon key as the bearer token
 // (same as any other Edge Function). The real OpenRouter key lives only here.
 
-const MODEL = "deepseek/deepseek-chat";
+const MODEL = "deepseek/deepseek-v4-flash";
 const MAX_CHARS = 2000;
+const MAX_TOKENS = 4000;
+const MAX_RETRIES = 2; // retries on transient upstream errors (429/5xx)
 
-// Compact output keeps generated tokens (and therefore latency) low: the model
-// returns just an array of [word, gloss] pairs — the full translation is
-// reconstructed by joining the words, so it's never emitted twice.
-const SYSTEM_PROMPT =
+// Supported output languages. Chinese ("zh") is the rich mode (tokenized with
+// per-word glosses); the others return a plain translation only.
+const LANGS = { zh: "Simplified Chinese", en: "English", es: "Spanish" };
+
+// The language the per-word glosses are written in (the app's UI language).
+const GLOSS_LANGS = { en: "English", es: "Spanish" };
+
+// Chinese mode. Compact output keeps generated tokens (and therefore latency)
+// low: the model returns just an array of [word, gloss] pairs — the full
+// translation is reconstructed by joining the words, so it's never emitted twice.
+// The exact JSON shape is enforced by TOKENS_SCHEMA (json_schema strict mode)
+// rather than by prompting alone, so the prompt only needs to describe the
+// translation/segmentation/gloss rules. The gloss is written in `glossName`
+// (the app's selected language).
+const zhPrompt = (glossName) =>
   "You are a professional translator. Translate the user message into Simplified Chinese, then segment it into natural word-level tokens. " +
-  'Reply with ONLY a compact JSON object {"t": [[zh, en], ...]} — an array of [word, gloss] pairs in order. ' +
-  'Each "zh" is one Chinese word (or punctuation mark); each "en" is a short literal English gloss for it in context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ' +
-  "No translation field, no pinyin, no extra keys, no explanations.";
+  `Each "zh" is one Chinese word (or punctuation mark); each "en" is a short literal ${glossName} gloss for it in context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ` +
+  "No pinyin, no explanations.";
 
-// Calls OpenRouter. Uses plain JSON mode (fast — parseModelJson tolerates any
-// imperfect formatting) and routes to the highest-throughput provider.
-function callOpenRouter(key, text) {
+// Plain mode (any non-Chinese target): just the translation, no tokens/glosses.
+const plainPrompt = (langName) =>
+  `You are a professional translator. Translate the user message into ${langName}. ` +
+  "Return just the translated text — no explanations, no notes, no alternatives.";
+
+// Strict JSON Schema for response_format: structured outputs. Pairs are
+// objects ({zh, en}) rather than 2-element tuples, since fixed-length tuple
+// arrays aren't reliably validated by every provider's strict-mode
+// implementation — objects with required/additionalProperties:false are.
+const TOKENS_SCHEMA = {
+  name: "translation_tokens",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: {
+      t: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            zh: { type: "string" },
+            en: { type: "string" },
+          },
+          required: ["zh", "en"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["t"],
+    additionalProperties: false,
+  },
+};
+
+// Strict JSON Schema for the plain (non-Chinese) response: a single string.
+const PLAIN_SCHEMA = {
+  name: "translation",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: { translation: { type: "string" } },
+    required: ["translation"],
+    additionalProperties: false,
+  },
+};
+
+// Calls OpenRouter with the given system prompt and strict response schema, and
+// routes to the highest-throughput provider that supports the parameters.
+// reasoning is explicitly disabled: DeepSeek V4 Flash defaults to "thinking
+// mode" on, which (a) can push the actual answer into a separate reasoning
+// field instead of message.content, leaving content empty, and (b) eats into
+// the token budget, truncating the JSON on longer inputs. max_tokens is set
+// explicitly for the same reason — without it, truncation on longer texts
+// silently produces broken JSON.
+function callOpenRouter(key, text, system, schema) {
   return fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -34,14 +97,44 @@ function callOpenRouter(key, text) {
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.2,
-      response_format: { type: "json_object" },
-      provider: { sort: "throughput" },
+      max_tokens: MAX_TOKENS,
+      reasoning: { enabled: false },
+      response_format: { type: "json_schema", json_schema: schema },
+      provider: { sort: "throughput", require_parameters: true },
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: system },
         { role: "user", content: text },
       ],
     }),
   });
+}
+
+// Wraps callOpenRouter with a couple of retries on transient failures
+// (network errors, 429 rate limit, 5xx from the provider). Non-transient
+// errors (4xx other than 429) are returned immediately without retrying.
+async function callOpenRouterWithRetry(key, text, system, schema) {
+  let lastErr;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const resp = await callOpenRouter(key, text, system, schema);
+      if (resp.ok) return resp;
+      if (resp.status === 429 || resp.status >= 500) {
+        lastErr = new Error(`OpenRouter ${resp.status}`);
+        if (attempt < MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          continue;
+        }
+      }
+      return resp; // non-retriable error status, return as-is
+    } catch (e) {
+      lastErr = e;
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        continue;
+      }
+    }
+  }
+  throw lastErr;
 }
 
 const CORS = {
@@ -84,9 +177,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  let text;
+  let text, target, gloss;
   try {
-    ({ text } = await req.json());
+    ({ text, target, gloss } = await req.json());
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
   }
@@ -97,13 +190,20 @@ Deno.serve(async (req) => {
   if (text.length > MAX_CHARS) {
     return json({ error: `Text too long (max ${MAX_CHARS} chars)` }, 413);
   }
+  // Default to Chinese for older clients that don't send a target; glosses default
+  // to English if the client doesn't specify (or sends an unsupported language).
+  target = typeof target === "string" && LANGS[target] ? target : "zh";
+  gloss = typeof gloss === "string" && GLOSS_LANGS[gloss] ? gloss : "en";
+  const isZh = target === "zh";
+  const system = isZh ? zhPrompt(GLOSS_LANGS[gloss]) : plainPrompt(LANGS[target]);
+  const schema = isZh ? TOKENS_SCHEMA : PLAIN_SCHEMA;
 
   const key = Deno.env.get("OPENROUTER_API_KEY")?.trim();
   if (!key) return json({ error: "Server not configured" }, 500);
 
   let resp;
   try {
-    resp = await callOpenRouter(key, text);
+    resp = await callOpenRouterWithRetry(key, text, system, schema);
   } catch (e) {
     return json({ error: "Upstream request failed", detail: String(e) }, 502);
   }
@@ -114,16 +214,41 @@ Deno.serve(async (req) => {
   }
 
   const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content?.trim();
-  if (!content) return json({ error: "Empty translation" }, 502);
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content?.trim();
+  if (!content) {
+    // Surface finish_reason so logs tell you why: "length" = truncated by
+    // max_tokens, anything else = model genuinely returned nothing.
+    console.error("Empty content from OpenRouter", {
+      finish_reason: choice?.finish_reason,
+      choice,
+    });
+    return json(
+      { error: "Empty translation", finish_reason: choice?.finish_reason },
+      502,
+    );
+  }
+
+  const parsed = parseModelJson(content);
+
+  // Non-Chinese targets: plain translation, no tokens.
+  if (!isZh) {
+    const out = (typeof parsed?.translation === "string" && parsed.translation.trim())
+      ? parsed.translation.trim()
+      : content;
+    if (!out) return json({ error: "Empty translation" }, 502);
+    return json({ translation: out, tokens: null }, 200);
+  }
 
   // Expand the compact pairs into { zh, en } tokens and rebuild the full
   // translation by joining the words. Accepts the legacy object shape too, and
   // degrades to the raw reply if nothing parseable comes back.
   let translation = "";
   let tokens = null;
-  const parsed = parseModelJson(content);
-  const pairs = Array.isArray(parsed?.t) ? parsed.t
+  // The model is asked for {"t": [...]} but sometimes ignores the wrapper and
+  // returns the bare array directly — accept that shape too.
+  const pairs = Array.isArray(parsed) ? parsed
+    : Array.isArray(parsed?.t) ? parsed.t
     : Array.isArray(parsed?.tokens) ? parsed.tokens
     : null;
   if (pairs) {
@@ -139,6 +264,10 @@ Deno.serve(async (req) => {
       ? parsed.translation.trim()
       : content;
     tokens = null;
+    console.error("Unparseable model JSON", {
+      finish_reason: choice?.finish_reason,
+      contentPreview: content.slice(0, 300),
+    });
   }
   if (!translation) return json({ error: "Empty translation" }, 502);
 

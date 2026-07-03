@@ -14,6 +14,24 @@ const PUNCT_RE   = /^[\s\p{P}]+$/u;
 const CJK_RE     = /[㐀-鿿豈-﫿]/;     // han characters
 const WORD_RE    = /[\p{L}\p{N}]/u;                     // any letter or number
 
+// Output languages. Chinese ('zh') is the rich mode (tokens + pinyin + cloud TTS);
+// the others return a plain translation, spoken via the browser's Web Speech in
+// the matching locale. `label` is what the composer pill shows.
+export const TR_LANGS = {
+  zh: { label: '中文',    speech: 'zh-CN' },
+  en: { label: 'English', speech: 'en-US' },
+  es: { label: 'Español', speech: 'es-ES' },
+};
+
+// The chosen output language. Always defaults to Chinese on load (not persisted);
+// a change only lasts for the current session.
+let trTarget = 'zh';
+export function getTrTarget() { return trTarget; }
+export function setTrTarget(lang) {
+  if (!TR_LANGS[lang]) return;
+  trTarget = lang;
+}
+
 let segment, addDict, OutputFormat, pinyin;
 let libsPromise = null; // de-dupes concurrent loads
 
@@ -36,14 +54,20 @@ function ensureLibs() {
 }
 
 // DeepSeek via the Supabase Edge Function (proxies OpenRouter server-side).
-// DeepSeek detects the source language itself and returns the translation
-// already segmented into word tokens, each with a literal English gloss.
-// Resolves to { translation, tokens } — tokens may be null (raw-text fallback).
-async function translateToChinese(text) {
-  if (CJK_RE.test(text)) return { translation: text, tokens: null }; // already Chinese
+// DeepSeek detects the source language itself. For Chinese ('zh') it returns the
+// translation already segmented into word tokens with English glosses; for other
+// targets it returns just the translation (tokens null).
+// Resolves to { translation, tokens } — tokens may be null.
+async function translate(text, target) {
+  // Only short-circuit when the text is already in the requested language.
+  if (target === 'zh' && CJK_RE.test(text)) return { translation: text, tokens: null };
 
-  // Cache identical inputs in localStorage — repeated phrases return instantly.
-  const cacheKey = 'tr:' + text;
+  // Per-word glosses (Chinese mode) are written in the app's UI language.
+  const gloss = state.lang === 'es' ? 'es' : 'en';
+
+  // Cache identical inputs in localStorage — repeats return instantly. The key
+  // includes the gloss language for Chinese, whose tokens depend on it.
+  const cacheKey = target === 'zh' ? `tr:${target}:${gloss}:${text}` : `tr:${target}:${text}`;
   try {
     const hit = localStorage.getItem(cacheKey);
     if (hit) return JSON.parse(hit);
@@ -55,7 +79,7 @@ async function translateToChinese(text) {
       'Authorization': `Bearer ${SUPA_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, target, gloss }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -260,6 +284,24 @@ export async function speak(text, onState) {
   }
 }
 
+// Speaks non-Chinese translations with the browser's Web Speech in the given
+// locale (cloud TTS is Chinese-only). Picks a voice matching the language when the
+// OS provides one, else lets the engine choose. `onState` toggles UI feedback.
+export function speakInLang(text, speechLang, onState) {
+  if (!('speechSynthesis' in window) || !text) { onState?.(false); return; }
+  stopPlayback();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = speechLang;
+  const base = speechLang.slice(0, 2).toLowerCase();
+  const voice = speechSynthesis.getVoices().find(v => v.lang?.toLowerCase().startsWith(base));
+  if (voice) u.voice = voice;
+  u.rate = 0.95;
+  onState?.(true);
+  u.onend = () => onState?.(false);
+  u.onerror = () => onState?.(false);
+  speechSynthesis.speak(u);
+}
+
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -385,7 +427,14 @@ export function initTranslator() {
   // pull-to-refresh gesture — a pull discards the whole conversation).
   async function discardChat() {
     const id = chatId;
-    newChat();
+    // Glide the messages up and fade them before wiping, so the clear feels smooth
+    // rather than an abrupt disappearance.
+    if (conversationEl.children.length) {
+      conversationEl.classList.add('clearing');
+      await new Promise(r => setTimeout(r, 300));
+    }
+    newChat();                              // clears the (now invisible) messages
+    conversationEl.classList.remove('clearing');   // reset — empty, so no flash
     if (!id) return;
     if (!state.supaUser) {
       localChatsSet(localChatsGet().filter(x => x.chat_id !== id));
@@ -395,9 +444,11 @@ export function initTranslator() {
     if (document.body.classList.contains('recents-open')) loadHistory();
   }
 
-  // Appends one resolved translation as a chat message (Original / Hanzi /
-  // Tokens) with its own listen, copy and reveal-glosses controls.
-  function appendMessage(original, zh, tokens) {
+  // Appends one resolved translation as a chat message. For Chinese it's the rich
+  // layout (Original / Hanzi / Tokens); for other targets just Original / Translation
+  // — the tokenized section and glosses are dropped and TTS uses Web Speech.
+  function appendMessage(original, translation, tokens, target = 'zh') {
+    const isZh = target === 'zh';
     const msg = msgTemplate.content.firstElementChild.cloneNode(true);
     applyStaticTranslations(msg);   // localize the cloned section titles
     const originalEl = msg.querySelector('.js-original');
@@ -408,13 +459,23 @@ export function initTranslator() {
     const eyeBtn     = msg.querySelector('.js-eye');
 
     originalEl.textContent = original;
-    zhLineEl.textContent   = zh;
-    renderTokens(zh, tokens, resultEl);
+    zhLineEl.textContent   = translation;
 
-    // Listen to the full Chinese sentence.
+    if (isZh) {
+      renderTokens(translation, tokens, resultEl);
+    } else {
+      // Plain translation: relabel the section, drop the tokenized block.
+      const head = msg.querySelector('.tr-zh-head span');
+      if (head) head.textContent = t('tr.translation');
+      resultEl.closest('.tr-section')?.remove();
+    }
+
+    // Listen to the translated sentence: cloud TTS for Chinese, Web Speech otherwise.
     if (canSpeak) {
       speakBtn.addEventListener('click', () => {
-        speak(zhLineEl.textContent, on => speakBtn.classList.toggle('playing', on));
+        const cb = on => speakBtn.classList.toggle('playing', on);
+        if (isZh) speak(zhLineEl.textContent, cb);
+        else      speakInLang(zhLineEl.textContent, (TR_LANGS[target] || TR_LANGS.zh).speech, cb);
       });
     } else {
       speakBtn.style.display = 'none';
@@ -471,12 +532,14 @@ export function initTranslator() {
     input.value = '';
     autoGrow(); syncCount();
     try {
-      await ensureLibs();
-      const { translation: zh, tokens } = await translateToChinese(text);
-      appendMessage(text, zh, tokens);
+      const target = trTarget;
+      // pinyin-pro is only needed for the Chinese (tokenized) path.
+      if (target === 'zh') await ensureLibs();
+      const { translation: zh, tokens } = await translate(text, target);
+      appendMessage(text, zh, tokens, target);
       // Append to the current chat and save the whole conversation as one entry.
       if (!chatId) chatId = newChatId();
-      messages.push({ source_text: text, translation: zh, tokens: tokens ?? null });
+      messages.push({ source_text: text, translation: zh, tokens: tokens ?? null, target });
       saveChat({ chat_id: chatId, title: chatTitle(messages), messages, updated_at: new Date().toISOString() })
         .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
@@ -519,6 +582,58 @@ export function initTranslator() {
   syncCount();
 
   wireMic(input, () => { autoGrow(); syncCount(); });
+
+  // ── OUTPUT LANGUAGE PICKER ──
+  // A subtle language-code button (zh / en / es) on the left of the composer opens
+  // a little popover above it. Chinese keeps the full tokenized mode; other targets
+  // get a plain translation (see appendMessage). The button label always shows the
+  // current output language, so the choice is discoverable at a glance.
+  const langBtn  = document.getElementById('trLang');
+  const langCode = document.getElementById('trLangCode');
+  if (langBtn) {
+    const langMenu = document.createElement('div');
+    langMenu.className = 'tr-lang-menu';
+    langMenu.innerHTML = Object.entries(TR_LANGS)
+      .map(([code, { label }]) => `<button type="button" class="tr-lang-opt" data-lang="${code}">${label}</button>`)
+      .join('');
+    // Anchor it inside the input bar (position:absolute in CSS), so it stays glued
+    // to the bar and moves with it — fixed positioning drifts when the on-screen
+    // keyboard shifts the visual viewport.
+    (langBtn.closest('.tr-input-field') || document.body).appendChild(langMenu);
+
+    // Reflect the current target in the composer code and the header subtitle
+    // ("Any language → <language>"). The subtitle prefix is localized separately
+    // via data-i18n, so we only own the language name here.
+    const subLang = document.getElementById('trSubLang');
+    const syncBtn = () => {
+      const label = TR_LANGS[getTrTarget()].label;
+      if (langCode) langCode.textContent = getTrTarget();
+      if (subLang)  subLang.textContent  = label;
+    };
+    syncBtn();
+
+    const closeLangMenu = () => { langMenu.classList.remove('open'); langBtn.classList.remove('open'); };
+    const openLangMenu = () => {
+      langMenu.querySelectorAll('.tr-lang-opt').forEach(o => o.classList.toggle('active', o.dataset.lang === getTrTarget()));
+      langMenu.classList.add('open');
+      langBtn.classList.add('open');
+    };
+
+    langBtn.addEventListener('click', () => {
+      langMenu.classList.contains('open') ? closeLangMenu() : openLangMenu();
+    });
+    langMenu.addEventListener('click', e => {
+      const opt = e.target.closest('.tr-lang-opt');
+      if (!opt) return;
+      setTrTarget(opt.dataset.lang);
+      syncBtn();
+      closeLangMenu();
+    });
+    document.addEventListener('pointerdown', e => {
+      if (langMenu.classList.contains('open') && !langMenu.contains(e.target) && !langBtn.contains(e.target)) closeLangMenu();
+    }, true);
+    window.addEventListener('resize', closeLangMenu);
+  }
 
   // ── HISTORY DRAWER ──
   const historyBtn      = document.getElementById('trHistoryBtn');
@@ -732,7 +847,8 @@ export function initTranslator() {
     conversationEl.innerHTML = '';
     chatId = row.chat_id;
     messages = (row.messages || []).map(m => ({ ...m }));
-    messages.forEach(m => appendMessage(m.source_text, m.translation, m.tokens));
+    // Older saved messages have no target — they were Chinese.
+    messages.forEach(m => appendMessage(m.source_text, m.translation, m.tokens, m.target || 'zh'));
   }
 
   historyBtn?.addEventListener('click', openHistory);
@@ -801,6 +917,7 @@ export function initTranslator() {
     disc:      document.getElementById('trPull'),
     content:   document.getElementById('trContent'),
     onRefresh: discardChat,
+    exitUp:    true,    // wheel + caption glide up and fade with the cleared messages
     haptic:    buzz,    // buzz() handles iOS (no Vibration API) via the haptic switch
     // A longer, harder pull than the default so it isn't triggered by accident.
     trigger:   96,

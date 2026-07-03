@@ -13,7 +13,8 @@
    `readyText` once the threshold is crossed. */
 export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
                                    trigger = 56, max = 92, damp = 80,
-                                   label = null, pullText = '', readyText = '' }) {
+                                   label = null, pullText = '', readyText = '',
+                                   exitUp = false }) {
   if (!scroll || !disc) return;
 
   const TRIGGER = trigger;   // pull distance (px, after damping) that fires
@@ -46,11 +47,11 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
   let startY = 0, startX = 0, active = false, locked = false, ready = false;
 
   const reset = () => {
-    disc.classList.remove('dragging', 'ready', 'spinning');
+    disc.classList.remove('dragging', 'ready', 'spinning', 'exiting');
     disc.style.opacity = '';
     disc.style.transform = '';
     bars.forEach(b => { b.style.opacity = ''; });
-    if (label) { label.classList.remove('dragging', 'ready'); label.style.opacity = ''; label.style.transform = ''; }
+    if (label) { label.classList.remove('dragging', 'ready', 'exiting'); label.style.opacity = ''; label.style.transform = ''; }
     if (content) { content.classList.remove('dragging'); content.style.transform = ''; }
   };
 
@@ -95,7 +96,23 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
     active = false;
     if (!locked) return;
     if (content) { content.classList.remove('dragging'); content.style.transform = ''; }  // snap content back
-    if (ready) {
+    if (ready && exitUp) {
+      // Glide the wheel + caption up and fade them, together with the content the
+      // action clears — everything rises off the top in sync (see .exiting in CSS).
+      haptic?.();
+      disc.classList.remove('dragging', 'ready');
+      disc.classList.add('exiting');
+      disc.style.opacity = '0';
+      disc.style.transform = 'translateY(-48px)';
+      if (label) {
+        label.classList.remove('dragging');
+        label.classList.add('exiting');
+        label.style.opacity = '0';
+        label.style.transform = 'translateY(-48px)';
+      }
+      onRefresh?.();                             // content glides up at the same time
+      setTimeout(reset, 340);
+    } else if (ready) {
       disc.classList.remove('dragging', 'ready');
       disc.classList.add('spinning');
       disc.style.opacity = '1';
