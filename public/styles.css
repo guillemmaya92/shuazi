@@ -952,6 +952,32 @@ body.account-open .account-scrim { pointer-events: auto; }
   transition:transform .3s cubic-bezier(.4,0,.2,1), opacity .3s ease;
   transform:translateY(-28px); opacity:0;
 }
+
+/* "New chat" archive animation: a body-level clone of the messages, presented as a
+   clean elevated card, that recedes into the Recents icon (see archiveToRecents in
+   translator.js). Fixed so the scroller can't clip it; collapses from its top edge
+   toward the icon. */
+.tr-archive-fly {
+  position:fixed; z-index:200; pointer-events:none; transform-origin:50% 0;
+  box-sizing:border-box; padding:12px; max-height:44vh; overflow:hidden;
+  border-radius:20px; border:1px solid var(--bdr);
+  background:var(--surf2);   /* solid card — no backdrop blur, smoother + more stable */
+  box-shadow:0 24px 60px rgba(0,0,0,.30), 0 2px 8px rgba(0,0,0,.12);
+  /* motion is driven by the Web Animations API in translator.js */
+}
+/* Long chats: cap the card and fade its bottom edge, like a preview thumbnail. */
+.tr-archive-fly.clipped {
+  -webkit-mask-image:linear-gradient(to bottom, #000 66%, transparent);
+          mask-image:linear-gradient(to bottom, #000 66%, transparent);
+}
+/* The Recents icon springs as the card lands in it. */
+@keyframes tr-recents-pulse {
+  0%   { transform:scale(1); }
+  35%  { transform:scale(1.22); }
+  60%  { transform:scale(.96); }
+  100% { transform:scale(1); }
+}
+.tr-recents-pulse { animation:tr-recents-pulse .52s cubic-bezier(.34,1.56,.64,1); }
 .tr-message { display:flex; flex-direction:column; gap:12px; }
 .tr-message + .tr-message { border-top:1px solid var(--bdr); padding-top:12px; }
 

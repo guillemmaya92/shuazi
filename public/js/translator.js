@@ -410,6 +410,14 @@ export function initTranslator() {
   let chatId = null;
   let messages = [];
 
+  // "New chat" only makes sense once there's something to clear — a message on
+  // screen or text being typed. Hidden on an empty, fresh chat.
+  const syncNewChatBtn = () => {
+    if (!newChatBtn) return;
+    const hasContent = conversationEl.children.length > 0 || input.value.trim() !== '';
+    newChatBtn.style.display = hasContent ? '' : 'none';
+  };
+
   // Starts a fresh conversation: clears the on-screen messages and the input.
   // The previous chat is already saved, so it just becomes a Recents entry.
   function newChat() {
@@ -419,9 +427,57 @@ export function initTranslator() {
     input.value = '';
     chatId = null;
     messages = [];
-    autoGrow(); syncCount();
+    autoGrow(); syncCount(); syncNewChatBtn();
   }
-  newChatBtn?.addEventListener('click', newChat);
+
+  // "New chat" archives the current conversation (already saved to Recents) and
+  // opens a fresh one. To make that legible, a fixed-position clone of the messages
+  // flies up into the Recents icon (which pulses) while the real chat resets
+  // underneath instantly. The clone lives on <body> so the scroller can't clip it
+  // as it crosses into the header.
+  function archiveToRecents() {
+    const histBtn = document.getElementById('trHistoryBtn');
+    if (!histBtn || !conversationEl.children.length) { newChat(); return; }
+
+    const from = conversationEl.getBoundingClientRect();
+    const to   = histBtn.getBoundingClientRect();
+    const PAD  = 10;   // card inset; the fly grows by this so its content stays put
+
+    const fly = document.createElement('div');
+    fly.className = 'tr-archive-fly';
+    fly.style.left  = (from.left - PAD) + 'px';
+    fly.style.top   = (from.top  - PAD) + 'px';
+    fly.style.width = (from.width + PAD * 2) + 'px';
+    // Tall chats become a capped preview card with a soft bottom fade.
+    if (from.height > window.innerHeight * 0.44) fly.classList.add('clipped');
+    fly.appendChild(conversationEl.cloneNode(true));
+    document.body.appendChild(fly);
+
+    newChat();   // reset the real conversation now — the fresh chat is already visible
+    buzz?.(12);  // subtle haptic tick, iOS-style
+
+    // Spring the card up (anticipation) then let it decelerate into the Recents icon
+    // — a two-phase iOS-like "pick up and file away". Origin top-centre → it collapses
+    // upward as it shrinks. Web Animations API so each leg can have its own easing.
+    const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+    const dy = (to.top  + to.height / 2) - (from.top - PAD);
+    const anim = fly.animate([
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: 'translate(0,-12px) scale(1.03)', opacity: 1, offset: .18, easing: 'cubic-bezier(.34,1.56,.64,1)' },
+      { transform: `translate(${dx}px, ${dy}px) scale(.06)`, opacity: 0, easing: 'cubic-bezier(.5,0,.15,1)' },
+    ], { duration: 600, fill: 'forwards' });
+    anim.onfinish = () => fly.remove();
+
+    // Spring pop on the icon as the card lands.
+    setTimeout(() => {
+      histBtn.classList.add('tr-recents-pulse');
+      setTimeout(() => histBtn.classList.remove('tr-recents-pulse'), 520);
+    }, 380);
+  }
+
+  newChatBtn?.addEventListener('click', () => {
+    conversationEl.children.length ? archiveToRecents() : newChat();
+  });
 
   // Like newChat, but also deletes the current chat from Recents (used by the
   // pull-to-refresh gesture — a pull discards the whole conversation).
@@ -520,6 +576,7 @@ export function initTranslator() {
     emptyEl.style.display = 'none';
     conversationEl.appendChild(msg);
     scrollToBottom();
+    syncNewChatBtn();
   }
 
   async function handleSubmit() {
@@ -578,10 +635,11 @@ export function initTranslator() {
   const syncCount = () => {
     if (countEl) countEl.textContent = input.value.length;
   };
-  input.addEventListener('input', () => { autoGrow(); syncCount(); });
+  input.addEventListener('input', () => { autoGrow(); syncCount(); syncNewChatBtn(); });
   syncCount();
+  syncNewChatBtn();   // hidden on the initial empty chat
 
-  wireMic(input, () => { autoGrow(); syncCount(); });
+  wireMic(input, () => { autoGrow(); syncCount(); syncNewChatBtn(); });
 
   // ── OUTPUT LANGUAGE PICKER ──
   // A subtle language-code button (zh / en / es) on the left of the composer opens
