@@ -52,6 +52,9 @@ export async function openStrokeOrder(char) {
         <button class="stroke-btn stroke-radical" type="button" aria-label="${t('stroke.radical')}" aria-pressed="false" disabled>
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.7s6.5 6 6.5 10.8a6.5 6.5 0 0 1-13 0C5.5 8.7 12 2.7 12 2.7Z"/></svg>
         </button>
+        <button class="stroke-btn stroke-grid" type="button" aria-label="${t('stroke.grid')}" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
+        </button>
         <button class="stroke-nav stroke-next" type="button" aria-label="${t('stroke.next')}" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
     </div>`;
@@ -72,6 +75,7 @@ export async function openStrokeOrder(char) {
   const replayBtn   = backdrop.querySelector('.stroke-replay');
   const writeBtn    = backdrop.querySelector('.stroke-write');
   const radicalBtn  = backdrop.querySelector('.stroke-radical');
+  const gridBtn     = backdrop.querySelector('.stroke-grid');
   const prevBtn     = backdrop.querySelector('.stroke-prev');
   const nextBtn     = backdrop.querySelector('.stroke-next');
 
@@ -155,6 +159,19 @@ export async function openStrokeOrder(char) {
 
   radicalBtn.disabled = false;
   radicalBtn.addEventListener('click', () => setRadical(!radicalOn));
+
+  // Field grid (米字格): a faint dashed frame with a cross + diagonals behind the
+  // glyph, to gauge stroke proportion/placement. Toggled on every target so it
+  // persists while stepping through a word's characters.
+  let gridOn = false;
+  const setGrid = on => {
+    gridOn = on;
+    targetEls.forEach(el => el.classList.toggle('grid-on', on));
+    gridBtn.classList.toggle('active', on);
+    gridBtn.setAttribute('aria-pressed', String(on));
+  };
+  gridBtn.disabled = false;
+  gridBtn.addEventListener('click', () => setGrid(!gridOn));
 
   // Multi-character words: step through one glyph at a time with the side arrows.
   if (chars.length > 1) {
