@@ -1803,6 +1803,25 @@ export function renderProfile() {
 /* ── SLANG ── */
 function shuffleArr(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = 0 | Math.random() * (i + 1); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 
+// Scale a phrase title down only if it would overflow its row, keeping the largest
+// size (≤ the CSS 2.8em) that still fits on one line.
+function fitHanziLine(el) {
+  if (!el) return;
+  el.style.fontSize = '';                 // back to the CSS default (2.8em)
+  const box = el.clientWidth;
+  if (box > 0 && el.scrollWidth > box) {
+    el.style.fontSize = (2.8 * (box / el.scrollWidth) * 0.98).toFixed(3) + 'em';
+  }
+}
+// One observer refits every visible title on any size change — card insertion (the
+// initial observe callback), viewport/orientation, or the app panel resizing the
+// deck — so there are no scattered refit calls. It watches each `.phrase-text` box
+// (not the title itself), whose size is layout-driven and unaffected by the title's
+// font-size, so refitting can never feed back into a resize loop.
+const hanziFitRO = new ResizeObserver(entries => {
+  for (const e of entries) fitHanziLine(e.target.querySelector('.phrase-hanzi'));
+});
+
 function makeSlangCardEl(phrase, isStack) {
   const card = document.createElement('div');
   card.className = 'card phrase-card ' + (isStack ? 'stack-under' : 'top');
@@ -1819,6 +1838,7 @@ function makeSlangCardEl(phrase, isStack) {
       ${phrase.image ? `<img src="./images/${phrase.image}" alt="${phrase.id}" class="phrase-img" draggable="false" onerror="this.style.display='none'"/>` : ''}
     </div>
   `;
+  hanziFitRO.observe(card.querySelector('.phrase-text'));
   return card;
 }
 
@@ -1832,6 +1852,7 @@ function makeSlangCardEl(phrase, isStack) {
 export function renderSlang() {
   const deckPhrEl = document.getElementById('deck-slang');
   if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
+  hanziFitRO.disconnect();   // drop observations on the cards we're about to discard
   deckPhrEl.innerHTML = '';
   if (state.slangDeck.length > 1) deckPhrEl.appendChild(makeSlangCardEl(state.slangDeck[1], true));
   const top = makeSlangCardEl(state.slangDeck[0], false);
@@ -1889,7 +1910,11 @@ function attachPhraseSwipe(cardEl, phrase) {
       deckPhrEl.insertBefore(makeSlangCardEl(state.slangDeck[1], true), deckPhrEl.firstChild);
     }
 
-    setTimeout(() => cardEl.remove(), 230);
+    setTimeout(() => {
+      const pt = cardEl.querySelector('.phrase-text');
+      if (pt) hanziFitRO.unobserve(pt);   // stop observing the card we're removing
+      cardEl.remove();
+    }, 230);
   }
   function onEnd() {
     if (!active) return; active = false;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <!-- Apply the saved theme before first paint (shared with the dictionary site) -->
-  <script>(function(){try{var t=localStorage.getItem('shuazi-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('shuazi-theme')||'light';document.documentElement.dataset.theme=t;}catch(e){}})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="mobile-web-app-capable" content="yes"/>
