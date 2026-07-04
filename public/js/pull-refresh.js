@@ -20,6 +20,10 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
   const TRIGGER = trigger;   // pull distance (px, after damping) that fires
   const MAX     = max;       // asymptote — the ring can't be dragged past this
   const DAMP    = damp;      // rubber-band stiffness (higher = looser)
+  // How far the disc/caption lag the content as it's pulled down. The larger this
+  // is relative to the disc's ~40px height offset, the bigger the gap left between
+  // the wheel and the content below it (~16px here, instead of touching).
+  const DISC_LEAD = 56;
 
   const bars = Array.from(disc.querySelectorAll('.pull-spinner line'));
   // Graduated opacity around the ring (comet trail); the brightest bar leads.
@@ -32,7 +36,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
 
   // Optional caption that sits just above the disc (in the gap opened by the
   // pull, so it never overlaps the content) and flips text once armed. It shares
-  // the disc's transform (dist - 40) to stay glued to the wheel. `pullText` /
+  // the disc's transform (dist - DISC_LEAD) to stay glued to the wheel. `pullText` /
   // `readyText` may be a function (resolved each frame) so a live language change
   // is reflected without re-wiring.
   const resolve = v => (typeof v === 'function' ? v() : v);
@@ -40,7 +44,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
     if (!label) return;
     label.textContent = isReady ? resolve(readyText) : resolve(pullText);
     label.style.opacity = frac.toString();
-    label.style.transform = `translateY(${dist - 40}px)`;
+    label.style.transform = `translateY(${dist - DISC_LEAD}px)`;
     label.classList.toggle('ready', isReady);
   };
 
@@ -84,7 +88,7 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
     if (nowReady && !ready) haptic?.();          // tick the instant the threshold is crossed
     ready = nowReady;
     disc.style.opacity = frac.toString();
-    disc.style.transform = `translateY(${dist - 40}px)`;
+    disc.style.transform = `translateY(${dist - DISC_LEAD}px)`;
     disc.classList.toggle('ready', ready);
     setBars(frac);                               // bars fill in as you pull
     setLabel(frac, ready, dist);                 // caption follows + flips text

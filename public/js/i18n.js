@@ -50,7 +50,7 @@ const STRINGS = {
     // headers / screens
     'app.sub.cards': 'learn by swiping',
     'groups.title': 'HSK Groups',
-    'groups.sub': 'Tap a character to see details',
+    'groups.sub': 'Tap to see details',
     'slang.title': 'Slang',
     'slang.sub': 'Chinese culture & slang',
     'translator.title': 'Translator',
