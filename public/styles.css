@@ -1239,23 +1239,35 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-section { display:flex; flex-direction:column; gap:8px; }
 
 /* Hanzi result header: title + listen/clear actions on the right. */
-.tr-zh-head { display:flex; align-items:center; justify-content:space-between; }
-.tr-zh-actions { display:flex; gap:8px; }
+/* Copy / listen sit just below the translation (ChatGPT-style), a touch smaller
+   than the composer's action buttons, with a slight left margin. */
+.tr-zh-actions { display:flex; gap:6px; margin-top:2px; margin-left:2px; }
+.tr-zh-actions .tr-btn { width:26px; height:26px; }
+.tr-zh-actions .tr-btn svg { width:14px; height:14px; }
 
-/* Listen button (next to the Hanzi result title) */
-.tr-speak { width:31px; height:31px; }
-.tr-speak svg { width:15px; height:15px; }
-
-/* Listen — grey variant */
-.tr-speak {
-  background:color-mix(in srgb, var(--muted) 14%, transparent);
-  border-color:color-mix(in srgb, var(--muted) 32%, transparent);
+/* Listen button — small, borderless (ChatGPT-style): a bare muted icon that only
+   shows a faint background on hover. */
+.tr-speak { width:26px; height:26px; }
+.tr-speak svg { width:14px; height:14px; }
+/* Pin every interactive state to the neutral ghost look, so .tr-btn's green
+   hover/active fills can't leak in and stick on touch (where :hover/:active don't
+   clear). The "on" fill comes ONLY from the JS-toggled .playing class, so it always
+   clears when the audio ends. Desktop gets a subtle hover, scoped to fine pointers. */
+.tr-speak,
+.tr-speak:hover,
+.tr-speak:active,
+.tr-speak:focus {
+  background:none; border-color:transparent;
   color:var(--muted); -webkit-text-fill-color:var(--muted);
 }
-.tr-speak:hover { background:color-mix(in srgb, var(--muted) 24%, transparent); }
-.tr-speak:active, .tr-speak.playing {
+.tr-speak.playing,
+.tr-speak.playing:hover,
+.tr-speak.playing:active {
   background:var(--muted); border-color:var(--muted);
   color:var(--surf2); -webkit-text-fill-color:var(--surf2);
+}
+@media (hover:hover) and (pointer:fine) {
+  .tr-speak:hover { background:color-mix(in srgb, var(--muted) 18%, transparent); }
 }
 
 /* Copy button (next to the Hanzi result title) — grey variant.
@@ -1265,20 +1277,20 @@ body.account-open .account-scrim { pointer-events: auto; }
    the green appears ONLY via the JS-toggled .copied class. Desktop adds a subtle
    hover affordance, scoped to fine pointers so touch never shows a stuck state. */
 .tr-copy {
-  width:31px; height:31px; position:relative;
-  --tr-copy-bg:color-mix(in srgb, var(--muted) 14%, transparent);
+  width:26px; height:26px; position:relative;
+  --tr-copy-bg:transparent;
 }
 .tr-copy,
 .tr-copy:hover,
 .tr-copy:active,
 .tr-copy:focus {
   background:var(--tr-copy-bg);
-  border-color:color-mix(in srgb, var(--muted) 32%, transparent);
+  border-color:transparent;
   color:var(--muted); -webkit-text-fill-color:var(--muted);
 }
 /* Both icons stacked; cross-fade + scale between them on copy. */
 .tr-copy svg {
-  width:15px; height:15px;
+  width:14px; height:14px;
   position:absolute; top:50%; left:50%;
   transition:opacity 200ms ease, transform 260ms cubic-bezier(.34,1.56,.64,1);
 }
@@ -1293,7 +1305,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-copy.copied .ic-copy   { opacity:0; transform:translate(-50%,-50%) scale(.5); }
 .tr-copy.copied .ic-copied { opacity:1; transform:translate(-50%,-50%) scale(1); }
 @media (hover:hover) and (pointer:fine) {
-  .tr-copy:hover { --tr-copy-bg:color-mix(in srgb, var(--muted) 24%, transparent); }
+  .tr-copy:hover { --tr-copy-bg:color-mix(in srgb, var(--muted) 18%, transparent); }
 }
 
 /* The user's input as a ChatGPT-style bubble, aligned to the right. */
@@ -1307,7 +1319,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 .tr-zh-line {
   font-family:var(--cjk);
-  font-size:1.3rem; line-height:1.5; color:var(--txt);
+  font-size:1rem; line-height:1.5; color:var(--txt);   /* match the sent bubble (.tr-bubble) */
   padding:0 2px;
 }
 
@@ -1319,8 +1331,12 @@ body.account-open .account-scrim { pointer-events: auto; }
   cursor:pointer; user-select:none; -webkit-touch-callout:none;
   transition:transform 120ms ease, border-color 150ms ease, background 150ms ease;
 }
-.tr-token:not(.punct):hover { border-color:color-mix(in srgb, var(--green) 45%, var(--bdr)); }
-.tr-token:not(.punct):active { transform:scale(.94); }
+/* Hover/press feedback only on fine pointers, so a tap never leaves a stuck green
+   border or scale on touch (the tapped word's state comes from .selected/.speaking). */
+@media (hover:hover) and (pointer:fine) {
+  .tr-token:not(.punct):hover { border-color:color-mix(in srgb, var(--green) 45%, var(--bdr)); }
+  .tr-token:not(.punct):active { transform:scale(.94); }
+}
 /* Animated gradient ring while the word is playing (same effect as the input). */
 .tr-token::before {
   content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
@@ -1348,13 +1364,15 @@ body.account-open .account-scrim { pointer-events: auto; }
   color:var(--txt); -webkit-text-fill-color:var(--txt);
 }
 /* Tokenized header: title + the show-all-meanings eye toggle. */
-.tr-tokens-head { display:flex; align-items:center; justify-content:space-between; }
 .tr-eye {
-  width:24px; height:24px; display:grid; place-items:center; flex:0 0 auto;
-  border-radius:50%; background:var(--surf); border:1px solid var(--bdr);
-  color:var(--muted); cursor:pointer; padding:0;
+  width:26px; height:26px; display:grid; place-items:center; flex:0 0 auto;
+  border-radius:50%; background:none; border:1px solid transparent;
+  color:var(--muted); -webkit-text-fill-color:var(--muted); cursor:pointer; padding:0;
 }
 .tr-eye svg { width:14px; height:14px; }
+@media (hover:hover) and (pointer:fine) {
+  .tr-eye:hover { background:color-mix(in srgb, var(--muted) 18%, transparent); }
+}
 .tr-eye:active { opacity:.6; }
 .tr-eye .ic-eye { display:none; }
 .tr-eye.showing .ic-eye { display:block; }

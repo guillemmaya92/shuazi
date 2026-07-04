@@ -368,10 +368,14 @@ function renderTokens(zhText, tokens, resultEl) {
     // shown only via the eye toggle in the section header.
     if (!isPunct) {
       el.addEventListener('click', () => {
-        // Mark this word as selected (keeps the gradient border), exclusive.
+        // Mark the word (gradient border) only while it plays; clear it once the
+        // audio ends so nothing stays highlighted afterwards.
         resultEl.querySelectorAll('.tr-token.selected').forEach(t => t.classList.remove('selected'));
         el.classList.add('selected');
-        speak(seg.origin, on => el.classList.toggle('speaking', on));
+        speak(seg.origin, on => {
+          el.classList.toggle('speaking', on);
+          if (!on) el.classList.remove('selected');
+        });
       });
     }
     resultEl.appendChild(el);
@@ -523,9 +527,7 @@ export function initTranslator() {
     if (isZh) {
       renderTokens(translation, tokens, resultEl);
     } else {
-      // Plain translation: relabel the section, drop the tokenized block.
-      const head = msg.querySelector('.tr-zh-head span');
-      if (head) head.textContent = t('tr.translation');
+      // Plain translation: drop the tokenized block (there's no title to relabel).
       resultEl.closest('.tr-section')?.remove();
     }
 
@@ -615,13 +617,8 @@ export function initTranslator() {
   }
 
   button.addEventListener('click', handleSubmit);
-  // Enter sends (chat-style); Shift+Enter inserts a newline.
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  });
+  // Enter inserts a newline (default textarea behaviour) — translate only via the
+  // send button, so a return never fires a translation.
 
   const inputField = input.parentElement;
   // Auto-grow the textarea to fit its content (capped by max-height in CSS).
@@ -941,6 +938,10 @@ export function initTranslator() {
     if (e.touches.length !== 1 || (!opened && !trScreen.classList.contains('active'))) { active = false; return; }
     // Don't hijack the tab-bar pill drag or text selection in the input.
     if (e.target.closest('.tabbar, .tr-input')) { active = false; return; }
+    // When text is selected, let the native selection handles be dragged freely
+    // (extend/shrink the selection) instead of stealing the gesture to open Recents.
+    const sel = window.getSelection();
+    if (!opened && sel && !sel.isCollapsed) { active = false; return; }
     startX = e.touches[0].clientX; startY = e.touches[0].clientY;
     // Content shift = panel width minus the 30px underlap (see CSS).
     width  = (historyPanel.offsetWidth || 330) - 30;
