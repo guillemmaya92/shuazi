@@ -1029,13 +1029,26 @@ body.account-open .account-scrim { pointer-events: auto; }
 
 /* Bottom composer (ChatGPT-style): pinned below the results scroll. */
 .tr-composer { flex:0 0 auto; padding-top:8px; }
+/* Composer: one row while the text is short (language · textarea · mic/send). Once
+   the text nears the controls, JS adds .multiline and it becomes two rows — textarea
+   full-width on top, controls below — so writing can continue across the whole line
+   (see updateComposerMode in translator.js). A grid with named areas keeps the
+   language button on the left in BOTH layouts. */
 .tr-input-field {
-  position:relative; display:flex; align-items:flex-end; gap:6px;
+  position:relative; display:grid; gap:6px; align-items:center;
+  grid-template-columns:auto 1fr auto;
+  grid-template-areas:"lang input tools";
   background:var(--surf2); border:1px solid var(--bdr); border-radius:24px;
-  padding:5px; --sb:0px;
+  padding:6px 8px; --sb:0px;
 }
-/* Mic + send live inside the box on the right, anchored to the bottom line. */
-.tr-input-tools { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+.tr-input-field.multiline {
+  grid-template-areas:
+    "input input input"
+    "lang  .     tools";
+}
+.tr-lang-add   { grid-area:lang; }
+.tr-input      { grid-area:input; }
+.tr-input-tools { grid-area:tools; display:flex; align-items:center; gap:6px; }
 /* Grow while held (press-and-hold), like the bottom tab bar. */
 .tr-input-tools .tr-btn:active:not(:disabled) { transform:scale(1.18); }
 
@@ -1044,7 +1057,7 @@ body.account-open .account-scrim { pointer-events: auto; }
    colour — near-black in light, near-white in dark. The 34px box is just a
    comfortable tap target — no background or border. */
 .tr-lang-add {
-  flex:0 0 auto; align-self:flex-start; height:34px; padding:0 4px; margin-right:-3px;
+  flex:0 0 auto; height:34px; padding:0 6px;
   display:flex; align-items:center; justify-content:center; cursor:pointer;
   background:none; border:0;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
@@ -1128,15 +1141,20 @@ body.account-open .account-scrim { pointer-events: auto; }
   /* starts as a single line and grows upward with content (see autoGrow in
      translator.js) up to --tr-max-lines, the em-based maths adapting to zoom. */
   --tr-max-lines:6;
-  flex:1; min-width:0;
-  min-height:36px; resize:none; overflow-y:auto;
+  min-width:0; width:100%; box-sizing:border-box;
+  min-height:28px; resize:none; overflow-y:auto;
   max-height:calc(var(--tr-max-lines) * 1.45em + 12px);
   background:transparent; border:none; border-radius:0;
   color:var(--txt); -webkit-text-fill-color:var(--txt);
   font:inherit; font-size:1.02rem; line-height:1.45;
-  padding:6px 8px; outline:none;
+  padding:4px 6px; outline:none;
 }
-.tr-input::placeholder { color:var(--faint); opacity:.6; }
+.tr-input::placeholder { color:var(--faint); opacity:.6; white-space:nowrap; }
+/* Only genuinely small screens (below any iPhone) shrink the font so the
+   placeholder still fits one row; the line-height scales with it, staying centred. */
+@media (max-width:370px) {
+  .tr-input { font-size:clamp(.72rem, 3.4vw, 1.02rem); }
+}
 
 .tr-btn {
   width:36px; height:36px; padding:0; border-radius:50%;

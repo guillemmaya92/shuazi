@@ -434,7 +434,7 @@ export function initTranslator() {
     input.value = '';
     chatId = null;
     messages = [];
-    autoGrow(); syncCount(); syncNewChatBtn();
+    autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
   }
 
   // "New chat" archives the current conversation (already saved to Recents) and
@@ -592,7 +592,7 @@ export function initTranslator() {
     button.classList.add('tr-loading');
     // Clear the box right after sending (chat-style); it reappears as a message.
     input.value = '';
-    autoGrow(); syncCount();
+    autoGrow(); syncCount(); updateComposerMode();
     try {
       const target = trTarget;
       // pinyin-pro is only needed for the Chinese (tokenized) path.
@@ -635,11 +635,48 @@ export function initTranslator() {
   const syncCount = () => {
     if (countEl) countEl.textContent = input.value.length;
   };
-  input.addEventListener('input', () => { autoGrow(); syncCount(); syncNewChatBtn(); });
-  syncCount();
-  syncNewChatBtn();   // hidden on the initial empty chat
 
-  wireMic(input, () => { autoGrow(); syncCount(); syncNewChatBtn(); });
+  // ── ONE-ROW ↔ TWO-ROW COMPOSER ──
+  // Switch to the two-row layout once the text no longer fits a single row (or has a
+  // newline). The check measures the text against the *single-row* available width
+  // via a hidden mirror, so it's independent of the current layout and can't
+  // oscillate (widening the box could otherwise make the text fit again → flip-flop).
+  const toolsEl = inputField.querySelector('.tr-input-tools');
+  const langEl  = document.getElementById('trLang');
+  const measurer = document.createElement('span');
+  measurer.setAttribute('aria-hidden', 'true');
+  measurer.style.cssText = 'position:absolute;left:-9999px;top:-9999px;white-space:pre;visibility:hidden;pointer-events:none;';
+  document.body.appendChild(measurer);
+  const singleRowTextWidth = () => {
+    const fCS = getComputedStyle(inputField);
+    const fieldContent = inputField.clientWidth - parseFloat(fCS.paddingLeft) - parseFloat(fCS.paddingRight);
+    const iCS = getComputedStyle(input);
+    const inputPad = parseFloat(iCS.paddingLeft) + parseFloat(iCS.paddingRight);
+    const controls = (langEl?.offsetWidth || 0) + (toolsEl?.offsetWidth || 0) + 6; // + bar gap
+    return fieldContent - 6 /* field↔bar gap */ - controls - inputPad;
+  };
+  const updateComposerMode = () => {
+    const val = input.value;
+    let multi = val.includes('\n');
+    if (!multi && val) {
+      const iCS = getComputedStyle(input);
+      measurer.style.fontFamily    = iCS.fontFamily;
+      measurer.style.fontSize      = iCS.fontSize;
+      measurer.style.fontWeight    = iCS.fontWeight;
+      measurer.style.letterSpacing = iCS.letterSpacing;
+      measurer.textContent = val;
+      multi = measurer.offsetWidth > singleRowTextWidth() - 4;   // -4: small margin
+    }
+    inputField.classList.toggle('multiline', multi);
+  };
+
+  input.addEventListener('input', () => { updateComposerMode(); autoGrow(); syncCount(); syncNewChatBtn(); });
+  syncCount();
+  syncNewChatBtn();       // hidden on the initial empty chat
+  updateComposerMode();   // start in single-row for the empty chat
+  window.addEventListener('resize', updateComposerMode);
+
+  wireMic(input, () => { updateComposerMode(); autoGrow(); syncCount(); syncNewChatBtn(); });
 
   // ── OUTPUT LANGUAGE PICKER ──
   // A subtle language-code button (zh / en / es) on the left of the composer opens
