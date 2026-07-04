@@ -30,8 +30,9 @@ const GLOSS_LANGS = { en: "English", es: "Spanish" };
 // translation/segmentation/gloss rules. The gloss is written in `glossName`
 // (the app's selected language).
 const zhPrompt = (glossName) =>
-  "You are a professional translator. Translate the user message into Simplified Chinese, then segment it into natural word-level tokens. " +
-  `Each "zh" is one Chinese word (or punctuation mark); each "en" is a short literal ${glossName} gloss for it in context — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ` +
+  `You are a professional translator. Every "gloss" you output MUST be written in ${glossName} — never in English or any other language (unless ${glossName} is English). ` +
+  "Translate the user message into Simplified Chinese, then segment it into natural word-level tokens. " +
+  `For each token: "zh" is one Chinese word (or punctuation mark); "gloss" is that word's short literal meaning in ${glossName} — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ` +
   "No pinyin, no explanations.";
 
 // Plain mode (any non-Chinese target): just the translation, no tokens/glosses.
@@ -39,10 +40,11 @@ const plainPrompt = (langName) =>
   `You are a professional translator. Translate the user message into ${langName}. ` +
   "Return just the translated text — no explanations, no notes, no alternatives.";
 
-// Strict JSON Schema for response_format: structured outputs. Pairs are
-// objects ({zh, en}) rather than 2-element tuples, since fixed-length tuple
-// arrays aren't reliably validated by every provider's strict-mode
-// implementation — objects with required/additionalProperties:false are.
+// Strict JSON Schema for response_format: structured outputs. Pairs are objects
+// ({zh, gloss}) rather than 2-element tuples, since fixed-length tuple arrays
+// aren't reliably validated by every provider's strict-mode implementation —
+// objects with required/additionalProperties:false are. `gloss` is language-neutral
+// (its language is whatever the app requested), unlike the old `en` field name.
 const TOKENS_SCHEMA = {
   name: "translation_tokens",
   strict: true,
@@ -55,9 +57,9 @@ const TOKENS_SCHEMA = {
           type: "object",
           properties: {
             zh: { type: "string" },
-            en: { type: "string" },
+            gloss: { type: "string" },
           },
-          required: ["zh", "en"],
+          required: ["zh", "gloss"],
           additionalProperties: false,
         },
       },
@@ -240,9 +242,9 @@ Deno.serve(async (req) => {
     return json({ translation: out, tokens: null }, 200);
   }
 
-  // Expand the compact pairs into { zh, en } tokens and rebuild the full
-  // translation by joining the words. Accepts the legacy object shape too, and
-  // degrades to the raw reply if nothing parseable comes back.
+  // Expand the compact pairs into { zh, gloss } tokens and rebuild the full
+  // translation by joining the words. Accepts a bare [zh, gloss] tuple and the
+  // legacy `en` key too, and degrades to the raw reply if nothing parses.
   let translation = "";
   let tokens = null;
   // The model is asked for {"t": [...]} but sometimes ignores the wrapper and
@@ -253,9 +255,12 @@ Deno.serve(async (req) => {
     : null;
   if (pairs) {
     tokens = pairs
-      .map((p) => (Array.isArray(p) ? { zh: p[0], en: p[1] } : p))
+      .map((p) => (Array.isArray(p) ? { zh: p[0], gloss: p[1] } : p))
       .filter((t) => t && typeof t.zh === "string" && t.zh.length)
-      .map((t) => ({ zh: t.zh, en: typeof t.en === "string" ? t.en.trim() : "" }));
+      .map((t) => {
+        const g = typeof t.gloss === "string" ? t.gloss : (typeof t.en === "string" ? t.en : "");
+        return { zh: t.zh, gloss: g.trim() };
+      });
     translation = tokens.map((t) => t.zh).join("");
   }
   if (!translation) {

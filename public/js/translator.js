@@ -55,8 +55,8 @@ function ensureLibs() {
 
 // DeepSeek via the Supabase Edge Function (proxies OpenRouter server-side).
 // DeepSeek detects the source language itself. For Chinese ('zh') it returns the
-// translation already segmented into word tokens with English glosses; for other
-// targets it returns just the translation (tokens null).
+// translation already segmented into word tokens, each with a per-word gloss in the
+// app's language; for other targets it returns just the translation (tokens null).
 // Resolves to { translation, tokens } — tokens may be null.
 async function translate(text, target) {
   // Only short-circuit when the text is already in the requested language.
@@ -306,8 +306,10 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-// Normalises the server tokens ({ zh, en }) into the render shape, computing
-// pinyin per word locally. `en` is the literal English gloss shown as a legend.
+// Normalises the server tokens ({ zh, gloss }) into the render shape, computing
+// pinyin per word locally. `gloss` is the literal per-word meaning (in the app's
+// language) shown as a legend. Falls back to the legacy `en` key so tokens saved by
+// older builds (in history / the localStorage cache) still show their glosses.
 function tokensFromServer(tokens) {
   return tokens
     .filter(t => t && typeof t.zh === 'string' && t.zh.length)
@@ -315,10 +317,11 @@ function tokensFromServer(tokens) {
       const origin = t.zh;
       const latin = !CJK_RE.test(origin) && WORD_RE.test(origin);
       const punct = !latin && PUNCT_RE.test(origin);
+      const gloss = typeof t.gloss === 'string' ? t.gloss : (typeof t.en === 'string' ? t.en : '');
       return {
         origin,
         result: latin || punct ? '' : pinyin(origin),
-        en: typeof t.en === 'string' ? t.en : '',
+        en: gloss,
         latin,
         punct,
       };
