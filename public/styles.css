@@ -1122,14 +1122,20 @@ body.account-open .account-scrim { pointer-events: auto; }
   color:var(--txt); -webkit-text-fill-color:var(--txt); font-weight:700;
 }
 
-/* Send button: fill completely on hover (pointer devices only, so the
-   fill doesn't "stick" after a tap on touchscreens). */
-#trGo { position:relative; }
+/* Send — ChatGPT-style solid circle: brand green with a white arrow; muted grey
+   while the input is empty (disabled). */
+#trGo {
+  position:relative;
+  background:var(--green); border-color:transparent;
+  color:#fff; -webkit-text-fill-color:#fff;
+}
+#trGo:disabled {
+  opacity:1;   /* always full flat green, even while empty */
+  background:var(--green); border-color:transparent;
+  color:#fff; -webkit-text-fill-color:#fff;
+}
 @media (hover:hover) and (pointer:fine) {
-  #trGo:hover:not(:disabled) {
-    background:var(--green); border-color:var(--green);
-    color:#fff; -webkit-text-fill-color:#fff;
-  }
+  #trGo:hover:not(:disabled) { background:color-mix(in srgb, var(--green) 86%, #000); }
 }
 /* Send button: spin like a loader while translating, then snap back.
    The ring spins on its OWN compositor layer (translateZ + will-change) so it
@@ -1211,17 +1217,19 @@ body.account-open .account-scrim { pointer-events: auto; }
   color:var(--green); -webkit-text-fill-color:var(--green);
 }
 
-/* Mic button — blue variant */
-.tr-mic {
+/* Mic — borderless blue icon (matches the language button and the recording state);
+   the send button keeps its filled circle as the primary action. Every interactive
+   state is pinned so .tr-btn's green fill can't leak in / stick on touch. */
+.tr-mic,
+.tr-mic:hover,
+.tr-mic:active,
+.tr-mic:focus {
   position:relative;
-  background:color-mix(in srgb, var(--blue) 16%, transparent);
-  border-color:color-mix(in srgb, var(--blue) 35%, transparent);
+  background:none; border-color:transparent;
   color:var(--blue); -webkit-text-fill-color:var(--blue);
 }
-.tr-mic:hover { background:color-mix(in srgb, var(--blue) 26%, transparent); }
-.tr-mic:active {
-  background:var(--blue); border-color:var(--blue);
-  color:#fff; -webkit-text-fill-color:#fff;
+@media (hover:hover) and (pointer:fine) {
+  .tr-mic:hover { background:color-mix(in srgb, var(--blue) 16%, transparent); }
 }
 
 /* Idle = mic icon. Recording = animated audio-wave equaliser. */
