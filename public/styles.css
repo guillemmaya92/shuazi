@@ -35,6 +35,12 @@
   --green-bg:  rgba(104,191,138,.14);
   --blue:      #64a0e6;
   --blue-bg:   rgba(100,160,230,.15);
+  /* Entity-type accents (char / word / radical / component) — one fixed color per
+     type, reused by every badge, chip and link so color always encodes the type. */
+  --char:        var(--blue);   --char-bg:      var(--blue-bg);
+  --word:        #9b7ede;       --word-bg:      rgba(155,126,222,.16);
+  --radical:     #4bb3a3;       --radical-bg:   rgba(75,179,163,.16);
+  --component:   #9a9aa6;       --component-bg: rgba(154,154,166,.16);
   --sh:        0 28px 70px rgba(0,0,0,.6), 0 4px 14px rgba(0,0,0,.3);
   --tabbar:    rgba(17,22,26,.88);
   --bar-bg:    rgba(255,255,255,.18);
@@ -54,6 +60,11 @@
   --green-bg:  rgba(58,122,86,.11);
   --blue:      #2560b0;
   --blue-bg:   rgba(37,96,176,.11);
+  /* Entity-type accents — see the dark block above. */
+  --char:        var(--blue);   --char-bg:      var(--blue-bg);
+  --word:        #8158d4;       --word-bg:      rgba(129,88,212,.14);
+  --radical:     #3e9c8f;       --radical-bg:   rgba(62,156,143,.14);
+  --component:   #7e7e88;       --component-bg: rgba(120,120,130,.14);
   --sh:        0 28px 70px rgba(28,21,16,.18), 0 4px 14px rgba(28,21,16,.08);
   --tabbar:    rgba(228,222,211,.92);
   --bar-bg:    rgba(0,0,0,.18);
@@ -399,19 +410,20 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chip-link .cc-py { color:var(--blue); }
 @media (hover:hover) and (pointer:fine) { .char-chip-link:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
 .char-chip-link:active { transform:scale(.94); background:color-mix(in srgb, var(--blue) 30%, transparent); }
-.char-chip-radical { background:rgba(62,156,143,.14); border-color:rgba(62,156,143,.35); }
-.char-chip-radical .cc-glyph, .char-chip-radical .cc-py { color:#3e9c8f; }
-@media (hover:hover) and (pointer:fine) { .char-chip-radical:hover { background:rgba(62,156,143,.22); border-color:#3e9c8f; } }
-.char-chip-radical:active { background:rgba(62,156,143,.30); }
-.char-chip-component { background:rgba(120,120,130,.14); border-color:rgba(120,120,130,.35); }
-.char-chip-component .cc-glyph, .char-chip-component .cc-py { color:#7e7e88; }
-@media (hover:hover) and (pointer:fine) { .char-chip-component:hover { background:rgba(120,120,130,.22); border-color:#7e7e88; } }
-.char-chip-component:active { background:rgba(120,120,130,.30); }
-/* Tappable compound-character glyph (radical / component modals): blue pill that
-   hugs the hanzi, matching the .char-chip-link affordance used elsewhere. */
-.compound-char { align-self:flex-start; cursor:pointer; font-family:var(--cjk); font-size:.9rem; font-weight:600; line-height:1.2; color:var(--blue); background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:8px; padding:1px 8px; -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent; transition:background .15s, border-color .15s, transform .1s; }
-@media (hover:hover) and (pointer:fine) { .compound-char:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
-.compound-char:active { transform:scale(.92); background:color-mix(in srgb, var(--blue) 30%, transparent); }
+.char-chip-radical { background:var(--radical-bg); border-color:color-mix(in srgb, var(--radical) 35%, transparent); }
+.char-chip-radical .cc-glyph, .char-chip-radical .cc-py { color:var(--radical); }
+@media (hover:hover) and (pointer:fine) { .char-chip-radical:hover { background:color-mix(in srgb, var(--radical) 22%, transparent); border-color:var(--radical); } }
+.char-chip-radical:active { background:color-mix(in srgb, var(--radical) 30%, transparent); }
+.char-chip-component { background:var(--component-bg); border-color:color-mix(in srgb, var(--component) 35%, transparent); }
+.char-chip-component .cc-glyph, .char-chip-component .cc-py { color:var(--component); }
+@media (hover:hover) and (pointer:fine) { .char-chip-component:hover { background:color-mix(in srgb, var(--component) 22%, transparent); border-color:var(--component); } }
+.char-chip-component:active { background:color-mix(in srgb, var(--component) 30%, transparent); }
+/* Tappable compound-character glyph (radical / component modals): the list is
+   homogeneous (every row leads to a char), so it stays calm like .word-exp-link —
+   blue underlined text rather than a filled pill. */
+.compound-char { align-self:flex-start; cursor:pointer; font-family:var(--cjk); font-size:.9rem; font-weight:700; line-height:1.2; color:var(--char); background:transparent; border:none; border-radius:6px; padding:1px 3px; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--char) 45%, transparent); text-underline-offset:3px; -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent; transition:background .15s, transform .1s; }
+@media (hover:hover) and (pointer:fine) { .compound-char:hover { background:var(--char-bg); } }
+.compound-char:active { transform:scale(.94); background:var(--char-bg); }
 /* --mb drives the accent so the back button can be tinted by its destination:
    blue → char (default), green → radical, gray → component. */
 .modal-back { --mb:var(--blue); --mb-bg:var(--blue-bg); display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--mb-bg); border:1px solid color-mix(in srgb, var(--mb) 35%, transparent); border-radius:999px; color:var(--mb); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
@@ -419,10 +431,9 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .modal-back span { font-family:var(--cjk); color:var(--mb); }
 @media (hover:hover) and (pointer:fine) { .modal-back:hover { background:color-mix(in srgb, var(--mb) 22%, transparent); border-color:var(--mb); } }
 .modal-back:active { transform:scale(.96); background:color-mix(in srgb, var(--mb) 30%, transparent); }
-.modal-back-radical   { --mb:#3e9c8f; --mb-bg:rgba(62,156,143,.14); }
-.modal-back-component { --mb:#7e7e88; --mb-bg:rgba(120,120,130,.14); }
-.modal-back-word      { --mb:#8158d4; --mb-bg:rgba(129,88,212,.14); }
-[data-theme="dark"] .modal-back-word { --mb:#9b7ede; --mb-bg:rgba(155,126,222,.16); }
+.modal-back-radical   { --mb:var(--radical);   --mb-bg:var(--radical-bg); }
+.modal-back-component { --mb:var(--component); --mb-bg:var(--component-bg); }
+.modal-back-word      { --mb:var(--word);      --mb-bg:var(--word-bg); }
 .cc-desc { font-weight:500; color:var(--muted); }
 .words-title { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }
@@ -457,8 +468,14 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   width:100%; display:flex; align-items:flex-start; gap:8px;
   padding:7px 9px; text-align:left; cursor:pointer; background:transparent;
 }
-.word-exp-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.word-exp-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; align-items:flex-start; }
 .word-exp-info strong { color:var(--txt); font-size:.9rem; font-family:var(--cjk); }
+/* In the char modal the compound-words list is homogeneous (every row is a word),
+   so the glyph stays calm: purple underlined text rather than a filled pill — the
+   type badge already gives context and a long column of pills reads as noise. */
+.word-exp-link { align-self:flex-start; cursor:pointer; font-family:var(--cjk); font-size:.9rem; font-weight:700; line-height:1.2; color:var(--word); background:transparent; border:none; border-radius:6px; padding:1px 3px; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--word) 45%, transparent); text-underline-offset:3px; -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent; transition:background .15s, transform .1s; }
+@media (hover:hover) and (pointer:fine) { .word-exp-link:hover { background:var(--word-bg); } }
+.word-exp-link:active { transform:scale(.94); background:var(--word-bg); }
 .word-exp-chev { transition:transform 200ms ease; flex-shrink:0; margin-top:4px; color:var(--faint); }
 .word-exp-chev.open { transform:rotate(180deg); }
 .phrase-body { overflow:hidden; transition:max-height 250ms ease, opacity 200ms ease; max-height:1500px; opacity:1; }
@@ -913,10 +930,28 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 .modal-handle { width:36px; height:4px; border-radius:2px; background:var(--bdr); margin:0 auto 10px; }
 .modal #modal-content .info-row { margin-top:-14px; }
-.modal #modal-content .modal-back { margin-top:-14px; }
-.modal #modal-content .modal-back + .info-row { margin-top:6px; }
+/* Every modal opens with a head row (type badge, optional back button); it tucks
+   up under the drag handle and the info grid sits just below it. */
+.modal #modal-content .modal-head { display:flex; align-items:center; gap:8px; margin:-8px 0 8px; min-height:26px; }
+.modal #modal-content .modal-head .modal-back { margin:0; }
+.modal #modal-content .modal-head + .info-row { margin-top:0; }
 .modal #modal-content .words-title { margin-top:6px; margin-bottom:-4px; }
 .modal #modal-content .words-list { margin-top:6px; }
+
+/* --tc / --tc-bg = the current modal's entity-type accent (set per data-type),
+   so the badge and the glyph cell announce "you are in a word / char / …". */
+#modal-content[data-type="char"]      { --tc:var(--char);      --tc-bg:var(--char-bg); }
+#modal-content[data-type="word"]      { --tc:var(--word);      --tc-bg:var(--word-bg); }
+#modal-content[data-type="radical"]   { --tc:var(--radical);   --tc-bg:var(--radical-bg); }
+#modal-content[data-type="component"] { --tc:var(--component); --tc-bg:var(--component-bg); }
+.modal-type {
+  margin-left:auto; display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:999px;
+  font-size:.6rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--tc); background:var(--tc-bg);
+  border:1px solid color-mix(in srgb, var(--tc) 30%, transparent);
+}
+.modal-type .mt-dot { width:7px; height:7px; border-radius:50%; background:var(--tc); }
 
 /* HSK filter pills */
 .hsk-filter-row { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
@@ -1242,6 +1277,8 @@ body.account-open .account-scrim { pointer-events: auto; }
 @media (hover:hover) and (pointer:fine) {
   .tr-mic:hover { background:color-mix(in srgb, var(--blue) 16%, transparent); }
 }
+/* Slightly larger than the other tr-btn icons so the mic reads as its own affordance. */
+.tr-mic svg { width:19px; height:19px; }
 
 /* Idle = mic icon. Recording = animated audio-wave equaliser. */
 .tr-mic .audio-wave { display:none; align-items:center; gap:2px; height:16px; }
@@ -1703,7 +1740,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .stroke-open-btn {
   position:absolute; right:5px; bottom:5px;
   width:22px; height:22px; display:grid; place-items:center;
-  color:var(--blue); opacity:.8; cursor:pointer;
+  color:var(--tc, var(--blue)); opacity:.8; cursor:pointer;
 }
 .stroke-open-btn svg { width:13px; height:13px; }
 .stroke-open-btn:active { transform:scale(.9); }

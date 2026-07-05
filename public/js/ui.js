@@ -803,6 +803,16 @@ function wireModalBack(backStack) {
   btn?.addEventListener('click', () => openModalEntry(backStack[backStack.length - 1], backStack.slice(0, -1)));
 }
 
+// The modal header: optional back button (where you came from) on the left, and a
+// type badge (where you are now) on the right. The badge color comes from --tc,
+// set on #modal-content via data-type by each opener, so it always encodes the
+// current entity type: blue=char, purple=word, green=radical, gray=component.
+const MODAL_TYPE_LABEL = { char: 'lbl.char', word: 'lbl.word', radical: 'lbl.radical', component: 'lbl.component' };
+function modalHeadHTML(kind, backStack) {
+  return `<div class="modal-head">${modalBackHTML(backStack)}`
+    + `<span class="modal-type"><span class="mt-dot"></span>${t(MODAL_TYPE_LABEL[kind] || 'lbl.char')}</span></div>`;
+}
+
 export function closeResetModal() {
   const rb = document.getElementById('reset-backdrop');
   rb.classList.remove('open');
@@ -835,14 +845,14 @@ export async function openModal(card, backStack = []) {
           .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
           .map(w =>
           `<div class="word-exp" data-word-id="${w.dbId}">
-            <button class="word-exp-header">
+            <div class="word-exp-header" role="button" tabindex="0">
               <div class="word-exp-info">
-                <strong>${w.id}</strong>
+                <button type="button" class="word-exp-link" data-word-id="${w.dbId}">${w.id}</button>
                 <span class="word-pinyin">${w.pinyin}</span>
                 <span class="word-meaning">${w.meaning}</span>
               </div>
               <svg class="word-exp-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
+            </div>
             <div class="phrase-body collapsed"></div>
           </div>`
         ).join('');
@@ -870,7 +880,8 @@ export async function openModal(card, backStack = []) {
     ? charComponents.map(c => `<button type="button" class="char-chip char-chip-link char-chip-component" data-comp-id="${c.id}"><span class="cc-glyph">${c.component}</span>${c.pinyin ? `<span class="cc-py">${c.pinyin}</span>` : ''}</button>`).join('')
     : '<span class="char-chip-empty">—</span>';
 
-  const backHTML = modalBackHTML(backStack);
+  modalContent.dataset.type = 'char';
+  const backHTML = modalHeadHTML('char', backStack);
 
   modalContent.innerHTML = `
     ${backHTML}
@@ -907,6 +918,19 @@ export async function openModal(card, backStack = []) {
   });
 
   wireCompoundGroups();
+
+  // Tapping the word glyph drills into that word's own modal (char pushed onto
+  // the back stack). Stop propagation so it doesn't also toggle the phrase list.
+  modalContent.querySelectorAll('.word-exp-link[data-word-id]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const w = cardWords.find(x => x.dbId === +btn.dataset.wordId);
+      if (!w) return;
+      const full = state.WORDS?.find(x => x.id === w.dbId);
+      const word = full || { word: w.id, id: w.dbId, pinyin: w.pinyin, meaning: w.meaning, meaning_es: w.meaning_es, hsk: w.hsk };
+      openWordModal(word, deeper);
+    });
+  });
 
   modalContent.querySelectorAll('.word-exp-header').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -1016,7 +1040,8 @@ function openRadicalModal(rad, backStack = []) {
   const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
   const charsHTML = compoundCharsHTML(chars);
 
-  const backHTML = modalBackHTML(backStack);
+  modalContent.dataset.type = 'radical';
+  const backHTML = modalHeadHTML('radical', backStack);
 
   modalContent.innerHTML = `
     ${backHTML}
@@ -1043,7 +1068,8 @@ function openComponentModal(comp, backStack = []) {
 
   const hasPinyin = !!(comp.pinyin && comp.pinyin.trim());
 
-  const backHTML = modalBackHTML(backStack);
+  modalContent.dataset.type = 'component';
+  const backHTML = modalHeadHTML('component', backStack);
 
   modalContent.innerHTML = `
     ${backHTML}
@@ -1080,7 +1106,8 @@ export async function openWordModal(word, backStack = []) {
       ).join('')
     : '<span class="char-chip-empty">—</span>';
 
-  const backHTML = modalBackHTML(backStack);
+  modalContent.dataset.type = 'word';
+  const backHTML = modalHeadHTML('word', backStack);
 
   modalContent.innerHTML = `
     ${backHTML}
