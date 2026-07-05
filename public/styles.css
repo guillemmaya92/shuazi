@@ -407,11 +407,22 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .char-chip-component .cc-glyph, .char-chip-component .cc-py { color:#7e7e88; }
 @media (hover:hover) and (pointer:fine) { .char-chip-component:hover { background:rgba(120,120,130,.22); border-color:#7e7e88; } }
 .char-chip-component:active { background:rgba(120,120,130,.30); }
-.modal-back { display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:999px; color:var(--blue); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
-.modal-back svg { stroke:var(--blue); }
-.modal-back span { font-family:var(--cjk); color:var(--blue); }
-@media (hover:hover) and (pointer:fine) { .modal-back:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
-.modal-back:active { transform:scale(.96); background:color-mix(in srgb, var(--blue) 30%, transparent); }
+/* Tappable compound-character glyph (radical / component modals): blue pill that
+   hugs the hanzi, matching the .char-chip-link affordance used elsewhere. */
+.compound-char { align-self:flex-start; cursor:pointer; font-family:var(--cjk); font-size:.9rem; font-weight:600; line-height:1.2; color:var(--blue); background:var(--blue-bg); border:1px solid color-mix(in srgb, var(--blue) 35%, transparent); border-radius:8px; padding:1px 8px; -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent; transition:background .15s, border-color .15s, transform .1s; }
+@media (hover:hover) and (pointer:fine) { .compound-char:hover { background:color-mix(in srgb, var(--blue) 22%, transparent); border-color:var(--blue); } }
+.compound-char:active { transform:scale(.92); background:color-mix(in srgb, var(--blue) 30%, transparent); }
+/* --mb drives the accent so the back button can be tinted by its destination:
+   blue → char (default), green → radical, gray → component. */
+.modal-back { --mb:var(--blue); --mb-bg:var(--blue-bg); display:inline-flex; align-items:center; gap:5px; align-self:flex-start; margin:-2px 0 10px; padding:5px 12px 5px 9px; background:var(--mb-bg); border:1px solid color-mix(in srgb, var(--mb) 35%, transparent); border-radius:999px; color:var(--mb); font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, transform .1s; -webkit-tap-highlight-color:transparent; }
+.modal-back svg { stroke:var(--mb); }
+.modal-back span { font-family:var(--cjk); color:var(--mb); }
+@media (hover:hover) and (pointer:fine) { .modal-back:hover { background:color-mix(in srgb, var(--mb) 22%, transparent); border-color:var(--mb); } }
+.modal-back:active { transform:scale(.96); background:color-mix(in srgb, var(--mb) 30%, transparent); }
+.modal-back-radical   { --mb:#3e9c8f; --mb-bg:rgba(62,156,143,.14); }
+.modal-back-component { --mb:#7e7e88; --mb-bg:rgba(120,120,130,.14); }
+.modal-back-word      { --mb:#8158d4; --mb-bg:rgba(129,88,212,.14); }
+[data-theme="dark"] .modal-back-word { --mb:#9b7ede; --mb-bg:rgba(155,126,222,.16); }
 .cc-desc { font-weight:500; color:var(--muted); }
 .words-title { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); width:100%; }
 .words-list { background:var(--surf); border:1px solid var(--bdr); border-radius:16px; overflow:hidden; width:100%; }

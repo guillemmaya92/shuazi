@@ -787,8 +787,15 @@ function openModalEntry(entry, backStack) {
 }
 function modalBackHTML(backStack) {
   if (!backStack?.length) return '';
-  const label = modalEntryLabel(backStack[backStack.length - 1]);
-  return `<button type="button" class="modal-back" id="modal-back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>${label}</span></button>`;
+  const prev = backStack[backStack.length - 1];
+  const label = modalEntryLabel(prev);
+  // Tint the back button by the destination it returns to: green for a radical,
+  // gray for a component, blue for a char (default) — matching the chip colors.
+  const kindClass = prev.kind === 'radical' ? ' modal-back-radical'
+                  : prev.kind === 'component' ? ' modal-back-component'
+                  : prev.kind === 'word' ? ' modal-back-word'
+                  : '';
+  return `<button type="button" class="modal-back${kindClass}" id="modal-back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>${label}</span></button>`;
 }
 function wireModalBack(backStack) {
   if (!backStack?.length) return;
@@ -950,7 +957,7 @@ function compoundCharsHTML(chars) {
       .slice()
       .sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
       .map(c =>
-        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><span style="font-family:var(--cjk);font-size:.9rem;font-weight:600;color:var(--txt);line-height:1.3">${c.char}</span><span style="font-size:.72rem;color:var(--muted);line-height:1.3">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
+        `<div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px"><button type="button" class="compound-char" data-char-id="${c.id}">${c.char}</button><span style="font-size:.72rem;color:var(--muted);line-height:1.3;margin-top:2px">${c.pinyin ?? ''}</span><span style="font-size:.72rem;color:var(--faint);line-height:1.3">${c.meaning ?? ''}</span></div>`
       ).join('');
     const open = i === 0;
     return `
@@ -963,6 +970,18 @@ function compoundCharsHTML(chars) {
         <div class="word-group-body ${open ? '' : 'collapsed'}" style="display:flex;flex-direction:column;gap:6px;padding:${open ? '8px 10px' : '0 10px'}">${items}</div>
       </div>`;
   }).join('');
+}
+
+// Wire the compound-character tiles (radical / component modals) so tapping one
+// drills into that character's modal, with the current modal pushed onto the
+// back stack so the back button returns here.
+function wireCompoundChars(backStack) {
+  modalContent.querySelectorAll('.compound-char[data-char-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = state.charById[+btn.dataset.charId];
+      if (card) openModal(card, backStack);
+    });
+  });
 }
 
 function wireCompoundGroups() {
@@ -1012,6 +1031,7 @@ function openRadicalModal(rad, backStack = []) {
   attachModalListen(hanziForReading(rad.radical, rad.pinyin));
   wireModalBack(backStack);
   wireCompoundGroups();
+  wireCompoundChars([...backStack, { kind: 'radical', data: rad }]);
   wireStrokeOpen(rad.radical);
   openModalSheet();
 }
@@ -1038,6 +1058,7 @@ function openComponentModal(comp, backStack = []) {
   if (hasPinyin) attachModalListen(hanziForReading(comp.component, comp.pinyin));
   wireModalBack(backStack);
   wireCompoundGroups();
+  wireCompoundChars([...backStack, { kind: 'component', data: comp }]);
   wireStrokeOpen(comp.component);
   openModalSheet();
 }
