@@ -678,6 +678,36 @@ export function initTranslator() {
 
   wireMic(input, () => { updateComposerMode(); autoGrow(); syncCount(); syncNewChatBtn(); });
 
+  // ── TAP EFFECT (ChatGPT-style: soft & sophisticated) ──
+  // Every tap on the bar makes it breathe (a barely-there scale, no overshoot) and
+  // sends a soft luminous bloom out from the touch point. One-shot, replays per tap.
+  const rippleLayer = document.createElement('div');
+  rippleLayer.className = 'tr-ripple-layer';
+  rippleLayer.setAttribute('aria-hidden', 'true');
+  inputField.appendChild(rippleLayer);
+  inputField.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;   // buttons have their own feedback
+
+    // Gentle breath — subtle, smooth, no overshoot.
+    inputField.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.015)', offset: .5 }, { transform: 'scale(1)' }],
+      { duration: 540, easing: 'cubic-bezier(.4,0,.2,1)' }
+    );
+
+    // Soft luminous bloom from the tapped point.
+    const r = inputField.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'tr-ripple';
+    const size = Math.max(r.width, r.height) * 1.25;
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - r.left) + 'px';
+    ripple.style.top  = (e.clientY - r.top) + 'px';
+    const remove = () => ripple.remove();       // idempotent
+    ripple.addEventListener('animationend', remove);
+    setTimeout(remove, 1100);                   // fallback so a node can never leak
+    rippleLayer.appendChild(ripple);
+  });
+
   // ── OUTPUT LANGUAGE PICKER ──
   // A subtle language-code button (zh / en / es) on the left of the composer opens
   // a little popover above it. Chinese keeps the full tokenized mode; other targets

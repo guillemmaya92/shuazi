@@ -1047,6 +1047,7 @@ body.account-open .account-scrim { pointer-events: auto; }
   grid-template-areas:"lang input tools";
   background:var(--surf2); border:1px solid var(--bdr); border-radius:24px;
   padding:6px 8px; --sb:0px;
+  transform-origin:50% 100%; will-change:transform;
 }
 .tr-input-field.multiline {
   grid-template-areas:
@@ -1056,6 +1057,29 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-lang-add   { grid-area:lang; }
 .tr-input      { grid-area:input; }
 .tr-input-tools { grid-area:tools; display:flex; align-items:center; gap:6px; }
+
+/* Tap effect (ChatGPT-style): a gentle breath (WAAPI, in translator.js) + a soft
+   luminous ripple from the tapped point. The ripple layer clips to the rounded field
+   (separate so the language popover, which opens above, isn't clipped); the content
+   sits above it. Literal rgba (not color-mix) so older Safari renders the glow. */
+.tr-ripple-layer {
+  position:absolute; inset:0; z-index:0; overflow:hidden;
+  border-radius:inherit; pointer-events:none;
+}
+.tr-input-field > .tr-lang-add,
+.tr-input-field > .tr-input,
+.tr-input-field > .tr-input-tools { position:relative; z-index:1; }
+.tr-ripple {
+  position:absolute; border-radius:50%; pointer-events:none;
+  transform:translate(-50%,-50%) scale(.35);
+  background:radial-gradient(circle, rgba(130,175,235,.22), rgba(130,175,235,.05) 38%, transparent 62%);
+  animation:tr-ripple .9s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes tr-ripple {
+  0%   { transform:translate(-50%,-50%) scale(.35); opacity:0; }
+  28%  { opacity:.22; }
+  100% { transform:translate(-50%,-50%) scale(1);  opacity:0; }
+}
 /* Grow while held (press-and-hold), like the bottom tab bar. */
 .tr-input-tools .tr-btn:active:not(:disabled) { transform:scale(1.18); }
 
