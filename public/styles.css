@@ -497,8 +497,9 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   flex:2; min-height:0; overflow:hidden;
   display:flex; flex-direction:column; gap:.5em; justify-content:center;
   font-size:clamp(.8rem, 3cqh, 1.2rem);
-  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
-          mask-image:linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+  padding-block:.5em;   /* breathing room so the fade lands mostly off the text */
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%);
+          mask-image:linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%);
 }
 .phrase-hanzi {
   font-family:var(--cjk);
