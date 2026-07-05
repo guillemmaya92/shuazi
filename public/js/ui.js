@@ -523,7 +523,9 @@ export function renderGroups() {
     }
 
     wheader.addEventListener('click', () => {
-      if (collapsedWordGroups.has(hsk)) {
+      // Decide from the real open/closed state (see the char handler): a filter
+      // force-opens grids without updating the set, so relying on it needed two taps.
+      if (wwrap.classList.contains('collapsed')) {
         levels.forEach(otherHsk => {
           if (otherHsk !== hsk && !collapsedWordGroups.has(otherHsk) && wordGroupEls[otherHsk]) {
             collapsedWordGroups.add(otherHsk);
@@ -540,7 +542,6 @@ export function renderGroups() {
             if (wordGroupEls[otherHsk]) wordGroupEls[otherHsk].wwrap.style.transition = '';
           });
         });
-        scrollEl.scrollTop = wdiv.offsetTop;
         collapsedWordGroups.delete(hsk);
         if (!wgrid.childElementCount) renderWordTiles();
         animateGridWrap(wwrap, true);
@@ -728,7 +729,10 @@ export function renderGroups() {
     }
 
     header.addEventListener('click', () => {
-      if (collapsedGroups.has(hsk)) {
+      // Use the actual open/closed state of this grid, not the remembered set —
+      // a radical/component filter force-opens every grid without updating the set,
+      // which otherwise made the first close-click a no-op (needed two taps).
+      if (wrap.classList.contains('collapsed')) {
         levels.forEach(otherHsk => {
           if (otherHsk !== hsk && !collapsedGroups.has(otherHsk) && charGroupEls[otherHsk]) {
             collapsedGroups.add(otherHsk);
@@ -745,7 +749,6 @@ export function renderGroups() {
             if (charGroupEls[otherHsk]) charGroupEls[otherHsk].wrap.style.transition = '';
           });
         });
-        scrollEl.scrollTop = div.offsetTop;
         collapsedGroups.delete(hsk);
         if (!grid.childElementCount) renderTiles();
         animateGridWrap(wrap, true);
