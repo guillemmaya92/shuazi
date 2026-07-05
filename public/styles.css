@@ -114,19 +114,26 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   touch-action:none;
   user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
   background: var(--tabbar);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--bdr);
+  /* Whole-bar liquid glass: stronger blur + saturation lifts the colour behind it. */
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   padding-bottom: max(4px, var(--safe-b));
   padding-top: 2px;
   /* Liquid-glass tuning (per theme) */
   --glass-c:#bbbbbc; --glass-light:#fff; --glass-dark:#000;
-  --glass-rl:1; --glass-rd:1; --glass-sat:150%;
-  --glass-fill:36%;   /* knob tint opacity */
+  --glass-rl:1; --glass-rd:1; --glass-sat:170%;
+  --glass-fill:28%;   /* clearer glass (iOS 26 lets the backdrop show through) */
+  /* Specular glass rim across the whole bar (bright top edge + soft inner shading +
+     a faint lift above), so every tab sits on the glass — like the knob, cross-browser. */
+  box-shadow:
+    inset 0 1px 0 0       color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 60%), transparent),
+    inset 0 10px 14px -12px color-mix(in srgb, var(--glass-light) calc(var(--glass-rl) * 32%), transparent),
+    inset 0 -8px 12px -12px color-mix(in srgb, var(--glass-dark) calc(var(--glass-rd) * 14%), transparent),
+    0 -2px 18px           color-mix(in srgb, var(--glass-dark) calc(var(--glass-rd) * 7%), transparent);
 }
 [data-theme="dark"] .tabbar {
   --glass-rl:.42; --glass-rd:2;
-  --glass-fill:16%;   /* clearer glass on dark */
+  --glass-fill:13%;   /* clearer glass on dark */
 }
 
 /* The sliding "liquid glass" knob behind the active tab. */
@@ -134,7 +141,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   position:absolute;
   left:0; top:0;
   width:0; height:0;
-  border-radius:13px;
+  border-radius:18px;   /* rounder, capsule-like (must match PILL_R in ui.js) */
   pointer-events:none;
   opacity:0;
   isolation:isolate;

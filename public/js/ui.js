@@ -1238,7 +1238,7 @@ let activeTab = 'cards';
 /* Sliding pill that tracks the active tab. */
 const tabPill   = document.querySelector('.tab-pill');
 const glassMap  = document.getElementById('liquidGlassMap');
-const PILL_R    = 13; // must match .tab-pill border-radius
+const PILL_R    = 18; // must match .tab-pill border-radius
 
 /* Build a displacement map (RG = edge normal) so the SVG feDisplacementMap
    refracts the backdrop only near the rim — the iOS "liquid glass" lens. */
