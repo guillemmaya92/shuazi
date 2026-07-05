@@ -1083,6 +1083,64 @@ function wireMic(input, onInput) {
   let chunks = [];
   let recording = false;
 
+  // Auto-stop on silence (energy-based VAD with an adaptive threshold — the usual
+  // industry approach; a fixed RMS is unreliable across mics/environments):
+  //   • calibrate the ambient noise floor for the first CALIBRATION_MS,
+  //   • speech = level a margin above that floor (held long enough to skip clicks),
+  //   • end the utterance after SILENCE_MS of trailing silence (~1s, like Google/Alexa),
+  //   • MAX_RECORD_MS is a hard cap on a single utterance.
+  let audioCtx = null, silenceRAF = 0;
+  const CALIBRATION_MS = 350;
+  const SPEECH_MIN_MS  = 120;    // sustained energy before it counts as speech
+  const SILENCE_MS     = 1000;   // trailing silence that ends the utterance
+  const MAX_RECORD_MS  = 30000;  // safety cap
+  function watchSilence() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx.resume?.();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      const buf = new Uint8Array(analyser.fftSize);
+      const t0 = performance.now();
+      let noiseSum = 0, noiseN = 0, threshold = 0.02;
+      let hasSpoken = false, silenceStart = 0, speechRun = 0, last = t0;
+
+      const tick = () => {
+        if (!recording) return;
+        analyser.getByteTimeDomainData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / buf.length);
+        const now = performance.now(), dt = now - last; last = now;
+
+        if (now - t0 > MAX_RECORD_MS) { recorder.stop(); return; }
+
+        if (now - t0 < CALIBRATION_MS) {                 // learn the ambient floor
+          noiseSum += rms; noiseN++;
+          threshold = Math.min(0.06, Math.max(0.015, (noiseSum / noiseN) * 2.8 + 0.008));
+        } else if (rms > threshold) {                    // energy present
+          speechRun += dt;
+          if (speechRun >= SPEECH_MIN_MS) hasSpoken = true;
+          silenceStart = 0;
+        } else {                                         // below threshold
+          speechRun = 0;
+          if (hasSpoken) {
+            if (!silenceStart) silenceStart = now;
+            else if (now - silenceStart > SILENCE_MS) { recorder.stop(); return; }
+          }
+        }
+        silenceRAF = requestAnimationFrame(tick);
+      };
+      silenceRAF = requestAnimationFrame(tick);
+    } catch (e) { /* Web Audio unavailable — manual stop still works */ }
+  }
+  function stopSilenceWatch() {
+    if (silenceRAF) cancelAnimationFrame(silenceRAF);
+    silenceRAF = 0;
+    if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; }
+  }
+
   const setState = (s) => {
     micBtn.classList.toggle('listening', s === 'recording');
     micBtn.classList.toggle('transcribing', s === 'transcribing');
@@ -1120,14 +1178,16 @@ function wireMic(input, onInput) {
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
       recording = false;
+      stopSilenceWatch();
+      stream.getTracks().forEach(t => t.stop());
       const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
       if (blob.size) transcribe(blob); else setState('idle');
     };
     recorder.start();
     recording = true;
     setState('recording');
+    watchSilence();   // auto-stop on silence once the user has spoken
   }
 
   micBtn.addEventListener('click', () => {

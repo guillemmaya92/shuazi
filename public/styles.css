@@ -1243,31 +1243,28 @@ body.account-open .account-scrim { pointer-events: auto; }
   50%      { transform:scaleY(1); }
 }
 
-/* Recording state — translucent blue fill, white bars. */
+/* Recording state — no fill (fully transparent), blue bars, halo kept below. */
 .tr-mic.listening {
-  background:color-mix(in srgb, var(--blue) 55%, transparent);
-  border-color:color-mix(in srgb, var(--blue) 60%, transparent);
-  color:#fff; -webkit-text-fill-color:#fff;
+  overflow:visible;
+  background:transparent;
+  border-color:transparent;
+  color:var(--blue); -webkit-text-fill-color:var(--blue);   /* bars use currentColor */
   animation:mic-throb 0.8s ease-in-out infinite alternate;
 }
 @keyframes mic-throb {
   from { transform:scale(1); }
   to   { transform:scale(1.12); }
 }
-[data-theme="light"] .tr-mic.listening {
-  background:color-mix(in srgb, var(--blue) 80%, transparent);
-  border-color:color-mix(in srgb, var(--blue) 85%, transparent);
-}
 /* Rotating multicolour glow halo around the recording button. */
 .tr-mic.listening::before {
   content:""; position:absolute; inset:2px; z-index:5; pointer-events:none;
   border-radius:50%;
   box-shadow:
-    2px -3px 6px 0 color-mix(in srgb, var(--blue) 70%, #fff),
-    3px -1px 7px 0 color-mix(in srgb, var(--blue) 85%, transparent),
-    -3px -3px 8px 0 color-mix(in srgb, var(--blue) 55%, #6fd0ec),
-    4px  1px 6px 0 var(--blue),
-    1px  1px 8px 0 color-mix(in srgb, var(--blue) 60%, transparent);
+    1px -2px 4px 0 color-mix(in srgb, var(--blue) 70%, #fff),
+    2px -1px 4px 0 color-mix(in srgb, var(--blue) 85%, transparent),
+    -2px -2px 5px 0 color-mix(in srgb, var(--blue) 55%, #6fd0ec),
+    2px  1px 4px 0 var(--blue),
+    1px  1px 5px 0 color-mix(in srgb, var(--blue) 60%, transparent);
   animation:mic-glow-rotate 1.5s linear infinite;
 }
 @keyframes mic-glow-rotate {
