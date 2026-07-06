@@ -8,8 +8,7 @@ const SHELL_CACHE = 'shuazi-shell-' + BUILD;
 // page, so these precache keys line up with the actual network requests.
 const v = u => (/\.(css|js)$/.test(u) ? `${u}?b=${BUILD}` : u);
 const SHELL_ASSETS = [
-  '/',
-  '/index.html',
+  '/', // served via the Cloudflare Worker rewrite (app.html) on app.shuaziapp.com
   '/styles.css',
   '/app.js',
   '/js/auth.js',

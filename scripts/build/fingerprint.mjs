@@ -19,8 +19,9 @@ const ROOT = 'public';
 
 const tag = url => (url.includes('?b=') ? url : `${url}?b=${BUILD}`);
 
-// 1. index.html — stylesheet / modulepreload / script references
-const htmlPath = join(ROOT, 'index.html');
+// 1. app.html (the app shell) — stylesheet / modulepreload / script references.
+// index.html is now the marketing landing page and has no app.js/styles.css refs.
+const htmlPath = join(ROOT, 'app.html');
 const html = readFileSync(htmlPath, 'utf8').replace(
   /(href|src)="(\.\/(?:app\.js|styles\.css|js\/[\w-]+\.js))"/g,
   (_, attr, url) => `${attr}="${tag(url)}"`,

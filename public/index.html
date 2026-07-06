@@ -1,600 +1,684 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <!-- Apply the saved theme before first paint (shared with the dictionary site) -->
-  <script>(function(){try{var t=localStorage.getItem('shuazi-theme')||'light';document.documentElement.dataset.theme=t;}catch(e){}})();</script>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-  <link rel="icon" href="./icons/favicon.ico" sizes="any"/>
-  <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml"/>
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png"/>
-  <meta name="apple-mobile-web-app-title" content="刷字"/>
-  <meta name="theme-color" content="#0e1215"/>
-  <link rel="manifest" href="./manifest.json"/>
+<meta charset="UTF-8"/>
+<script>(function(){try{var l=localStorage.getItem('shuazi-landing-lang')||(navigator.language||'en').slice(0,2);document.documentElement.dataset.lang=(l==='es'?'es':'en');document.documentElement.lang=document.documentElement.dataset.lang;}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>刷字 shuazi - Learn chinese by swiping</title>
+<meta name="description" content="Shuazi is a Chinese learning app: swipeable Hanzi flashcards, an HSK 1-6 character dictionary, real Chinese slang & culture, and an any-language → 中文 translator with voice and pinyin."/>
+<link rel="canonical" href="https://shuaziapp.com/"/>
+<link rel="icon" href="./icons/favicon.ico" sizes="any"/>
+<link rel="icon" href="./icons/favicon.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png"/>
+<meta name="theme-color" content="#ffffff"/>
 
-  <!-- Critical CSS inline: prevents FOUC and unblocks first paint -->
-  <style>
-    :root{--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px)}
-    [data-theme="dark"]{--bg:#0e1215;--surf:#161c21;--surf2:#1d252c;--bdr:rgba(255,255,255,.08);--txt:#e8f0f4;--muted:#8fa4b0;--faint:#7090a0;--red:#d9705a;--red-bg:rgba(217,112,90,.15);--green:#68bf8a;--green-bg:rgba(104,191,138,.14);--blue:#64a0e6;--blue-bg:rgba(100,160,230,.15);--sh:0 28px 70px rgba(0,0,0,.6),0 4px 14px rgba(0,0,0,.3);--tabbar:rgba(14,18,21,.88);--bar-bg:rgba(255,255,255,.18);--bar-act:rgba(255,255,255,.92)}
-    [data-theme="light"]{--bg:#f2f2f7;--surf:#ffffff;--surf2:#ffffff;--bdr:rgba(0,0,0,.08);--txt:#251d17;--muted:#645750;--faint:#635649;--red:#b04030;--red-bg:rgba(176,64,48,.11);--green:#3a7a56;--green-bg:rgba(58,122,86,.11);--blue:#2560b0;--blue-bg:rgba(37,96,176,.11);--sh:0 28px 70px rgba(0,0,0,.10),0 4px 14px rgba(0,0,0,.05);--tabbar:rgba(249,249,249,.94);--bar-bg:rgba(0,0,0,.18);--bar-act:rgba(0,0,0,.85)}
-    [data-theme="medium"]{--bg:#f0ebe4;--surf:#faf6f1;--surf2:#ffffff;--bdr:rgba(0,0,0,.08);--txt:#1c1510;--muted:#6b5e54;--faint:#6a5c50;--red:#b04030;--red-bg:rgba(176,64,48,.11);--green:#3a7a56;--green-bg:rgba(58,122,86,.11);--blue:#2560b0;--blue-bg:rgba(37,96,176,.11);--sh:0 28px 70px rgba(28,21,16,.18),0 4px 14px rgba(28,21,16,.08);--tabbar:rgba(240,235,228,.92);--bar-bg:rgba(0,0,0,.18);--bar-act:rgba(0,0,0,.85)}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;touch-action:none}
-    body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
-    button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
-    .root{width:100%;max-width:860px;height:100dvh;display:grid;grid-template-rows:1fr auto;box-shadow:0 0 60px rgba(0,0,0,.4)}
-    .screens{overflow:hidden;position:relative}
-    .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:max(14px,var(--safe-t));padding-left:max(16px,var(--safe-l));padding-right:max(16px,var(--safe-r));padding-bottom:8px;gap:10px;opacity:0;pointer-events:none;transition:opacity 220ms ease}
-    .screen.active{opacity:1;pointer-events:all}
-    .tabbar{display:flex;background:var(--tabbar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--bdr);padding-bottom:max(4px,var(--safe-b));padding-top:2px}
-    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 0;color:var(--faint);transition:color 180ms ease;min-height:44px}
-    .tab.active{color:var(--blue)}
-    .tab svg{width:26px;height:26px}
-    .tab span{font-size:.68rem;font-weight:600;letter-spacing:.02em}
-    .header{display:flex;align-items:center;justify-content:space-between}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:34px;height:34px;flex-shrink:0;border-radius:10px;background:var(--red-bg);border:1px solid var(--bdr);display:grid;place-items:center;font-size:14px;line-height:1;color:var(--red)}
-    .title{font-size:.95rem;font-weight:700;line-height:1.1}
-    .sub{font-size:.68rem;color:var(--faint);margin-top:0}
-    .hdr-stats{display:flex;gap:14px;align-items:center}
-    .st{text-align:center}
-    .st .v{font-size:.92rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
-    .st .l{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
-    #sKnown .v{color:var(--green)}
-    #sRepaso .v{color:var(--blue)}
-    .icon-btn{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:var(--surf);border:1px solid var(--bdr);color:var(--muted)}
-    .deck-wrap{position:relative;flex:1}
-    .deck{position:absolute;inset:0}
-  </style>
+<meta property="og:title" content="刷字 ShuaziApp — Learn Chinese by swiping"/>
+<meta property="og:description" content="Swipeable Hanzi flashcards, an HSK 1-6 dictionary, real Chinese slang, and an any-language → 中文 translator."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://shuaziapp.com/"/>
+<meta property="og:image" content="https://shuaziapp.com/icons/og-image.png"/>
 
-  <!-- Full CSS. Loaded as a normal stylesheet: the inline critical CSS above
-       already unblocks first paint, and a single render-blocking request avoids
-       the FOUC/flash the old preload+swap hack caused (it triggered a second
-       fetch that could fail with ERR_TOO_MANY_RETRIES and not apply in time). -->
-  <link rel="stylesheet" href="./styles.css"/>
-  <title>刷字 ShuaziApp</title>
-  <meta name="description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
-  <link rel="canonical" href="https://shuaziapp.com/"/>
+<!-- Chinese ink-style fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&family=Ma+Shan+Zheng&display=swap"/>
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="刷字 ShuaziApp"/>
-  <meta property="og:description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://shuaziapp.com/"/>
-  <meta property="og:image" content="https://shuaziapp.com/icons/og-image.png"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:image:alt" content="刷字 ShuaziApp — Learn Chinese Hanzi with flashcards, characters and radicals"/>
-
-  <!-- Twitter/X -->
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="刷字 ShuaziApp"/>
-  <meta name="twitter:description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
-  <meta name="twitter:image" content="https://shuaziapp.com/icons/og-image.png"/>
-
-  <!-- Structured data (rich results) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "刷字 ShuaziApp",
-    "alternateName": "Shuazi",
-    "url": "https://shuaziapp.com/",
-    "image": "https://shuaziapp.com/icons/og-image.png",
-    "description": "Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system.",
-    "applicationCategory": "EducationalApplication",
-    "operatingSystem": "Web, iOS, Android",
-    "inLanguage": ["en", "zh"],
-    "isAccessibleForFree": true,
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+<style>
+  /* ================= Apple.com design language ================= */
+  :root{
+    /* same blue as the app's active tab-bar buttons (index.html --blue, light theme) */
+    --blue:#2560b0;--blue-h:#2c6cc2;
+    --txt:#1d1d1f;--gray:#6e6e73;--gray2:#86868b;
+    --bg-lt:#ffffff;--bg-gy:#f5f5f7;--bg-dk:#000000;
+    --txt-dk:#f5f5f7;--gray-dk:#a1a1a6;
+    --nav-h:48px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
   }
-  </script>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  /* Anchor targets: stop scrollIntoView short of the sticky nav's height,
+     so it never covers the top of the section it just scrolled to. */
+  #top,#cards,#groups,#slang,#translate,#profile{scroll-margin-top:var(--nav-h)}
+  body{font-family:var(--font);background:var(--bg-lt);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.47;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
 
-  <!-- GA: deferred until first interaction or 3s — removes 151 KB from critical path -->
-  <script>
-    window.dataLayer=window.dataLayer||[];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js',new Date());
-    function _loadGA(){
-      if(window._gaLoaded)return; window._gaLoaded=true;
-      var s=document.createElement('script');s.async=true;
-      s.src='https://www.googletagmanager.com/gtag/js?id=G-ZRKKJ7TCWT';
-      document.head.appendChild(s);
-      gtag('config','G-ZRKKJ7TCWT');
-    }
-    ['click','keydown','touchstart','scroll'].forEach(function(e){
-      document.addEventListener(e,_loadGA,{once:true,passive:true});
-    });
-    setTimeout(_loadGA,3000);
-  </script>
+  /* i18n — only ever hide the inactive language, never set display on the
+     visible one (so .gnav a, .link, etc. keep their own inline-flex etc.).
+     !important beats higher-specificity rules like `.gnav a`. */
+  html:not([data-lang="es"]) [data-i18n-es]{display:none !important}
+  html[data-lang="es"] [data-i18n-en]{display:none !important}
 
-  <!-- Supabase ready-gate: resolves when the async SDK finishes loading -->
-  <script>window._supabaseReady=new Promise(function(r){window._supabaseResolve=r;})</script>
+  /* ---------- global nav (apple 48px bar, light) ---------- */
+  .gnav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(255,255,255,.8);
+    backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid rgba(0,0,0,.08);
+  }
+  .gnav-inner{max-width:1024px;margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:8px;padding:0 22px}
+  .gnav a,.gnav button{
+    font-family:var(--font);font-size:12px;letter-spacing:-.01em;
+    color:rgba(0,0,0,.72);background:none;border:none;cursor:pointer;
+    transition:color .2s;padding:0 10px;height:var(--nav-h);display:inline-flex;align-items:center;
+  }
+  .gnav a:hover,.gnav button:hover{color:#000}
+  .gnav .glogo{font-size:17px;font-weight:600;color:var(--txt);padding-left:0;gap:7px}
+  .gnav .glogo img{width:18px;height:18px;border-radius:4px}
+  .gnav .spacer{flex:1}
+  .gnav .gopen{
+    font-size:12px;color:#fff;background:var(--blue);border-radius:980px;
+    height:24px;padding:0 12px;align-self:center;
+  }
+  .gnav .gopen:hover{background:var(--blue-h);color:#fff}
+  @media(max-width:734px){.gnav .glink{display:none}}
 
-  <!-- Capture the install prompt as early as possible. Chrome (Android/desktop)
-       fires beforeinstallprompt very early in page load — before our ES modules
-       finish downloading — so we stash it here and the PWA module reads it later. -->
-  <script>
-    window._deferredInstallPrompt = null;
-    window.addEventListener('beforeinstallprompt', function (e) {
-      e.preventDefault();
-      window._deferredInstallPrompt = e;
-      window.dispatchEvent(new Event('pwa-prompt-ready'));
-    });
-  </script>
-  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"/>
+  /* ---------- typography ---------- */
+  .eyebrow{font-size:clamp(19px,2.4vw,24px);font-weight:600;letter-spacing:-.01em}
+  .headline{font-size:clamp(40px,7.2vw,80px);font-weight:600;letter-spacing:-.015em;line-height:1.05}
+  .headline-md{font-size:clamp(32px,5.4vw,56px);font-weight:600;letter-spacing:-.015em;line-height:1.07}
+  .subhead{font-size:clamp(19px,2.6vw,28px);font-weight:400;letter-spacing:.004em;line-height:1.25}
+  .copy-sm{font-size:17px;line-height:1.47;letter-spacing:-.022em}
 
-  <!-- Parallelise JS module fetching: browser downloads all modules at once instead of waterfall -->
-  <link rel="modulepreload" href="./app.js"/>
-  <link rel="modulepreload" href="./js/config.js"/>
-  <link rel="modulepreload" href="./js/state.js"/>
-  <link rel="modulepreload" href="./js/auth.js"/>
-  <link rel="modulepreload" href="./js/progress.js"/>
-  <link rel="modulepreload" href="./js/cards.js"/>
-  <link rel="modulepreload" href="./js/ui.js"/>
-  <link rel="modulepreload" href="./js/translator.js"/>
-  <link rel="modulepreload" href="./js/pwa-install.js"/>
-  <link rel="modulepreload" href="./js/coach.js"/>
-  <link rel="modulepreload" href="./js/stroke-order.js"/>
-  <link rel="modulepreload" href="./js/srs.js"/>
-  <link rel="modulepreload" href="./js/password-reset.js"/>
+  .link{color:var(--blue);font-size:clamp(17px,2vw,21px);display:inline-flex;align-items:center;gap:2px}
+  .link:hover{text-decoration:underline}
+  .link .chev{font-size:.8em;transform:translateY(1px)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--blue);color:#fff;border-radius:980px;
+    font-size:17px;letter-spacing:-.022em;padding:12px 24px;min-width:28px;
+    transition:background .2s;
+  }
+  .btn:hover{background:var(--blue-h)}
+  .btn.lg{font-size:19px;padding:14px 28px}
 
-  <!-- Early connection to Supabase so the first query has no DNS/TLS overhead -->
-  <link rel="preconnect" href="https://coysmojauucqgdhhxyrz.supabase.co"/>
+  /* ---------- section tiles ---------- */
+  .tile{text-align:center;overflow:hidden}
+  .tile .inner{max-width:1024px;margin:0 auto;padding:110px 22px 0}
+  .tile.lt{background:var(--bg-lt);color:var(--txt)}
+  .tile.gy{background:var(--bg-gy);color:var(--txt)}
+  .tile.dk{background:var(--bg-dk);color:var(--txt-dk)}
+  .tile .sub{color:var(--gray);max-width:600px;margin:14px auto 0}
+  .tile.dk .sub{color:var(--gray-dk)}
+  .tile .links{display:flex;gap:34px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .tile .shotwrap{margin:56px auto 0;padding-bottom:0}
 
+  /* scroll reveal */
+  .rv{opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.25,.1,.25,1),transform .8s cubic-bezier(.25,.1,.25,1)}
+  .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
+  /* ---------- phone frame + app screenshots ----------
+     Each slot shows a real screenshot (780×1688, 9:19.5) from images/landing/
+     — see the README there for how to capture them. */
+  /* iPhone 15/16 Pro-style frame: titanium band, thin uniform bezel,
+     Dynamic Island and side buttons */
+  .phone{
+    position:relative;width:min(340px,78vw);margin:0 auto;
+    border-radius:17.4%/8%;border-radius:clamp(44px,16%,60px);padding:9px;
+    background:
+      linear-gradient(145deg,#8a8b8f 0%,#5f6064 18%,#3f4043 45%,#55565a 72%,#7c7d81 100%);
+    box-shadow:
+      0 30px 80px rgba(0,0,0,.30),0 6px 18px rgba(0,0,0,.18),
+      inset 0 0 0 1.5px rgba(255,255,255,.35),
+      inset 0 0 0 4px #17181a;
+  }
+  /* side buttons: volume (left) + power (right), titanium */
+  .phone::before,.phone::after{
+    content:"";position:absolute;width:3px;border-radius:2px;
+    background:linear-gradient(90deg,#6a6b6f,#3c3d40);
+  }
+  .phone::before{left:-2.5px;top:24%;height:7%;box-shadow:0 58px 0 0 #4a4b4f}
+  .phone::after{right:-2.5px;top:30%;height:11%;background:linear-gradient(270deg,#6a6b6f,#3c3d40)}
+  .phone .shot{
+    position:relative;border-radius:clamp(36px,13%,50px);overflow:hidden;
+    aspect-ratio:1170/2532;background:#0e1215;
+  }
+  .phone .shot img{width:100%;height:100%;object-fit:cover}
+  /* Dynamic Island: floating pill with the camera lens on the right */
+  .phone .notch{
+    position:absolute;top:4.2%;left:50%;transform:translate(-50%,-50%);
+    width:25%;height:22px;border-radius:999px;z-index:4;
+    background:radial-gradient(circle at 82% 50%,#1c2733 0 3.5px,#0a1017 5px,#000 7px);
+    box-shadow:0 0 4px rgba(0,0,0,.4);
+  }
+  .phone.no-notch .notch{display:none}
+
+  /* ---------- full-screen feature sections (phone beside copy) ---------- */
+  .feat{
+    display:flex;align-items:center;
+    min-height:calc(100dvh - var(--nav-h));
+    padding:60px 22px;overflow:hidden;
+  }
+  .feat.lt{background:var(--bg-lt);color:var(--txt)}
+  .feat.gy{background:var(--bg-gy);color:var(--txt)}
+  .feat.dk{background:var(--bg-dk);color:var(--txt-dk)}
+  .feat-inner{
+    width:100%;max-width:1024px;margin:0 auto;
+    display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,80px);align-items:center;
+  }
+  .feat.ph-right .feat-art{order:2}
+  .feat-art{display:flex;justify-content:center}
+  .feat-art .phone{width:min(300px,36dvh,70vw);margin:0}
+  .feat-copy{text-align:left}
+  .feat-copy .sub{color:var(--gray);margin:14px 0 0;max-width:46ch}
+  .feat.dk .feat-copy .sub{color:var(--gray-dk)}
+  .feat-copy .links{justify-content:flex-start;margin-top:20px}
+  @media(max-width:734px){
+    .feat{min-height:0;padding:80px 22px}
+    .feat-inner{grid-template-columns:1fr;gap:40px;text-align:center}
+    .feat .feat-art,.feat.ph-right .feat-art{order:2}
+    .feat-copy{text-align:center}
+    .feat-copy .sub{margin-left:auto;margin-right:auto}
+    .feat-copy .links{justify-content:center}
+  }
+
+  /* ---------- hero: full-screen matrix rain (from home.html) ---------- */
+  .rain-hero{
+    position:relative;height:calc(100dvh - var(--nav-h));min-height:480px;
+    background:#fff;overflow:hidden;
+  }
+  .rain-hero canvas{position:absolute;inset:0;display:block}
+  .hero-watermark{
+    position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(200px,40vw,600px);
+    font-weight:400;color:rgba(239,68,68,.06);pointer-events:none;z-index:1;
+    font-family:'Long Cang',cursive;letter-spacing:-4px
+  }
+  .hero-cta{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;
+    font-size:clamp(16px,3vw,24px);font-weight:600;color:#fff;letter-spacing:.5px;
+    text-decoration:none;transition:all .3s ease;
+    display:flex;align-items:center;gap:8px;padding:14px 28px;
+    background:rgba(0,0,0,.12);backdrop-filter:blur(12px);border-radius:48px;
+    border:1px solid rgba(255,255,255,.15)
+  }
+  .hero-cta:hover{background:rgba(0,0,0,.4);border-color:rgba(255,255,255,.4)}
+  .hero-cta:hover .hero-cta-char{color:#ef4444}
+  .hero-cta-char{font-family:'Ma Shan Zheng',cursive;font-size:1.15em;font-weight:700;color:#b91c1c;transition:color .3s ease}
+
+  /* two-up gallery (apple homepage split tiles) */
+  .twoup{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:1240px;margin:12px auto 0;padding:0 12px 12px}
+  .twoup .cell{border-radius:0;overflow:hidden;text-align:center;padding:72px 22px 0}
+  .twoup .cell.gy{background:var(--bg-gy)}
+  .twoup .cell.dk{background:var(--bg-dk);color:var(--txt-dk)}
+  @media(max-width:734px){.twoup{grid-template-columns:1fr}}
+
+  /* stats strip (full-width band at the bottom of .final) */
+  .ribbon{
+    width:100%;text-align:center;
+    background:var(--bg-gy);border-top:1px solid rgba(0,0,0,.06);
+    padding:48px 22px;
+  }
+  .ribbon .grid{max-width:1024px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:40px}
+  .ribbon .v{font-size:clamp(24px,3.6vw,40px);font-weight:600;letter-spacing:-.015em}
+  .ribbon .l{font-size:14px;color:var(--gray);margin-top:6px;letter-spacing:-.01em}
+  @media(max-width:734px){.ribbon .grid{grid-template-columns:1fr 1fr;gap:30px}}
+
+  /* final cta (full page: CTA centered + stats strip pinned at the bottom) */
+  .final{
+    background:var(--bg-lt);text-align:center;
+    min-height:calc(100dvh - var(--nav-h));
+    display:flex;flex-direction:column;align-items:stretch;
+    padding:0;
+  }
+  .final-cta{
+    flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:60px 22px;
+  }
+  .final .zh{font-size:clamp(44px,7vw,64px);font-weight:700}
+  .final .zh.ink{
+    font-family:'Ma Shan Zheng',var(--font);font-weight:400;
+    font-size:clamp(60px,9vw,92px);line-height:1;color:#b04030;
+  }
+  .final .headline-md{margin-top:10px}
+  .final .sub{color:var(--gray);max-width:520px;margin:16px auto 0}
+  .final .btn{margin-top:30px}
+
+  /* footer */
+  footer{background:var(--bg-lt);border-top:1px solid rgba(0,0,0,.08);padding:10px 22px;color:var(--gray);font-size:12px}
+  footer .inner{max-width:1024px;margin:0 auto}
+  footer .row{display:flex;flex-wrap:wrap;gap:4px 24px;justify-content:space-between;align-items:center}
+  footer .flinks{display:flex;gap:24px}
+  footer a:hover{text-decoration:underline;color:var(--txt)}
+
+  .tile .inner.tight-bottom{padding-bottom:96px}
+
+  /* Default selection color (red) */
+  ::selection{background-color:#ef4444;color:#fff}
+  *::selection{background-color:#ef4444;color:#fff}
+
+  /* Selection colors per section */
+  #cards::selection{background-color:#ef4444;color:#fff}
+  #cards *::selection{background-color:#ef4444;color:#fff}
+  #groups::selection{background-color:#2560b0;color:#fff}
+  #groups *::selection{background-color:#2560b0;color:#fff}
+  #slang::selection{background-color:#fbbf24;color:#000}
+  #slang *::selection{background-color:#fbbf24;color:#000}
+  #translate::selection{background-color:#10b981;color:#fff}
+  #translate *::selection{background-color:#10b981;color:#fff}
+  #profile::selection{background-color:#a855f7;color:#fff}
+  #profile *::selection{background-color:#a855f7;color:#fff}
+</style>
 </head>
 <body>
 
-<!-- Liquid-glass refraction filter (displacement map generated by JS) -->
-<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-  <filter id="liquidGlass" x="-30%" y="-30%" width="160%" height="160%"
-          primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-    <feImage id="liquidGlassMap" result="map" x="0" y="0" preserveAspectRatio="none"/>
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="42"
-                       xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
+<!-- ===== GLOBAL NAV ===== -->
+<nav class="gnav">
+  <div class="gnav-inner">
+    <a class="glogo" href="#top"><img src="./icons/favicon.svg" alt=""/>刷字 shuazi</a>
+    <span class="spacer"></span>
+    <a class="glink" href="#cards" data-i18n-en>Cards</a><a class="glink" href="#cards" data-i18n-es>Tarjetas</a>
+    <a class="glink" href="#groups" data-i18n-en>Groups</a><a class="glink" href="#groups" data-i18n-es>Grupos</a>
+    <a class="glink" href="#slang">Slang</a>
+    <a class="glink" href="#translate" data-i18n-en>Translate</a><a class="glink" href="#translate" data-i18n-es>Traductor</a>
+    <a class="glink" href="#profile" data-i18n-en>Profile</a><a class="glink" href="#profile" data-i18n-es>Perfil</a>
+    <button id="langBtn" aria-label="Language"><span id="langLabel">EN</span></button>
+    <a class="gopen" href="https://app.shuaziapp.com/"><span data-i18n-en>Open app</span><span data-i18n-es>Abrir app</span></a>
+  </div>
+</nav>
 
-<!-- Indexable content for search engines (visually hidden, screen-reader accessible) -->
-<header style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">
-  <h1>刷字 ShuaziApp — Learn Chinese Hanzi with Flashcards</h1>
-  <p>Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. Build vocabulary and improve character recognition through an interactive flashcard system covering HSK 1–6, and explore an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system.</p>
-</header>
-<noscript>
-  <h2>刷字 ShuaziApp</h2>
-  <p>Shuazi is a free Chinese learning app for studying Hanzi with flashcards, an HSK 1–6 character dictionary, and a radicals reference. Please enable JavaScript to use the interactive flashcards.</p>
-</noscript>
+<span id="top"></span>
 
-<div class="root">
+<!-- ===== HERO: full-screen matrix rain ===== -->
+<section class="rain-hero">
+  <div class="hero-watermark" aria-hidden="true">刷字</div>
+  <canvas id="matrix" aria-hidden="true"></canvas>
+  <a href="#cards" class="hero-cta"><span data-i18n-en>Discover</span><span data-i18n-es>Descubre</span> <span class="hero-cta-char">刷字</span></a>
+</section>
 
-  <!-- SCREENS -->
-  <div class="screens">
-
-    <!-- ── SCREEN 1: FLASHCARDS ── -->
-    <div class="screen active" id="screen-cards">
-      <header class="header">
-        <div class="brand">
-          <img class="logo" src="./icons/favicon.svg" alt="刷字" width="34" height="34"/>
-          <div>
-            <div class="title">shuazi</div>
-            <div class="sub" data-i18n="app.sub.cards">learn by swiping</div>
-          </div>
+<!-- ===== CARDS (phone left) ===== -->
+<section class="feat gy" id="cards">
+  <div class="feat-inner">
+    <div class="feat-art rv">
+      <div class="phone">
+        <div class="shot"><div class="notch"></div>
+          <img src="./images/landing/cards.png" alt="Shuazi — Cards flashcards screen" loading="lazy" width="780" height="1688"/>
         </div>
-        <div class="hdr-stats">
-          <div class="st" id="sRest"><div class="v" id="vRest">50</div><div class="l" data-i18n="stat.left">Left</div></div>
-          <div class="st" id="sKnown"><div class="v" id="vKnown">0</div><div class="l" data-i18n="stat.known">Known</div></div>
-          <div class="st" id="sRepaso"><div class="v" id="vRepaso">0</div><div class="l" data-i18n="stat.review">Review</div></div>
-          <button class="icon-btn" id="themeBtn" aria-label="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </button>
-        </div>
-      </header>
-      <div class="deck-wrap"><div class="deck" id="deck"></div></div>
-      <div class="deck-progress">
-        <div class="deck-progress-track"><div class="deck-progress-fill" id="deckProgFill"></div></div>
-        <span class="deck-progress-pct" id="deckProgPct">0%</span>
-      </div>
-      <div class="deck-hints">
-        <span class="deck-hint dh-left"   data-i18n="hint.left">← Left</span>
-        <span class="deck-hint dh-review" data-i18n="hint.review">↑ Review</span>
-        <span class="deck-hint dh-known"  data-i18n="hint.known">Known →</span>
       </div>
     </div>
-
-    <!-- ── SCREEN 2: GRUPOS HSK ── -->
-    <div class="screen" id="screen-groups">
-      <div class="groups-header">
-        <div>
-          <div class="groups-title" data-i18n="groups.title">HSK Groups</div>
-          <div class="groups-sub" data-i18n="groups.sub">Tap to see details</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="icon-btn sort-btn" id="sortBtn" aria-label="Sort">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M19 12l-3-3 3 3 3-3"/></svg>
-            <span id="sortLabel" data-i18n="sort.pinyin" style="font-size:.6rem;font-weight:700;letter-spacing:.04em;margin-left:2px">Pinyin</span>
-          </button>
-          <button class="icon-btn" id="pinyinToggleBtn" aria-label="Toggle pinyin"></button>
-          <button class="icon-btn" id="searchToggleBtn" aria-label="Search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          </button>
-          <button class="icon-btn" id="themeBtnG" aria-label="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="search-bar-wrap" id="searchBarWrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="searchInput" type="text" placeholder="Search…" data-i18n-ph="search.ph" aria-label="Search characters" autocomplete="off" autocorrect="off" spellcheck="false"/>
-        <button id="searchClear" aria-label="Clear">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <p id="searchHint" data-i18n="search.hint" style="font-size:.64rem;color:var(--faint);opacity:.6;margin:0;display:none">Use quotes (" ") to search for an exact character</p>
-      <div class="groups-scroll" id="groups-scroll">
-        <div id="groupsPull" class="pull-disc" aria-hidden="true">
-          <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-            <line x1="12" y1="6" x2="12" y2="2.5"/>
-            <line x1="15" y1="6.8" x2="16.75" y2="3.77"/>
-            <line x1="17.2" y1="9" x2="20.23" y2="7.25"/>
-            <line x1="18" y1="12" x2="21.5" y2="12"/>
-            <line x1="17.2" y1="15" x2="20.23" y2="16.75"/>
-            <line x1="15" y1="17.2" x2="16.75" y2="20.23"/>
-            <line x1="12" y1="18" x2="12" y2="21.5"/>
-            <line x1="9" y1="17.2" x2="7.25" y2="20.23"/>
-            <line x1="6.8" y1="15" x2="3.77" y2="16.75"/>
-            <line x1="6" y1="12" x2="2.5" y2="12"/>
-            <line x1="6.8" y1="9" x2="3.77" y2="7.25"/>
-            <line x1="9" y1="6.8" x2="7.25" y2="3.77"/>
-          </svg>
-        </div>
-        <div id="groupsPullLabel" class="pull-label" aria-hidden="true"></div>
-        <div id="groups-content" class="pull-follow"></div>
+    <div class="feat-copy">
+      <div class="eyebrow rv" style="color:#b04030" data-i18n-en>Cards</div>
+      <div class="eyebrow rv" style="color:#b04030" data-i18n-es>Tarjetas</div>
+      <h2 class="headline-md rv" style="transition-delay:.05s">
+        <span data-i18n-en>Swipe right.<br/>Learn Hanzi.</span>
+        <span data-i18n-es>Desliza.<br/>Aprende Hanzi.</span>
+      </h2>
+      <p class="subhead sub rv" style="transition-delay:.1s">
+        <span data-i18n-en>A smart flashcard deck with pinyin, meaning and audio. Right if you know it, left to see it again, up to review it later.</span>
+        <span data-i18n-es>Un mazo de flashcards con pinyin, significado y audio. Derecha si lo sabes, izquierda para repetir, arriba para repasar después.</span>
+      </p>
+      <div class="links rv" style="transition-delay:.12s">
+        <a class="link" href="https://app.shuaziapp.com/"><span data-i18n-en>Try the deck</span><span data-i18n-es>Prueba el mazo</span> <span class="chev">›</span></a>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- ── SCREEN 3: PHRASES ── -->
-    <div class="screen" id="screen-slang">
-      <header class="header">
-        <div class="brand">
-          <div>
-            <div class="title" data-i18n="slang.title">Slang</div>
-            <div class="sub" data-i18n="slang.sub">Chinese culture & slang</div>
-          </div>
+<!-- ===== GROUPS (phone right) ===== -->
+<section class="feat lt ph-right" id="groups">
+  <div class="feat-inner">
+    <div class="feat-art rv">
+      <div class="phone">
+        <div class="shot"><div class="notch"></div>
+          <img src="./images/landing/groups.png" alt="Shuazi — HSK Groups dictionary screen" loading="lazy" width="780" height="1688"/>
         </div>
-        <div class="hdr-stats">
-          <button class="icon-btn" id="themeBtnPh" aria-label="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </button>
-        </div>
-      </header>
-      <div class="deck-wrap"><div class="deck" id="deck-slang"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);padding:0 4px">
-        <span data-i18n="hint.swipeLeft">← swipe left</span><span data-i18n="hint.swipeRight">swipe right →</span>
       </div>
     </div>
+    <div class="feat-copy">
+      <div class="eyebrow rv" style="color:#2560b0" data-i18n-en>Groups</div>
+      <div class="eyebrow rv" style="color:#2560b0" data-i18n-es>Grupos</div>
+      <h2 class="headline-md rv" style="transition-delay:.05s">
+        <span data-i18n-en>Every word.<br/>Beautifully organized.</span>
+        <span data-i18n-es>Cada palabra.<br/>Perfectamente organizada.</span>
+      </h2>
+      <p class="subhead sub rv" style="transition-delay:.1s">
+        <span data-i18n-en>A complete HSK 3.0 dictionary, from level 1 to 9, in a clean, ordered grid. Search, connect and reproduce the logic behind word building.</span>
+        <span data-i18n-es>Un diccionario completo HSK 3.0, desde nivel 1 hasta 9 en una cuadrícula limpia y ordenada. Busca, relaciona y reproduce la lógica en la construcción de palabras.</span>
+      </p>
+      <div class="links rv" style="transition-delay:.12s">
+        <a class="link" href="https://app.shuaziapp.com/"><span data-i18n-en>Explore the dictionary</span><span data-i18n-es>Explora el diccionario</span> <span class="chev">›</span></a>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- ── SCREEN 4: TRANSLATOR ── -->
-    <div class="screen" id="screen-translator">
-      <header class="header">
-        <div class="brand">
-          <div>
-            <div class="title" data-i18n="translator.title">Translator</div>
-            <div class="sub"><span data-i18n="translator.subPrefix">Any language → </span><span id="trSubLang">中文</span></div>
-          </div>
-        </div>
-        <div class="hdr-stats">
-          <button class="icon-btn" id="trNewChat" aria-label="New chat">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-          </button>
-          <button class="icon-btn" id="trHistoryBtn" aria-label="History">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
-          </button>
-          <button class="icon-btn" id="themeBtnT" aria-label="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </button>
-        </div>
-      </header>
-      <div class="translator-scroll">
-        <div id="trPull" class="pull-disc" aria-hidden="true">
-          <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-            <line x1="12" y1="6" x2="12" y2="2.5"/>
-            <line x1="15" y1="6.8" x2="16.75" y2="3.77"/>
-            <line x1="17.2" y1="9" x2="20.23" y2="7.25"/>
-            <line x1="18" y1="12" x2="21.5" y2="12"/>
-            <line x1="17.2" y1="15" x2="20.23" y2="16.75"/>
-            <line x1="15" y1="17.2" x2="16.75" y2="20.23"/>
-            <line x1="12" y1="18" x2="12" y2="21.5"/>
-            <line x1="9" y1="17.2" x2="7.25" y2="20.23"/>
-            <line x1="6.8" y1="15" x2="3.77" y2="16.75"/>
-            <line x1="6" y1="12" x2="2.5" y2="12"/>
-            <line x1="6.8" y1="9" x2="3.77" y2="7.25"/>
-            <line x1="9" y1="6.8" x2="7.25" y2="3.77"/>
-          </svg>
-        </div>
-        <div id="trPullLabel" class="pull-label" aria-hidden="true"></div>
-        <div id="trContent" class="tr-content pull-follow">
-          <div id="trConversation" class="tr-conversation"></div>
-          <div id="trEmpty" class="tr-empty" style="display:none"></div>
+<!-- ===== SLANG (phone left) ===== -->
+<section class="feat gy" id="slang">
+  <div class="feat-inner">
+    <div class="feat-art rv">
+      <div class="phone">
+        <div class="shot"><div class="notch"></div>
+          <img src="./images/landing/slang.png" alt="Shuazi — Slang and culture screen" loading="lazy" width="780" height="1688"/>
         </div>
       </div>
+    </div>
+    <div class="feat-copy">
+      <div class="eyebrow rv" style="color:#c7920a">Slang</div>
+      <h2 class="headline-md rv" style="transition-delay:.05s">
+        <span data-i18n-en>Discover, laugh<br/>and learn.</span>
+        <span data-i18n-es>Descubre, ríe<br/>y aprende.</span>
+      </h2>
+      <p class="subhead sub rv" style="transition-delay:.1s">
+        <span data-i18n-en>Real slang, internet culture, and everyday expressions—with meanings, context, and origins.</span>
+        <span data-i18n-es>Jerga real, cultura de internet y expresiones cotidianas — con significados, contexto y orígenes.</span>
+      </p>
+      <div class="links rv" style="transition-delay:.12s">
+        <a class="link" href="https://app.shuaziapp.com/"><span data-i18n-en>Learn the culture</span><span data-i18n-es>Aprende la cultura</span> <span class="chev">›</span></a>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <!-- Cloned once per translation into #trConversation (chat-style). -->
-      <template id="trMsgTemplate">
-        <div class="tr-message">
-          <div class="tr-user-msg">
-            <div class="tr-bubble js-original"></div>
-          </div>
-          <div class="tr-section">
-            <div class="tr-zh-line js-zh"></div>
-            <div class="tr-zh-actions">
-              <button class="tr-btn tr-copy js-copy" aria-label="Copy" type="button">
-                <svg class="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                <svg class="ic-copied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </button>
-              <button class="tr-btn tr-speak js-speak" aria-label="Listen" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="tr-section">
-            <div class="tr-result js-result"></div>
-            <div class="tr-zh-actions">
-              <button class="tr-eye js-eye" aria-label="Show all meanings" type="button">
-                <svg class="ic-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-                <svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </template>
-      <!-- ChatGPT-style composer pinned to the bottom -->
-      <div class="tr-composer">
-        <div class="tr-input-field">
-          <button id="trLang" class="tr-lang-add" type="button" aria-label="Output language">
-            <span id="trLangCode">zh</span>
-          </button>
-          <textarea id="trInput" class="tr-input" rows="1" placeholder="Type in any language..." data-i18n-ph="tr.placeholder" autocomplete="off" autocorrect="on" spellcheck="true"></textarea>
-          <div class="tr-input-tools">
-            <button id="trMic" class="tr-btn tr-mic" aria-label="Dictate" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
-              <span class="audio-wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
-            </button>
-            <button id="trGo" class="tr-btn" aria-label="Translate" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
-            </button>
-          </div>
+<!-- ===== TRANSLATE (phone right) ===== -->
+<section class="feat lt ph-right" id="translate">
+  <div class="feat-inner">
+    <div class="feat-art rv">
+      <div class="phone">
+        <div class="shot"><div class="notch"></div>
+          <img src="./images/landing/translator.png" alt="Shuazi — Translator screen" loading="lazy" width="780" height="1688"/>
         </div>
       </div>
-
     </div>
+    <div class="feat-copy">
+      <div class="eyebrow rv" style="color:#3a7a56" data-i18n-en>Translate</div>
+      <div class="eyebrow rv" style="color:#3a7a56" data-i18n-es>Traductor</div>
+      <h2 class="headline-md rv" style="transition-delay:.05s">
+        <span data-i18n-en>Say it in any language.<br/>Get it back in 中文.</span>
+        <span data-i18n-es>Dilo en cualquier idioma.<br/>Recíbelo en 中文.</span>
+      </h2>
+      <p class="subhead sub rv" style="transition-delay:.1s">
+        <span data-i18n-en>A chat-style translator for learners. Type or dictate and get natural Chinese back — with pinyin and audio.</span>
+        <span data-i18n-es>Un traductor tipo chat para quien aprende. Escribe o dicta y recibe chino natural — con pinyin y audio.</span>
+      </p>
+      <div class="links rv" style="transition-delay:.12s">
+        <a class="link" href="https://app.shuaziapp.com/"><span data-i18n-en>Translate something</span><span data-i18n-es>Traduce algo</span> <span class="chev">›</span></a>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- ── SCREEN 5: PROFILE ── -->
-    <div class="screen" id="screen-profile">
-      <div class="groups-header">
-        <div>
-          <div class="groups-title" data-i18n="profile.title">Profile</div>
-          <div class="groups-sub" data-i18n="profile.sub">Your progress overview</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="lang-toggle" id="profileLangBtn" aria-label="Language"></button>
-          <button class="icon-btn" id="settingsBtnP" aria-label="Settings">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
-          <button class="icon-btn" id="themeBtnP" aria-label="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </button>
+<!-- ===== PROFILE (phone left) ===== -->
+<section class="feat gy" id="profile">
+  <div class="feat-inner">
+    <div class="feat-art rv">
+      <div class="phone">
+        <div class="shot"><div class="notch"></div>
+          <img src="./images/landing/profile.png" alt="Shuazi — Profile and progress screen" loading="lazy" width="780" height="1688"/>
         </div>
       </div>
-      <div class="groups-scroll" id="profile-scroll"></div>
     </div>
-
-  </div>
-
-  <!-- TAB BAR -->
-  <nav class="tabbar" style="min-height:58px">
-    <div class="tab-pill" aria-hidden="true"></div>
-    <button class="tab active" id="tab-cards" aria-label="Flashcards">
-      <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="4" width="20" height="16" rx="3"/>
-        <path d="M8 10h8M8 14h5"/>
-      </svg>
-      <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
-        <path d="M4 3h16a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm4 6a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H8Zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8Z"/>
-      </svg>
-      <span data-i18n="tab.cards">Cards</span>
-    </button>
-    <button class="tab" id="tab-groups" aria-label="HSK Groups">
-      <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
-        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-      </svg>
-      <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor">
-        <rect x="3"  y="3"  width="8" height="8" rx="2"/>
-        <rect x="13" y="3"  width="8" height="8" rx="2"/>
-        <rect x="3"  y="13" width="8" height="8" rx="2"/>
-        <rect x="13" y="13" width="8" height="8" rx="2"/>
-      </svg>
-      <span data-i18n="tab.groups">Groups</span>
-    </button>
-    <button class="tab" id="tab-slang" aria-label="Slang">
-      <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M4 3h16a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9.4l-4.6 3.8A1 1 0 0 1 3 21V6a3 3 0 0 1 1-3Z"/>
-      </svg>
-      <span data-i18n="tab.slang">Slang</span>
-    </button>
-    <button class="tab" id="tab-translator" aria-label="Translator">
-      <svg class="ic-line" viewBox="0 0 24 24">
-        <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <text x="12" y="17.5" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" font-family="-apple-system,'Helvetica Neue',sans-serif">文</text>
-      </svg>
-      <svg class="ic-fill" viewBox="0 0 24 24">
-        <defs>
-          <mask id="trIconMask">
-            <rect width="24" height="24" fill="#fff"/>
-            <text x="12" y="17.5" text-anchor="middle" font-size="14" font-weight="700" fill="#000" font-family="-apple-system,'Helvetica Neue',sans-serif">文</text>
-          </mask>
-        </defs>
-        <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="currentColor" mask="url(#trIconMask)"/>
-      </svg>
-      <span data-i18n="tab.translate">Translate</span>
-    </button>
-    <button class="tab" id="tab-profile" aria-label="Profile">
-      <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
-      </svg>
-      <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8Z"/>
-      </svg>
-      <span data-i18n="tab.profile">Profile</span>
-    </button>
-  </nav>
-</div>
-
-<!-- Recents drawer: a flat panel revealed as the app content slides aside (ChatGPT-style push) -->
-<aside class="tr-history-panel" id="trHistory" role="dialog" aria-label="Recent translations" aria-hidden="true">
-  <div class="tr-history-head">
-    <span></span>
-    <button class="icon-btn" id="trHistoryClose" aria-label="Close">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    </button>
-  </div>
-  <div class="tr-history-list" id="trHistoryList"></div>
-</aside>
-<div class="tr-history-scrim" id="trHistoryBackdrop" aria-hidden="true"></div>
-
-<!-- CHAR DETAIL MODAL -->
-<div class="modal-backdrop" id="modal-backdrop">
-  <div class="modal" id="modal">
-    <div class="modal-handle"></div>
-    <div id="modal-content"></div>
-  </div>
-</div>
-
-<!-- RESET CONFIRM MODAL -->
-<div class="modal-backdrop" id="reset-backdrop" style="display:none">
-  <div class="modal" id="reset-modal" style="gap:16px">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;font-size:2rem">⚠️</div>
-    <div style="text-align:center">
-      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px" data-i18n="reset.title">Reset all progress?</div>
-      <div style="font-size:.75rem;color:var(--faint);line-height:1.6" data-i18n="reset.desc">This will permanently delete all your Known and Review marks. This action cannot be undone.</div>
-    </div>
-    <div id="reset-stats" style="background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-around;text-align:center"></div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="resetConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer" data-i18n="reset.confirm">Yes, reset everything</button>
-      <button id="resetCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer" data-i18n="common.cancel">Cancel</button>
+    <div class="feat-copy">
+      <div class="eyebrow rv" style="color:#8158d4" data-i18n-en>Profile</div>
+      <div class="eyebrow rv" style="color:#8158d4" data-i18n-es>Perfil</div>
+      <h2 class="headline-md rv" style="transition-delay:.05s">
+        <span data-i18n-en>Your progress.<br/>Everywhere you go.</span>
+        <span data-i18n-es>Tu progreso.<br/>Vayas donde vayas.</span>
+      </h2>
+      <p class="subhead sub rv" style="transition-delay:.1s">
+        <span data-i18n-en>Known characters, review queue and streaks at a glance — synced across your devices.</span>
+        <span data-i18n-es>Caracteres aprendidos, cola de repaso y rachas de un vistazo — sincronizado entre tus dispositivos.</span>
+      </p>
+      <div class="links rv" style="transition-delay:.12s">
+        <a class="link" href="https://app.shuaziapp.com/"><span data-i18n-en>See your stats</span><span data-i18n-es>Mira tus estadísticas</span> <span class="chev">›</span></a>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ACCOUNT PANEL -->
-<aside class="account-panel" id="accountPanel" role="dialog" aria-label="Account" aria-hidden="true">
-  <div class="settings-panel-head" style="justify-content:flex-start;gap:4px">
-    <button class="icon-btn" id="accountPanelClose" aria-label="Back">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    </button>
-    <span data-i18n="settings.account">Account</span>
+<!-- ===== FINAL CTA ===== -->
+<section class="final">
+  <div class="final-cta rv">
+    <div class="zh ink">刷字</div>
+    <h2 class="headline-md">
+      <span data-i18n-en>Start today. It's free.</span>
+      <span data-i18n-es>Empieza hoy. Es gratis.</span>
+    </h2>
+    <p class="subhead sub">
+      <span data-i18n-en>Open it in your browser and swipe.</span>
+      <span data-i18n-es>Ábrela en tu navegador y desliza.</span>
+    </p>
+    <a class="btn lg" href="https://app.shuaziapp.com/"><span data-i18n-en>Open the app</span><span data-i18n-es>Abrir la app</span></a>
   </div>
-  <div class="settings-panel-body">
-    <div id="accountUserSection"></div>
-    <button class="settings-item" id="resetBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-      <span data-i18n="account.reset">Reset progress</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-    <button class="settings-item" id="deleteAccountBtn" style="background:rgba(186,13,31,.1);border-color:rgba(186,13,31,.22);color:#c04050">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      <span data-i18n="account.delete">Delete account</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-  </div>
-</aside>
-<div class="account-scrim" id="accountScrim" aria-hidden="true"></div>
 
-<!-- DELETE ACCOUNT CONFIRM MODAL -->
-<div class="modal-backdrop" id="delacct-backdrop" style="display:none">
-  <div class="modal" id="delacct-modal" style="gap:16px">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;font-size:2rem">⚠️</div>
-    <div style="text-align:center">
-      <div style="font-size:.95rem;font-weight:700;color:var(--txt);margin-bottom:6px" data-i18n="delacct.title">Delete your account?</div>
-      <div style="font-size:.75rem;color:var(--faint);line-height:1.6" data-i18n="delacct.desc">This permanently deletes your account, progress and saved translations. This action cannot be undone.</div>
-    </div>
-    <div id="delacct-error" style="font-size:.7rem;color:#c04050;text-align:center;min-height:.9rem"></div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="delacctConfirmBtn" style="padding:12px;border-radius:12px;background:rgba(186,13,31,.12);border:1px solid rgba(186,13,31,.25);color:#c04050;font-size:.82rem;font-weight:700;cursor:pointer" data-i18n="delacct.confirm">Yes, delete my account</button>
-      <button id="delacctCancelBtn" style="padding:12px;border-radius:12px;background:var(--surf);border:1px solid var(--bdr);color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer" data-i18n="common.cancel">Cancel</button>
+  <!-- stats -->
+  <div class="ribbon rv">
+    <div class="grid">
+      <div><div class="v">3,000+</div><div class="l" data-i18n-en>Characters</div><div class="l" data-i18n-es>Caracteres</div></div>
+      <div><div class="v">11,000+</div><div class="l" data-i18n-en>Words</div><div class="l" data-i18n-es>Palabras</div></div>
+      <div><div class="v">HSK 1-9</div><div class="l" data-i18n-en>Full coverage</div><div class="l" data-i18n-es>Cobertura completa</div></div>
+      <div><div class="v" data-i18n-en>Free</div><div class="v" data-i18n-es>Gratis</div><div class="l" data-i18n-en>Up to HSK 3</div><div class="l" data-i18n-es>Hasta HSK 3</div></div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- SETTINGS PANEL -->
-<aside class="settings-panel" id="settingsPanel" role="dialog" aria-label="Settings" aria-hidden="true">
-  <div class="settings-panel-head">
-    <span data-i18n="settings.title">Settings</span>
-    <button class="icon-btn" id="settingsPanelClose" aria-label="Close">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    </button>
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="inner">
+    <div class="row">
+      <div>Copyright © 2026 Shuazi · shuaziapp.com</div>
+      <div class="flinks">
+        <a href="https://app.shuaziapp.com/">App</a>
+        <a href="./privacy.html" data-i18n-en>Privacy Policy</a><a href="./privacy.html" data-i18n-es>Privacidad</a>
+        <a href="./terms.html" data-i18n-en>Terms of Use</a><a href="./terms.html" data-i18n-es>Términos</a>
+      </div>
+    </div>
   </div>
-  <div class="settings-panel-body">
-    <button class="settings-item" id="settingsAccountBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span data-i18n="settings.account">Account</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-    <button class="settings-item" id="settingsInviteBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-      <span data-i18n="settings.invite">Invite a friend</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-    <button class="settings-item" id="settingsContactBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-      <span data-i18n="settings.contact">Contact</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-    <a class="settings-item" id="settingsTermsBtn" href="./terms.html" target="_blank" rel="noopener">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
-      <span data-i18n="settings.terms">Terms &amp; Conditions</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <a class="settings-item" id="settingsPrivacyBtn" href="./privacy.html" target="_blank" rel="noopener">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span data-i18n="settings.privacy">Privacy Policy</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <button class="settings-item" id="settingsMatrixBtn">
-      <span class="settings-item-hanzi" aria-hidden="true">雨</span>
-      <span data-i18n="settings.hanzi">Hanzi</span>
-      <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-  </div>
-</aside>
-<div class="settings-scrim" id="settingsScrim" aria-hidden="true"></div>
+</footer>
 
-<!-- Hanzi Rain effect overlay -->
-<div class="matrix-overlay" id="matrixOverlay" aria-hidden="true">
-  <iframe id="matrixFrame" title="Hanzi Rain" loading="lazy"></iframe>
-</div>
+<script>
+  // Language toggle
+  var root=document.documentElement;
+  function applyLang(l){
+    root.dataset.lang=l;root.lang=l;
+    document.getElementById('langLabel').textContent=(l==='es'?'ES':'EN');
+    try{localStorage.setItem('shuazi-landing-lang',l);}catch(e){}
+  }
+  document.getElementById('langLabel').textContent=(root.dataset.lang==='es'?'ES':'EN');
+  document.getElementById('langBtn').addEventListener('click',function(){
+    applyLang(root.dataset.lang==='es'?'en':'es');
+  });
 
-<!-- Supabase loaded async (non-blocking); onload resolves the ready-gate above -->
-<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
-        crossorigin="anonymous"
-        onload="window._supabaseResolve()"></script>
-<!-- Stripe removed: checkout uses server-side redirect, no Stripe.js needed client-side -->
-<script type="module" src="./app.js"></script>
+  // Apple-style scroll reveal
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.15,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.rv').forEach(function(el){ io.observe(el); });
+
+  // ===== Matrix rain hero (same effect as home.html, fixed params) =====
+  (function(){
+    var canvas=document.getElementById('matrix');
+    if(!canvas)return;
+    var ctx=canvas.getContext('2d');
+    var hero=canvas.parentElement;
+    var chars="的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能成于然样没还最长凍京汽亦吉並佞昏予棟亍丰從場拚予扎弍京並劲呔吋於亍".split('');
+
+    var P={baseFontSize:24,minScale:.55,maxScale:1.55,colGapFactor:1.25,lineGapFactor:1.18,
+           speedMin:1.8,speedMax:8,trailMin:6,trailMax:24,
+           headDarkFar:150,headDarkNear:0,mergeGrayFar:248,mergeGrayNear:165,
+           bgVisFar:.06,bgVisNear:.28,
+           touchRadius:22,gravity:600,respawnSeconds:3};
+
+    // smaller glyphs / tighter columns on phones (same values as 汉字雨.html)
+    function deviceParams(){
+      return hero.clientWidth<768
+        ? {baseFontSize:16,minScale:.45,maxScale:1.25,colGapFactor:1.15}
+        : {baseFontSize:24,minScale:.55,maxScale:1.55,colGapFactor:1.25};
+    }
+
+    function randomChar(){return chars[Math.floor(Math.random()*chars.length)];}
+    function lerp(a,b,t){return a+(b-a)*t;}
+
+    var cols,columnsData,colGap;
+    var W=0,H=0,DPR=1; // logical size + device-pixel-ratio (crisp on mobile)
+    var mouseX=null,mouseY=null;
+    var debris=[]; // caracteres rotos de su fila que caen libremente (como 汉字雨.html)
+
+    function makeColumn(){
+      var depth=Math.random();
+      var fontSize=P.baseFontSize*lerp(P.minScale,P.maxScale,depth);
+      var lineGap=fontSize*P.lineGapFactor;
+      var rowsC=Math.ceil(H/lineGap)+2;
+      var gridChars=new Array(rowsC).fill(0).map(randomChar);
+      var visRange=lerp(P.bgVisFar,P.bgVisNear,depth);
+      var bgBrightness=new Array(rowsC).fill(0).map(function(){return .02+Math.random()*visRange;});
+      return{depth:depth,fontSize:fontSize,lineGap:lineGap,rowsC:rowsC,gridChars:gridChars,bgBrightness:bgBrightness,
+        broken:new Array(rowsC).fill(false),
+        brokenUntil:new Array(rowsC).fill(0),
+        headPos:Math.random()*-30,
+        speed:lerp(P.speedMin,P.speedMax,depth)+Math.random()*(P.speedMax*.15),
+        trailLen:Math.round(lerp(P.trailMin,P.trailMax,depth)+Math.random()*6),
+        headDark:Math.round(lerp(P.headDarkFar,P.headDarkNear,depth)),
+        mergeGray:Math.round(lerp(P.mergeGrayFar,P.mergeGrayNear,depth))};
+    }
+
+    function setup(){
+      var d=deviceParams();
+      P.baseFontSize=d.baseFontSize;P.minScale=d.minScale;
+      P.maxScale=d.maxScale;P.colGapFactor=d.colGapFactor;
+      W=hero.clientWidth;H=hero.clientHeight;
+      DPR=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=Math.round(W*DPR);
+      canvas.height=Math.round(H*DPR);
+      canvas.style.width=W+'px';
+      canvas.style.height=H+'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0); // draw in logical px, render at DPR
+      colGap=P.baseFontSize*P.maxScale*P.colGapFactor;
+      cols=Math.ceil(W/colGap);
+      columnsData=new Array(cols).fill(0).map(makeColumn);
+      debris=[];
+    }
+
+    // si el cursor toca un carácter, lo rompe de su fila y lo manda a "debris"
+    function updateTouch(){
+      if(mouseX===null)return;
+      var now=performance.now()/1000;
+      for(var i=0;i<columnsData.length;i++){
+        var s=columnsData[i],x=i*colGap;
+        for(var r=0;r<s.rowsC;r++){
+          if(s.broken[r])continue;
+          var y=r*s.lineGap;
+          var dx=x+s.fontSize/2-mouseX,dy=y+s.fontSize/2-mouseY;
+          if(Math.sqrt(dx*dx+dy*dy)<P.touchRadius){
+            s.broken[r]=true;
+            s.brokenUntil[r]=now+P.respawnSeconds*(0.7+Math.random()*0.6);
+            debris.push({x:x,y:y,fontSize:s.fontSize,char:s.gridChars[r],
+              vx:(Math.random()-0.5)*70,vy:10+Math.random()*50,
+              rot:0,rotSpeed:(Math.random()-0.5)*4});
+          }
+        }
+      }
+    }
+
+    function updateDebris(dt){
+      var now=performance.now()/1000;
+      for(var i=debris.length-1;i>=0;i--){
+        var d=debris[i];
+        d.vy+=P.gravity*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.rot+=d.rotSpeed*dt;
+        if(d.y>H+80)debris.splice(i,1);
+      }
+      // los huecos reaparecen como caracteres nuevos pasado su tiempo
+      for(var c=0;c<columnsData.length;c++){
+        var s=columnsData[c];
+        for(var r=0;r<s.rowsC;r++){
+          if(s.broken[r]&&now>=s.brokenUntil[r]){
+            s.broken[r]=false;
+            s.gridChars[r]=randomChar();
+          }
+        }
+      }
+    }
+
+    function update(dt){
+      for(var i=0;i<columnsData.length;i++){
+        var s=columnsData[i];
+        s.headPos+=s.speed*dt;
+        if(s.headPos-s.trailLen>s.rowsC+5){
+          var fresh=makeColumn();
+          s.headPos=fresh.headPos;s.speed=fresh.speed;s.trailLen=fresh.trailLen;
+        }
+      }
+    }
+
+    function draw(){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,W,H);
+      ctx.textBaseline='top';
+      ctx.textAlign='left';
+      var order=columnsData.map(function(_,i){return i;});
+      order.sort(function(a,b){return columnsData[a].depth-columnsData[b].depth;});
+      for(var o=0;o<order.length;o++){
+        var c=order[o],s=columnsData[c],x=c*colGap;
+        ctx.font=s.fontSize+'px monospace';
+        for(var r=0;r<s.rowsC;r++){
+          if(s.broken[r])continue; // hueco: ese carácter está cayendo como debris
+          var diff=s.headPos-r,g;
+          if(diff>=0&&diff<=s.trailLen){
+            var t=1-diff/s.trailLen;
+            g=t>.92?s.headDark:Math.round(lerp(s.mergeGray,s.headDark,t));
+          }else{
+            g=Math.round(255-s.bgBrightness[r]*300);
+          }
+          g=Math.min(255,Math.max(0,g));
+          ctx.fillStyle='rgb('+g+','+g+','+g+')';
+          ctx.fillText(s.gridChars[r],x,r*s.lineGap);
+        }
+      }
+      // caracteres rotos cayendo con rotación, encima de todo
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      for(var j=0;j<debris.length;j++){
+        var d=debris[j];
+        ctx.save();
+        ctx.translate(d.x+d.fontSize/2,d.y+d.fontSize/2);
+        ctx.rotate(d.rot);
+        ctx.font=d.fontSize+'px monospace';
+        ctx.fillStyle='#111';
+        ctx.fillText(d.char,0,0);
+        ctx.restore();
+      }
+      ctx.textAlign='left';
+      ctx.textBaseline='top';
+    }
+
+    var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var lastTime=performance.now();
+    function frame(now){
+      var dt=(now-lastTime)/1000;lastTime=now;
+      update(dt);updateTouch();updateDebris(dt);draw();
+      requestAnimationFrame(frame);
+    }
+
+    // ratón: pasar por encima rompe los caracteres (coords relativas al canvas)
+    canvas.addEventListener('mousemove',function(e){
+      var r=canvas.getBoundingClientRect();
+      mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;
+    });
+    canvas.addEventListener('mouseleave',function(){mouseX=null;mouseY=null;});
+    // táctil: deslizar el dedo también rompe (passive: no bloquea el scroll)
+    function setTouchPos(e){
+      if(!e.touches.length)return;
+      var r=canvas.getBoundingClientRect(),t=e.touches[0];
+      mouseX=t.clientX-r.left;mouseY=t.clientY-r.top;
+    }
+    canvas.addEventListener('touchstart',setTouchPos,{passive:true});
+    canvas.addEventListener('touchmove',setTouchPos,{passive:true});
+    canvas.addEventListener('touchend',function(){mouseX=null;mouseY=null;},{passive:true});
+    canvas.addEventListener('touchcancel',function(){mouseX=null;mouseY=null;},{passive:true});
+
+    setup();
+    // On phones the URL bar collapsing fires resize with tiny height changes;
+    // regenerating the rain for those is jarring. Only rebuild when the width
+    // changes or the height moves substantially (rotation, real resize).
+    window.addEventListener('resize',function(){
+      if(hero.clientWidth!==W||Math.abs(hero.clientHeight-H)>140){
+        setup();
+        if(reduced){update(3);draw();}
+      }
+    });
+    if(reduced){update(3);draw();}         // static frame only
+    else requestAnimationFrame(frame);
+  })();
+
+</script>
 </body>
 </html>
