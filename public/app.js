@@ -152,10 +152,9 @@ const rebuildDeckKeepingTop = () => {
   return next;
 };
 
-// Restore theme before first paint
+// Restore theme before first paint (default: iOS light)
 try {
-  const t = localStorage.getItem('shuazi-theme');
-  if (t) setTheme(t);
+  setTheme(localStorage.getItem('shuazi-theme') || 'light');
 } catch (e) {}
 
 // Translate the static chrome to the saved language before first paint.

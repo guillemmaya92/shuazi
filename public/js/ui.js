@@ -1396,6 +1396,15 @@ tabPhrases.onclick   = () => showTab('slang');
 tabTranslate.onclick = () => showTab('translator');
 tabProfile.onclick   = () => showTab('profile');
 
+/* Deep-link: /?screen=groups|slang|translator|profile opens on that tab
+   (used by the landing page mockup previews). */
+{
+  const scr = new URLSearchParams(window.location.search).get('screen');
+  if (['cards', 'groups', 'slang', 'translator', 'profile'].includes(scr)) {
+    requestAnimationFrame(() => showTab(scr));
+  }
+}
+
 /* ── DRAG THE PILL (Instagram-style) ──
    The knob follows the finger across the bar in real time and snaps to the
    nearest tab on release. A plain tap still falls through to the click handler. */
@@ -2062,15 +2071,28 @@ setupPullRefresh({
   readyText: () => t('filters.releaseClear'),
 });
 
-/* ── THEME ── */
+/* ── THEME ──
+   Three states cycling light → medium → dark. 'light' is the iOS-style
+   palette, 'medium' the original warm-paper light, 'dark' unchanged. The
+   button icon shows the CURRENT theme: sun / half circle / moon. */
+const THEME_CYCLE = ['light', 'medium', 'dark'];
+const THEME_ICONS = {
+  // sun — iOS light
+  light:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
+  // half-filled circle — medium
+  medium: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>',
+  // moon — dark
+  dark:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+};
+const nextTheme = t => THEME_CYCLE[(THEME_CYCLE.indexOf(t) + 1) % THEME_CYCLE.length];
+
 export function setTheme(t) {
+  if (!THEME_CYCLE.includes(t)) t = 'light';
   state.theme = t;
   document.documentElement.setAttribute('data-theme', t);
   try { localStorage.setItem('shuazi-theme', t); } catch (e) {}
   saveSettings();
-  const icon = t === 'dark'
-    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
-    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  const icon = THEME_ICONS[t];
   ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
     document.getElementById(id).innerHTML = icon;
   });
@@ -2080,7 +2102,7 @@ export function setTheme(t) {
   // position (and needlessly rebuild thousands of tiles).
 }
 
-const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+const toggleTheme = () => setTheme(nextTheme(document.documentElement.getAttribute('data-theme')));
 ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
   document.getElementById(id).onclick = toggleTheme;
 });

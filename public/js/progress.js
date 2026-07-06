@@ -189,7 +189,7 @@ export async function loadSettingsFromSupabase() {
   if (data.game === 'words' || data.game === 'characters') state.groupsContent = data.game;
   if (Array.isArray(data.hsk_levels) && data.hsk_levels.length) state.activeHskLevels = new Set(data.hsk_levels);
   if (Array.isArray(data.statuses) && data.statuses.length)     state.activeStatuses  = new Set(data.statuses);
-  if (data.theme === 'dark' || data.theme === 'light')          state.theme = data.theme;
+  if (['dark', 'medium', 'light'].includes(data.theme))         state.theme = data.theme;
   // Adopt the account's language and re-localize any already-loaded content, so
   // the deck/grid the caller renders next is in the right language.
   if ((data.lang === 'en' || data.lang === 'es') && data.lang !== state.lang) {

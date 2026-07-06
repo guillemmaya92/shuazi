@@ -47,6 +47,33 @@
   --bar-act:   rgba(255,255,255,.92);
 }
 [data-theme="light"] {
+  /* iOS structure (grouped gray background + pure white surfaces), but keeping
+     the medium theme's ink and accent colors — only structure/bg change. */
+  --bg:        #f2f2f7; /* systemGroupedBackground */
+  --surf:      #ffffff;
+  --surf2:     #ffffff;
+  --bdr:       rgba(0,0,0,.08);
+  --txt:       #251d17;
+  --muted:     #645750;
+  --faint:     #635649;
+  --red:       #b04030;
+  --red-bg:    rgba(176,64,48,.11);
+  --green:     #3a7a56;
+  --green-bg:  rgba(58,122,86,.11);
+  --blue:      #2560b0;
+  --blue-bg:   rgba(37,96,176,.11);
+  /* Entity-type accents — see the dark block above. */
+  --char:        var(--blue);   --char-bg:      var(--blue-bg);
+  --word:        #8158d4;       --word-bg:      rgba(129,88,212,.14);
+  --radical:     #3e9c8f;       --radical-bg:   rgba(62,156,143,.14);
+  --component:   #7e7e88;       --component-bg: rgba(120,120,130,.14);
+  --sh:        0 28px 70px rgba(0,0,0,.10), 0 4px 14px rgba(0,0,0,.05);
+  --tabbar:    rgba(249,249,249,.94); /* iOS tab-bar material */
+  --bar-bg:    rgba(0,0,0,.18);
+  --bar-act:   rgba(0,0,0,.85);
+}
+[data-theme="medium"] {
+  /* the original warm-paper light theme */
   --bg:        #e4ded3; /* gently warmed, low-glare base */
   --surf:      #ede7de; /* soft warm surface */
   --surf2:     #f3eee5; /* was #ffffff — no pure white */
@@ -267,12 +294,17 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tint-l { background:linear-gradient(to right,  rgba(143,164,176,.22), rgba(143,164,176,0)); }
 .tint-r { background:linear-gradient(to left,   rgba(104,191,138,.2),  rgba(104,191,138,0)); }
 .tint-u { background:linear-gradient(to bottom, rgba(100,160,230,.2),  rgba(100,160,230,0)); }
-/* Light theme is tuned per-direction so each colour reads with even weight. */
-[data-theme="light"] .tint-l { background:linear-gradient(to right,  rgba(143,164,176,.3),  rgba(143,164,176,0)); }
-[data-theme="light"] .tint-r { background:linear-gradient(to left,   rgba(58,122,86,.18),   rgba(58,122,86,0)); }
-[data-theme="light"] .tint-u { background:linear-gradient(to bottom, rgba(37,96,176,.16),   rgba(37,96,176,0)); }
-[data-theme="light"] .chip-r { background:rgba(58,122,86,.18); }
-[data-theme="light"] .chip-u { background:rgba(37,96,176,.18); }
+/* Light/medium themes are tuned per-direction so each colour reads evenly. */
+[data-theme="light"] .tint-l,
+[data-theme="medium"] .tint-l { background:linear-gradient(to right,  rgba(143,164,176,.3),  rgba(143,164,176,0)); }
+[data-theme="light"] .tint-r,
+[data-theme="medium"] .tint-r { background:linear-gradient(to left,   rgba(58,122,86,.18),   rgba(58,122,86,0)); }
+[data-theme="light"] .tint-u,
+[data-theme="medium"] .tint-u { background:linear-gradient(to bottom, rgba(37,96,176,.16),   rgba(37,96,176,0)); }
+[data-theme="light"] .chip-r,
+[data-theme="medium"] .chip-r { background:rgba(58,122,86,.18); }
+[data-theme="light"] .chip-u,
+[data-theme="medium"] .chip-u { background:rgba(37,96,176,.18); }
 .chip { position:absolute; top:52px; z-index:3; padding:4px 12px; border-radius:999px; font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:0; pointer-events:none; }
 .chip-l { left:34px;  background:rgba(143,164,176,.25); color:var(--muted); }
 .chip-r { right:26px; background:var(--green-bg); color:var(--green); }
