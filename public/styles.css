@@ -72,6 +72,27 @@
   --bar-bg:    rgba(0,0,0,.18);
   --bar-act:   rgba(0,0,0,.85);
 }
+/* Light theme: modal content boxes (palabra, nivel, pinyin) are light gray */
+[data-theme="light"] .modal .info-cell,
+[data-theme="light"] .modal .words-list,
+[data-theme="light"] .modal .word-exp {
+  background: #f5f5fa;
+}
+/* Light theme: cards page - second card (back) content boxes are light gray */
+[data-theme="light"] .card .info-cell,
+[data-theme="light"] .card .words-list,
+[data-theme="light"] .card .word-exp {
+  background: #f5f5fa;
+}
+/* Light theme: cards page - first card (front) example box is light gray */
+[data-theme="light"] .card .ans-example {
+  background: #f5f5fa;
+}
+/* Light theme: grid hover is light gray, not white */
+[data-theme="light"] .char-tile:not(.known):not(.repaso):hover {
+  background: #f5f5fa;
+}
+
 [data-theme="medium"] {
   /* the original warm-paper light theme */
   --bg:        #e4ded3; /* gently warmed, low-glare base */
@@ -1915,7 +1936,9 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   .tab:not(.active):hover { color:var(--muted); }
   .hsk-group-header:hover > * { opacity: .8; }
   .pill:hover { opacity:.85; }
-  .char-tile:hover { background:var(--surf2); }
+  .char-tile:not(.known):not(.repaso):hover { background:var(--surf2); }
+  .char-tile.known:hover  { background:color-mix(in srgb, var(--green) 22%, var(--green-bg)); }
+  .char-tile.repaso:hover { background:color-mix(in srgb, var(--blue) 22%, var(--blue-bg)); }
   .settings-item:hover {
     background:var(--surf2);
     border-color:color-mix(in srgb, var(--txt) 16%, var(--bdr));

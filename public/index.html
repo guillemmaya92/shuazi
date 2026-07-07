@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script>(function(){try{var l=localStorage.getItem('shuazi-landing-lang')||(navigator.language||'en').slice(0,2);document.documentElement.dataset.lang=(l==='es'?'es':'en');document.documentElement.lang=document.documentElement.dataset.lang;}catch(e){}})();</script>
+<script>(function(){try{var l=localStorage.getItem('shuazi-landing-lang')||'en';document.documentElement.dataset.lang=(l==='es'?'es':'en');document.documentElement.lang=document.documentElement.dataset.lang;}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>刷字 shuazi - Learn chinese by swiping</title>
 <meta name="description" content="Shuazi is a Chinese learning app: swipeable Hanzi flashcards, an HSK 1-6 character dictionary, real Chinese slang & culture, and an any-language → 中文 translator with voice and pinyin."/>
@@ -35,11 +35,11 @@
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;overflow-x:hidden;overflow-x:clip}
   /* Anchor targets: stop scrollIntoView short of the sticky nav's height,
      so it never covers the top of the section it just scrolled to. */
   #top,#cards,#groups,#slang,#translate,#profile{scroll-margin-top:var(--nav-h)}
-  body{font-family:var(--font);background:var(--bg-lt);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.47;overflow-x:hidden}
+  body{font-family:var(--font);background:var(--bg-lt);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.47;width:100%;max-width:100%;overflow-x:hidden;overflow-x:clip;overscroll-behavior-x:none}
   a{color:inherit;text-decoration:none}
   img{display:block;max-width:100%}
 
@@ -159,7 +159,9 @@
   }
   .feat.ph-right .feat-art{order:2}
   .feat-art{display:flex;justify-content:center}
-  .feat-art .phone{width:min(300px,36dvh,70vw);margin:0}
+  /* svh (stable small viewport) not dvh: dvh recalculates as the mobile URL
+     bar shows/hides on scroll, making the phone mockups jitter/resize. */
+  .feat-art .phone{width:min(300px,36svh,70vw);margin:0}
   .feat-copy{text-align:left}
   .feat-copy .sub{color:var(--gray);margin:14px 0 0;max-width:46ch}
   .feat.dk .feat-copy .sub{color:var(--gray-dk)}
@@ -175,13 +177,19 @@
 
   /* ---------- hero: full-screen matrix rain (from home.html) ---------- */
   .rain-hero{
-    position:relative;height:calc(100dvh - var(--nav-h));min-height:480px;
+    position:relative;
+    /* Stable viewport unit: dvh changes as the mobile URL bar shows/hides,
+       which grows the hero mid-scroll and leaves a white gap under the
+       fixed-size rain canvas. lvh (large viewport) never changes. */
+    height:calc(100vh - var(--nav-h));
+    height:calc(100lvh - var(--nav-h));
+    min-height:480px;
     background:#fff;overflow:hidden;
   }
   .rain-hero canvas{position:absolute;inset:0;display:block}
   .hero-watermark{
     position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(200px,40vw,600px);
-    font-weight:400;color:rgba(239,68,68,.06);pointer-events:none;z-index:1;
+    font-weight:400;color:rgba(239,68,68,.04);pointer-events:none;z-index:1;
     font-family:'Long Cang',cursive;letter-spacing:-4px
   }
   .hero-cta{
@@ -281,7 +289,6 @@
 
 <!-- ===== HERO: full-screen matrix rain ===== -->
 <section class="rain-hero">
-  <div class="hero-watermark" aria-hidden="true">刷字</div>
   <canvas id="matrix" aria-hidden="true"></canvas>
   <a href="#cards" class="hero-cta"><span data-i18n-en>Discover</span><span data-i18n-es>Descubre</span> <span class="hero-cta-char">刷字</span></a>
 </section>
