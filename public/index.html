@@ -52,8 +52,10 @@
   /* ---------- global nav (apple 48px bar, light) ---------- */
   .gnav{
     position:sticky;top:0;z-index:100;
-    background:rgba(255,255,255,.8);
-    backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+    /* No backdrop-filter: blurring the animated rain behind the bar every frame
+       freezes browsers with GPU acceleration off (e.g. locked-down work PCs).
+       A near-opaque white bar reads the same without the per-frame cost. */
+    background:rgba(255,255,255,.92);
     border-bottom:1px solid rgba(0,0,0,.08);
   }
   .gnav-inner{max-width:1024px;margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:8px;padding:0 22px}
@@ -187,6 +189,13 @@
     background:#fff;overflow:hidden;
   }
   .rain-hero canvas{position:absolute;inset:0;display:block}
+  /* Soft fade at the bottom so the rain dissolves into the Cards section
+     instead of being cut off with a hard edge. Ends on the Cards grey. */
+  .rain-hero::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;z-index:1;
+    height:clamp(120px,22vh,220px);pointer-events:none;
+    background:linear-gradient(to bottom,rgba(245,245,247,0) 0%,var(--bg-gy) 100%);
+  }
   .hero-watermark{
     position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(200px,40vw,600px);
     font-weight:400;color:rgba(239,68,68,.04);pointer-events:none;z-index:1;
@@ -197,7 +206,11 @@
     font-size:clamp(16px,3vw,24px);font-weight:600;color:#fff;letter-spacing:.5px;
     text-decoration:none;transition:all .3s ease;
     display:flex;align-items:center;gap:8px;padding:14px 28px;
-    background:rgba(0,0,0,.12);backdrop-filter:blur(12px);border-radius:48px;
+    /* Small centred pill: its blur is far cheaper than the full-width nav's, so
+       the frosted look stays. rgba fallback keeps it legible if blur is absent. */
+    background:rgba(0,0,0,.12);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-radius:48px;
     border:1px solid rgba(255,255,255,.15)
   }
   .hero-cta:hover{background:rgba(0,0,0,.4);border-color:rgba(255,255,255,.4)}
@@ -462,7 +475,7 @@
 <footer>
   <div class="inner">
     <div class="row">
-      <div>Copyright © 2026 Shuazi · shuaziapp.com</div>
+      <div>© 2026 <a href="https://shuaziapp.com/">shuazi</a></div>
       <div class="flinks">
         <a href="https://app.shuaziapp.com/">App</a>
         <a href="./privacy.html" data-i18n-en>Privacy Policy</a><a href="./privacy.html" data-i18n-es>Privacidad</a>
@@ -494,8 +507,9 @@
   // ===== Matrix rain hero (same effect as home.html, fixed params) =====
   (function(){
     var canvas=document.getElementById('matrix');
-    if(!canvas)return;
+    if(!canvas||!canvas.getContext)return;
     var ctx=canvas.getContext('2d');
+    if(!ctx)return; // canvas 2d unavailable: bail cleanly instead of throwing
     var hero=canvas.parentElement;
     var chars="的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能成于然样没还最长凍京汽亦吉並佞昏予棟亍丰從場拚予扎弍京並劲呔吋於亍".split('');
 
@@ -647,10 +661,12 @@
       ctx.textBaseline='top';
     }
 
-    var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var lastTime=performance.now();
     function frame(now){
       var dt=(now-lastTime)/1000;lastTime=now;
+      // After a tab switch / scroll throttle / bfcache restore, rAF resumes with
+      // a huge gap; cap dt so the physics never jumps and the effect stays stable.
+      if(dt>0.05||dt<0)dt=0.05;
       update(dt);updateTouch();updateDebris(dt);draw();
       requestAnimationFrame(frame);
     }
@@ -672,18 +688,30 @@
     canvas.addEventListener('touchend',function(){mouseX=null;mouseY=null;},{passive:true});
     canvas.addEventListener('touchcancel',function(){mouseX=null;mouseY=null;},{passive:true});
 
-    setup();
     // On phones the URL bar collapsing fires resize with tiny height changes;
     // regenerating the rain for those is jarring. Only rebuild when the width
     // changes or the height moves substantially (rotation, real resize).
     window.addEventListener('resize',function(){
-      if(hero.clientWidth!==W||Math.abs(hero.clientHeight-H)>140){
-        setup();
-        if(reduced){update(3);draw();}
-      }
+      if(hero.clientWidth!==W||Math.abs(hero.clientHeight-H)>140){setup();}
     });
-    if(reduced){update(3);draw();}         // static frame only
-    else requestAnimationFrame(frame);
+    // Safari bfcache: navigating back restores the page with a blank canvas —
+    // rebuild it. (persisted === true only on a bfcache restore.)
+    window.addEventListener('pageshow',function(e){if(e.persisted){setup();}});
+
+    var started=false;
+    function begin(){
+      setup();
+      // Some browsers run this before the hero has laid out (clientHeight 0);
+      // retry next frame until it has a real size, otherwise nothing renders.
+      if(!W||!H){requestAnimationFrame(begin);return;}
+      if(started)return;
+      started=true;
+      // Always animate. We intentionally do NOT gate on prefers-reduced-motion:
+      // some locked-down/work browsers report it as true, which would freeze the
+      // decorative rain (this is exactly why it stayed static on a work PC).
+      requestAnimationFrame(frame);
+    }
+    begin();
   })();
 
 </script>
