@@ -18,10 +18,12 @@
 <meta property="og:url" content="https://shuaziapp.com/"/>
 <meta property="og:image" content="https://shuaziapp.com/icons/og-image.png"/>
 
-<!-- Chinese ink-style fonts -->
+<!-- Chinese ink-style font (刷字), loaded async so it never blocks first render.
+     media="print" downloads it off the critical path; onload flips it to all. -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&family=Ma+Shan+Zheng&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" media="print" onload="this.media='all'"/>
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap"/></noscript>
 
 <style>
   /* ================= Apple.com design language ================= */
@@ -195,11 +197,6 @@
     content:"";position:absolute;left:0;right:0;bottom:0;z-index:1;
     height:clamp(120px,22vh,220px);pointer-events:none;
     background:linear-gradient(to bottom,rgba(245,245,247,0) 0%,var(--bg-gy) 100%);
-  }
-  .hero-watermark{
-    position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(200px,40vw,600px);
-    font-weight:400;color:rgba(239,68,68,.04);pointer-events:none;z-index:1;
-    font-family:'Long Cang',cursive;letter-spacing:-4px
   }
   .hero-cta{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;
