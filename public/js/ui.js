@@ -81,6 +81,7 @@ function gridGroupLabel(item, index, total) {
     return `${start}–${end}`;
   }
   if (s === 'stroke') return String(item.stroke ?? '?');
+  if (s === 'pos') return state.POS_TAGS?.[item.pos] || null;
   return null;
 }
 
@@ -373,6 +374,17 @@ export function renderGroups() {
     else if (state.gridSort === 'productive') wgroup = [...wgroup].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
     else if (state.gridSort === 'frequency')  wgroup = [...wgroup].sort((a, b) => (b.frequency  ?? 0) - (a.frequency  ?? 0));
     else if (state.gridSort === 'stroke')     wgroup = [...wgroup].sort((a, b) => (a.stroke      ?? 0) - (b.stroke      ?? 0));
+    else if (state.gridSort === 'pos') {
+      // Categories ordered by size (most words first); words within a category alphabetical (pinyin).
+      const posDesc = w => state.POS_TAGS?.[w.pos] ?? '';
+      const counts = new Map();
+      wgroup.forEach(w => { const d = posDesc(w); counts.set(d, (counts.get(d) || 0) + 1); });
+      wgroup = [...wgroup].sort((a, b) => {
+        const da = posDesc(a), db = posDesc(b);
+        if (da !== db) return (counts.get(db) || 0) - (counts.get(da) || 0) || da.localeCompare(db);
+        return (a.pinyin ?? '').localeCompare(b.pinyin ?? '');
+      });
+    }
     else                                      wgroup = [...wgroup].sort((a, b) => a.id - b.id);
 
     // Tiles shown respect the status filter; counts/progress stay on the full level.
@@ -482,19 +494,22 @@ export function renderGroups() {
         return;
       }
       // Ordered cell list: section labels (when the sort groups them) + tiles.
+      // Each label carries the tile count of its group, shown in parentheses.
+      const wLabels = wtiles.map(word => gridGroupLabel(word, wgroupIndex.get(word.word) ?? 0, wgroup.length));
+      const wLabelCounts = new Map();
+      for (const l of wLabels) if (l !== null) wLabelCounts.set(l, (wLabelCounts.get(l) || 0) + 1);
       const cells = [];
       let lastLbl = null;
       for (let i = 0; i < wtiles.length; i++) {
-        const word = wtiles[i];
-        const lbl = gridGroupLabel(word, wgroupIndex.get(word.word) ?? 0, wgroup.length);
-        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl }); }
-        cells.push({ word });
+        const lbl = wLabels[i];
+        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl, count: wLabelCounts.get(lbl) }); }
+        cells.push({ word: wtiles[i] });
       }
       const renderCell = (cell) => {
         if (cell.label !== undefined) {
           const sep = document.createElement('div');
           sep.className = 'char-grid-label';
-          sep.textContent = cell.label;
+          sep.textContent = state.gridSort === 'pos' ? `${cell.label} (${cell.count})` : cell.label;
           return sep;
         }
         const word = cell.word;
@@ -593,6 +608,17 @@ export function renderGroups() {
     else if (state.gridSort === 'productive') group = [...group].sort((a, b) => (a.productive ?? 0) - (b.productive ?? 0));
     else if (state.gridSort === 'frequency')  group = [...group].sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
     else if (state.gridSort === 'stroke')     group = [...group].sort((a, b) => (a.stroke ?? 0) - (b.stroke ?? 0));
+    else if (state.gridSort === 'pos') {
+      // Categories ordered by size (most chars first); chars within a category alphabetical (pinyin).
+      const posDesc = c => state.POS_TAGS?.[c.pos] ?? '';
+      const counts = new Map();
+      group.forEach(c => { const d = posDesc(c); counts.set(d, (counts.get(d) || 0) + 1); });
+      group = [...group].sort((a, b) => {
+        const da = posDesc(a), db = posDesc(b);
+        if (da !== db) return (counts.get(db) || 0) - (counts.get(da) || 0) || da.localeCompare(db);
+        return (a.pinyin ?? '').localeCompare(b.pinyin ?? '');
+      });
+    }
     else group = [...group].sort((a, b) => a.id - b.id);
 
     // Tiles shown respect the status filter; counts/progress stay on the full level.
@@ -691,19 +717,22 @@ export function renderGroups() {
         return;
       }
       // Ordered cell list: section labels (when the sort groups them) + tiles.
+      // Each label carries the tile count of its group, shown in parentheses.
+      const cLabels = tiles.map(card => gridGroupLabel(card, groupIndex.get(card.char) ?? 0, group.length));
+      const cLabelCounts = new Map();
+      for (const l of cLabels) if (l !== null) cLabelCounts.set(l, (cLabelCounts.get(l) || 0) + 1);
       const cells = [];
       let lastLbl = null;
       for (let i = 0; i < tiles.length; i++) {
-        const card = tiles[i];
-        const lbl = gridGroupLabel(card, groupIndex.get(card.char) ?? 0, group.length);
-        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl }); }
-        cells.push({ card });
+        const lbl = cLabels[i];
+        if (lbl !== null && lbl !== lastLbl) { lastLbl = lbl; cells.push({ label: lbl, count: cLabelCounts.get(lbl) }); }
+        cells.push({ card: tiles[i] });
       }
       const renderCell = (cell) => {
         if (cell.label !== undefined) {
           const sep = document.createElement('div');
           sep.className = 'char-grid-label';
-          sep.textContent = cell.label;
+          sep.textContent = state.gridSort === 'pos' ? `${cell.label} (${cell.count})` : cell.label;
           return sep;
         }
         const card = cell.card;
@@ -1992,7 +2021,7 @@ function attachPhraseSwipe(cardEl, phrase) {
 }
 
 /* ── SORT & SEARCH ── */
-const SORT_CYCLE  = ['pinyin', 'productive', 'frequency', 'stroke'];
+const SORT_CYCLE  = ['pinyin', 'productive', 'frequency', 'stroke', 'pos'];
 export const sortLabelText = mode => t('sort.' + mode);
 
 document.getElementById('sortBtn').onclick = () => {

@@ -97,6 +97,7 @@ create table chars (
     pinyin      text,
     meaning     text,
     radical     text references radicals(radical),
+	pos			text,
     hsk         int,
     stroke      int,
     productive  int,

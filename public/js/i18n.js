@@ -202,6 +202,7 @@ const STRINGS = {
     'sort.hsk': 'HSK',
     'sort.frequency': 'Frequency',
     'sort.productive': 'Productive',
+    'sort.pos': 'POS',
     // PWA install banner + instruction sheets
     'pwa.ariaBanner': 'Install app',
     'pwa.title': 'Install Shuazi',
@@ -369,6 +370,7 @@ const STRINGS = {
     'sort.hsk': 'HSK',
     'sort.frequency': 'Frecuencia',
     'sort.productive': 'Productivo',
+    'sort.pos': 'Categoría',
     'pwa.ariaBanner': 'Instalar app',
     'pwa.title': 'Instala Shuazi',
     'pwa.subtitle': 'Añádela a tu pantalla de inicio',

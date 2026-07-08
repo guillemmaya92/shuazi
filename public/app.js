@@ -50,7 +50,7 @@ async function fetchAll(table, columns, orderBy = 'id') {
 // Granular loaders so the boot sequence can put exactly the right table on the
 // critical path: CHARACTERS for "characters" mode, WORDS for "words" mode.
 async function loadChars() {
-  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, meaning_es, radical, hsk, stroke, productive, frequency');
+  const chars = await fetchAll('chars', 'id, char, pinyin, meaning, meaning_es, radical, hsk, stroke, productive, frequency, pos');
   chars.forEach(c => localizeRow(c, LANG_FIELDS.chars));
   state.CHARACTERS = chars;
   state.charById   = Object.fromEntries(chars.map(c => [c.id, c]));
