@@ -837,9 +837,9 @@ function wireModalBack(backStack) {
 // set on #modal-content via data-type by each opener, so it always encodes the
 // current entity type: blue=char, purple=word, green=radical, gray=component.
 const MODAL_TYPE_LABEL = { char: 'lbl.char', word: 'lbl.word', radical: 'lbl.radical', component: 'lbl.component' };
-function modalHeadHTML(kind, backStack) {
+function modalHeadHTML(kind, backStack, extraHTML = '') {
   return `<div class="modal-head">${modalBackHTML(backStack)}`
-    + `<span class="modal-type"><span class="mt-dot"></span>${t(MODAL_TYPE_LABEL[kind] || 'lbl.char')}</span></div>`;
+    + `<span class="modal-type"><span class="mt-dot"></span>${t(MODAL_TYPE_LABEL[kind] || 'lbl.char')}</span>${extraHTML}</div>`;
 }
 
 export function closeResetModal() {
@@ -910,7 +910,7 @@ export async function openModal(card, backStack = []) {
     : '<span class="char-chip-empty">—</span>';
 
   modalContent.dataset.type = 'char';
-  const backHTML = modalHeadHTML('char', backStack);
+  const backHTML = modalHeadHTML('char', backStack, statusChipHTML(card.char));
 
   modalContent.innerHTML = `
     ${backHTML}
@@ -928,6 +928,7 @@ export async function openModal(card, backStack = []) {
   attachModalListen(card.char);
 
   wireStrokeOpen(card.char);   // tap the character or the pencil to see stroke order
+  wireStatusChip(modalContent, card, card.char);
 
   wireModalBack(backStack);
 
@@ -1118,6 +1119,49 @@ function openComponentModal(comp, backStack = []) {
   openModalSheet();
 }
 
+// A single header chip that cycles Left → Known → Review on tap.
+const STATUS_NEXT = { left: 'know', know: 'review', review: 'left' };
+const itemStatus = key => state.known.has(key) ? 'know' : state.unknown.has(key) ? 'review' : 'left';
+const statusChipHTML = key => {
+  const s = itemStatus(key);
+  return `<button type="button" class="modal-status status-${s}" data-status="${s}" title="${t('status.' + s)}" aria-label="${t('status.' + s)}"></button>`;
+};
+
+// Apply a study status (left / know / review) picked from an item's modal, then
+// reflect it everywhere: the study deck, the header/profile counters (stats), and
+// the grid (renderGroups). `item` is a word or char row; `key` is its word/char.
+function setItemStatus(item, key, status) {
+  state.known.delete(key);
+  state.unknown.delete(key);
+  if (status === 'know')        state.known.add(key);
+  else if (status === 'review') state.unknown.add(key);
+  const isWord = item.word !== undefined;
+  // Known items leave the study deck; left/review items stay queued in it.
+  if (status === 'know') {
+    state.deck = state.deck.filter(c => c.char !== key);
+  } else if (!state.deck.find(c => c.char === key)) {
+    state.deck.push(isWord ? { ...item, char: key, isWord: true } : item);
+  }
+  stats();   // refresh header + profile counters; persists state
+  const scrollEl = document.getElementById('groups-scroll');
+  const y = scrollEl ? scrollEl.scrollTop : 0;
+  renderGroups();   // refresh grid tiles, group counts and progress bars
+  if (scrollEl) scrollEl.scrollTop = y;
+}
+
+// Wire the modal's status chip so tapping it cycles to the next status.
+function wireStatusChip(container, item, key) {
+  const btn = container.querySelector('.modal-status');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const next = STATUS_NEXT[btn.dataset.status] || 'left';
+    setItemStatus(item, key, next);
+    btn.dataset.status = next;
+    btn.className = `modal-status status-${next}`;
+    btn.title = btn.ariaLabel = t('status.' + next);
+  });
+}
+
 export async function openWordModal(word, backStack = []) {
   const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6', 7: 'hsk-7' };
 
@@ -1136,7 +1180,7 @@ export async function openWordModal(word, backStack = []) {
     : '<span class="char-chip-empty">—</span>';
 
   modalContent.dataset.type = 'word';
-  const backHTML = modalHeadHTML('word', backStack);
+  const backHTML = modalHeadHTML('word', backStack, statusChipHTML(word.word));
 
   modalContent.innerHTML = `
     ${backHTML}
@@ -1153,6 +1197,7 @@ export async function openWordModal(word, backStack = []) {
   attachModalListen(word.word);
   wireModalBack(backStack);
   wireStrokeOpen(word.word);
+  wireStatusChip(modalContent, word, word.word);
 
   const deeper = [...backStack, { kind: 'word', data: word }];
   modalContent.querySelectorAll('.char-chip-link').forEach(btn => {
