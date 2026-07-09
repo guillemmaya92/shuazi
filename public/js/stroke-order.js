@@ -104,6 +104,9 @@ export async function openStrokeOrder(char) {
   // Unpainted silhouette: a solid light tint (not transparency) so it reads evenly.
   const outlineColor = light ? '#ddd7cf' : '#39434c';
   const accentColor  = cs.getPropertyValue('--blue').trim() || '#64a0e6';
+  // Highlighted radical strokes take the radical entity colour (green), matching
+  // the radical button's active tint.
+  const radicalAccent = cs.getPropertyValue('--radical').trim() || '#4bb3a3';
   const radicalColor = strokeColor;   // uniform by default; the radical button tints it
 
   let idx = 0;
@@ -140,7 +143,7 @@ export async function openStrokeOrder(char) {
   };
   const setRadical = on => {
     radicalOn = on;
-    current().updateColor('radicalColor', on ? accentColor : strokeColor);
+    current().updateColor('radicalColor', on ? radicalAccent : strokeColor);
     radicalBtn.classList.toggle('active', on);
     radicalBtn.setAttribute('aria-pressed', String(on));
   };

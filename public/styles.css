@@ -1861,10 +1861,14 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .stroke-btn svg { width:14px; height:14px; }
 .stroke-btn:active { transform:scale(.94); }
 .stroke-btn:disabled { opacity:.4; cursor:default; }
-.stroke-radical.active,
 .stroke-grid.active {
   color:var(--blue); background:var(--blue-bg);
   border-color:color-mix(in srgb, var(--blue) 45%, var(--bdr));
+}
+/* The radical toggle matches the colour its strokes take when highlighted. */
+.stroke-radical.active {
+  color:var(--radical); background:var(--radical-bg);
+  border-color:color-mix(in srgb, var(--radical) 45%, var(--bdr));
 }
 /* Field grid (米字格) behind the glyph — a background image so it stays under the
    HanziWriter strokes and over the tile surface. Neutral grey reads on both themes. */

@@ -1129,7 +1129,7 @@ const STATUS_NEXT = { left: 'know', know: 'review', review: 'left' };
 // if innerHTML drops the viewBox — otherwise a 24-space circle overflows the 16px
 // viewport and paints a solid square.
 const STATUS_ICON = {
-  left:   '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  left:   '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
   know:   '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2 2 4.3-4.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   review: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M11 6.2a3.4 3.4 0 1 0 .8 2.6" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M11.7 3.9v2.4h-2.4" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
@@ -1998,6 +1998,9 @@ function makeSlangCardEl(phrase, isStack) {
 export function renderSlang() {
   const deckPhrEl = document.getElementById('deck-slang');
   if (!state.slangDeck.length) state.slangDeck = shuffleArr(state.PHRASES);
+  // Slang streams in behind the first paint, so the deck can still be empty here
+  // (tab opened during boot). Leave it empty — app.js repaints once the rows land.
+  if (!state.slangDeck.length) return;
   hanziFitRO.disconnect();   // drop observations on the cards we're about to discard
   deckPhrEl.innerHTML = '';
   if (state.slangDeck.length > 1) deckPhrEl.appendChild(makeSlangCardEl(state.slangDeck[1], true));

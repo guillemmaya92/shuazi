@@ -4,7 +4,7 @@ import { localizeRow, L, LANG_FIELDS, applyStaticTranslations } from './js/i18n.
 import { loadUserPlan, syncUserProfile } from './js/auth.js';
 import { loadProgressFromSupabase, loadSettingsFromSupabase, loadState } from './js/progress.js';
 import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
-import { renderGroups, renderProfile, setTheme } from './js/ui.js';
+import { renderGroups, renderProfile, renderSlang, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
 import { maybeDemoSwipe } from './js/coach.js';
 import { showPasswordReset } from './js/password-reset.js';
@@ -47,6 +47,16 @@ async function fetchAll(table, columns, orderBy = 'id') {
   return all;
 }
 
+// Tables that comfortably fit in one page — slang, radicals, pos_tags. fetchAll's
+// count round-trip doubles their latency for nothing. Falls back to the paged path
+// if one ever outgrows a page.
+async function fetchSmall(table, columns, orderBy = 'id') {
+  const pageSize = 1000;
+  const { data, error } = await supa.from(table).select(columns).order(orderBy).range(0, pageSize - 1);
+  if (error) throw error;
+  return data.length < pageSize ? data : fetchAll(table, columns, orderBy);
+}
+
 // Granular loaders so the boot sequence can put exactly the right table on the
 // critical path: CHARACTERS for "characters" mode, WORDS for "words" mode.
 async function loadChars() {
@@ -66,7 +76,7 @@ async function loadWords() {
 // Shown on the word card's info page, so it's never on the critical path.
 async function loadPosTags() {
   try {
-    const tags = await fetchAll('pos_tags', 'pos, description, description_es', 'pos');
+    const tags = await fetchSmall('pos_tags', 'pos, description, description_es', 'pos');
     state._posTags = tags;   // keep raw rows so the map can be rebuilt per language
     state.POS_TAGS = Object.fromEntries(tags.map(t => [t.pos, L(t, 'description')]));
   } catch (e) {
@@ -74,13 +84,16 @@ async function loadPosTags() {
   }
 }
 
-async function loadRadicalsAndSlang() {
-  const [radicals, slang] = await Promise.all([
-    fetchAll('radicals', 'id, radical, traditional, pinyin, meaning, meaning_es, stroke, productive, frequency'),
-    fetchAll('slang', 'id, slang, pinyin, literal, literal_es, meaning, meaning_es, origin, origin_es, image'),
-  ]);
+async function loadRadicals() {
+  const radicals = await fetchSmall('radicals', 'id, radical, traditional, pinyin, meaning, meaning_es, stroke, productive, frequency');
   radicals.forEach(r => localizeRow(r, LANG_FIELDS.radicals));
   state.RADICALS = radicals;
+}
+
+// A few dozen rows. Kept out of loadRest() so it never queues behind the full
+// chars/words download — see the boot sequence below.
+async function loadSlang() {
+  const slang = await fetchSmall('slang', 'id, slang, pinyin, literal, literal_es, meaning, meaning_es, origin, origin_es, image');
   // renderSlang uses phrase.id as the hanzi — map the `slang` column onto it.
   state.PHRASES  = slang.map(s => localizeRow({
     id:         s.slang,
@@ -129,7 +142,7 @@ async function loadCritical(mode) {
 
 async function loadRest(mode) {
   await Promise.all([
-    loadRadicalsAndSlang(),
+    loadRadicals(),
     loadComponents(),
     loadPosTags(),
     mode === 'words' ? loadChars() : loadWords(),
@@ -174,6 +187,19 @@ if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
 }
 
 const bootMode = state.groupsContent;
+
+// Slang rides alongside the critical table rather than behind it: it's a few dozen
+// rows, and loading it inside loadRest() queued it behind the whole chars/words
+// download. Nothing is painted here — the deck's images would be fetched even on a
+// tab the user never opens, since inactive screens are opacity:0, not display:none.
+// Only repaint if they're already looking at it (tapped the tab during boot, or
+// arrived via ?screen=slang), where the deck rendered empty.
+window._supabaseReady
+  .then(loadSlang)
+  .then(() => {
+    if (document.getElementById('screen-slang')?.classList.contains('active')) renderSlang();
+  })
+  .catch(e => console.error('slang failed to load (cards unaffected):', e));
 
 loadCritical(bootMode).then(() => {
   // Paint the first card the instant its table is available — nothing else is
