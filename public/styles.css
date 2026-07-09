@@ -1005,21 +1005,20 @@ body.account-open .account-scrim { pointer-events: auto; }
   border:1px solid color-mix(in srgb, var(--tc) 30%, transparent);
 }
 .modal-type .mt-dot { width:7px; height:7px; border-radius:50%; background:var(--tc); }
-/* Status dot in the modal head — a radio-style indicator: an outer ring always,
-   with an inner filled dot only when Known (green) / Review (blue); Left stays a
-   hollow circle. Inner colour set via --sc; tapping cycles status. */
+/* Status indicator in the modal head — a self-contained SVG icon per state
+   (empty circle / green check disc / blue refresh disc). `color` drives the disc
+   fill and the outline; the glyph centres itself inside the viewBox, so it stays
+   perfectly centred at any screen zoom. Tapping cycles the status. */
 .modal-status {
-  width:15px; height:15px; padding:0; border-radius:50%; box-sizing:border-box;
-  border:1.5px solid var(--muted);
-  /* Inner dot painted as a gradient of the button itself, anchored to the border
-     box — dot and ring share one centre, so no sub-pixel drift at any zoom. */
-  background: radial-gradient(circle, var(--sc, transparent) 3.5px, transparent 4px) border-box;
-  cursor:pointer; flex-shrink:0; transition: transform 120ms ease;
+  width:16px; height:16px; padding:0; border:none; background:transparent;
+  -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
+  display:inline-flex; cursor:pointer; flex-shrink:0; transition: transform 120ms ease;
+  color:var(--muted);
 }
+.modal-status svg { width:100%; height:100%; display:block; }
 .modal-status:active { transform:scale(.85); }
-.modal-status.status-left   { --sc:transparent; }
-.modal-status.status-know   { --sc:#18b85a; border-color:#18b85a; }
-.modal-status.status-review { --sc:#2f7bf0; border-color:#2f7bf0; }
+.modal-status[data-status="know"]   { color:#18b85a; }
+.modal-status[data-status="review"] { color:#2f7bf0; }
 
 /* HSK filter pills */
 .hsk-filter-row { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }

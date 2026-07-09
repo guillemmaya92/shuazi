@@ -167,7 +167,8 @@ export function renderGroups() {
     const radChev   = radDiv.querySelector('.chevron');
     if (activeRadical) radGrid.classList.add('radical-filtered');
 
-    if (state.gridSort === 'pinyin')          sortedRadicals.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
+    // Radicals have no POS, so the 'pos' sort falls back to alphabetical (pinyin).
+    if (state.gridSort === 'pinyin' || state.gridSort === 'pos') sortedRadicals.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') sortedRadicals.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
     else if (state.gridSort === 'frequency')  sortedRadicals.sort((a, b) => (Number(b.frequency)  || 0) - (Number(a.frequency)  || 0));
     else if (state.gridSort === 'stroke')     sortedRadicals.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
@@ -267,7 +268,8 @@ export function renderGroups() {
     const compChev   = compDiv.querySelector('.chevron');
     if (activeComponent) compGrid.classList.add('component-filtered');
 
-    if (state.gridSort === 'pinyin')          sortedComponents.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
+    // Components have no POS, so the 'pos' sort falls back to alphabetical (pinyin).
+    if (state.gridSort === 'pinyin' || state.gridSort === 'pos') sortedComponents.sort((a, b) => a.pinyin.localeCompare(b.pinyin));
     else if (state.gridSort === 'productive') sortedComponents.sort((a, b) => (Number(b.productive) || 0) - (Number(a.productive) || 0));
     else if (state.gridSort === 'frequency')  sortedComponents.sort((a, b) => (Number(b.frequency)  || 0) - (Number(a.frequency)  || 0));
     else if (state.gridSort === 'stroke')     sortedComponents.sort((a, b) => (Number(a.stroke)      || 0) - (Number(b.stroke)      || 0));
@@ -1119,12 +1121,22 @@ function openComponentModal(comp, backStack = []) {
   openModalSheet();
 }
 
-// A single header chip that cycles Left → Known → Review on tap.
+// A single header chip that cycles Left → Known → Review on tap. Each state is a
+// self-contained SVG (empty circle / green check disc / blue refresh disc); the
+// glyph is centred inside its own viewBox, so it never drifts at any screen zoom.
 const STATUS_NEXT = { left: 'know', know: 'review', review: 'left' };
+// Coordinates use a 0–16 space (== the rendered px size) so the glyph fits even
+// if innerHTML drops the viewBox — otherwise a 24-space circle overflows the 16px
+// viewport and paints a solid square.
+const STATUS_ICON = {
+  left:   '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  know:   '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2 2 4.3-4.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  review: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M11 6.2a3.4 3.4 0 1 0 .8 2.6" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M11.7 3.9v2.4h-2.4" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
 const itemStatus = key => state.known.has(key) ? 'know' : state.unknown.has(key) ? 'review' : 'left';
 const statusChipHTML = key => {
   const s = itemStatus(key);
-  return `<button type="button" class="modal-status status-${s}" data-status="${s}" title="${t('status.' + s)}" aria-label="${t('status.' + s)}"></button>`;
+  return `<button type="button" class="modal-status" data-status="${s}" title="${t('status.' + s)}" aria-label="${t('status.' + s)}">${STATUS_ICON[s]}</button>`;
 };
 
 // Apply a study status (left / know / review) picked from an item's modal, then
@@ -1157,8 +1169,8 @@ function wireStatusChip(container, item, key) {
     const next = STATUS_NEXT[btn.dataset.status] || 'left';
     setItemStatus(item, key, next);
     btn.dataset.status = next;
-    btn.className = `modal-status status-${next}`;
     btn.title = btn.ariaLabel = t('status.' + next);
+    btn.innerHTML = STATUS_ICON[next];
   });
 }
 
