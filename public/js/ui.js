@@ -2102,7 +2102,10 @@ syncPinyinToggle();
 pinyinToggleBtn.onclick = () => {
   state.showPinyin = !state.showPinyin;
   syncPinyinToggle();
-  renderGroups();
+  const scrollEl = document.getElementById('groups-scroll');
+  const y = scrollEl ? scrollEl.scrollTop : 0;
+  renderGroups();      // rebuilds the grids, which resets the scroller to top…
+  if (scrollEl) scrollEl.scrollTop = y;   // …so restore the reading position
   saveSettings();
 };
 
