@@ -339,7 +339,7 @@ const STRINGS = {
     'tour.section.translate': 'Traducir',
     'tour.section.deck': 'Perfil',
     'tour.welcome.title': 'Bienvenido a Shuazi.',
-    'tour.welcome.body': 'Si estás aquí para aprender a usar la app, has llegado al lugar correcto.<br><br>Es hora de leer <span class="tour-manual" style="color:#b04030;text-decoration:underline;cursor:pointer" data-off="el manual" data-on="el fucking manual">el manual</span>.',
+    'tour.welcome.body': 'Si estás aquí para aprender a usar la app, has llegado al lugar correcto.<br><br>Es hora de leer <span class="tour-manual" style="color:#b04030;text-decoration:underline;cursor:pointer" data-off="el manual" data-on="el jodido manual">el manual</span>.',
     'tour.cards1.title': 'Aprende deslizando',
     'tour.cards1.body': '<ul><li><b>Izquierda</b> → dejarla para después</li><li><b>Derecha</b> → marcar como <b style="color:var(--green)">Hecho</b></li><li><b>Arriba</b> → marcar para <b style="color:var(--blue)">Repaso</b></li></ul>Toca cualquier tarjeta para ver más información.',
     'tour.cards2.title': 'Desliza',
