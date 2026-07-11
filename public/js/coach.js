@@ -21,14 +21,11 @@ const markSeen = key => { try { localStorage.setItem(key, '1'); } catch { /* ign
 const reducedMotion = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-// ── Cards: the real top card auto-swipes once ──
-export function maybeDemoSwipe() {
-  if (DEBUG ? DEBUG !== 'swipe' : seen(SWIPE_KEY)) return;
+// Plays the swipe demo on the current top card. Exported so the guided tour
+// (tour.js) can replay it on demand, independent of the "seen once" gate.
+export function playDemoSwipe() {
   const card = document.querySelector('#deck .card.top');
-  if (!card) return;
-
-  markSeen(SWIPE_KEY);                 // only ever demo once
-  if (reducedMotion()) return;         // honour the user's motion preference
+  if (!card || reducedMotion()) return;   // honour the user's motion preference
 
   card.classList.add('demo-swipe');
   // Cancel the moment the user grabs the card, so a real drag isn't blocked by
@@ -36,6 +33,14 @@ export function maybeDemoSwipe() {
   const stop = () => { card.classList.remove('demo-swipe'); clearTimeout(timer); };
   card.addEventListener('pointerdown', stop, { once: true });
   const timer = setTimeout(stop, 3300);
+}
+
+// ── Cards: the real top card auto-swipes once ──
+export function maybeDemoSwipe() {
+  if (DEBUG ? DEBUG !== 'swipe' : seen(SWIPE_KEY)) return;
+  if (!document.querySelector('#deck .card.top')) return;
+  markSeen(SWIPE_KEY);                 // only ever demo once
+  playDemoSwipe();
 }
 
 // ── Groups: lightweight long-press tip (non-modal, auto-dismisses) ──

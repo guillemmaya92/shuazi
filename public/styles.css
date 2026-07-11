@@ -946,6 +946,7 @@ body.account-open .account-scrim { pointer-events: auto; }
 .settings-item:active { background:var(--surf2); }
 .settings-item > span { flex:1; }
 .settings-item > svg:first-child { color:var(--muted); flex-shrink:0; }
+#settingsLearnBtn > svg:first-child { color:#b04030; }   /* slightly dark red */
 .settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
 .settings-item > .settings-item-value { flex:0 0 auto; color:var(--muted); font-weight:600; }
 .settings-item > .settings-item-hanzi {
@@ -1797,6 +1798,97 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 .coach-tip span { font-size:.78rem; font-weight:600; color:var(--txt); line-height:1.3; }
 .coach-tip-x { flex-shrink:0; color:var(--faint); display:grid; place-items:center; width:22px; height:22px; }
 .coach-tip-x svg { width:14px; height:14px; }
+
+/* ── LEARN SHUAZI GUIDED TOUR (tour.js) ── */
+/* Dimming layer: the even-odd clip-path punches a hole over the target, so the
+   dim area still swallows stray taps while the highlighted element beneath the
+   hole stays interactive. */
+.tour-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(8,10,12,.62);
+  opacity:0; transition:opacity .28s ease, clip-path .32s ease, background-color .28s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.tour-overlay.show { opacity:1; }
+/* Steps that showcase a live animation instead of a spotlight: no dim, and let
+   taps reach the app underneath so the card stays swipeable. */
+.tour-overlay.no-dim { background:transparent; pointer-events:none; }
+/* Steps that invite opening the detail modal (z-index 100): sink the tour below
+   it so the modal covers it and stays fully usable. */
+.tour-overlay.under-modal { z-index:90; }
+.tour-ring.under-modal    { z-index:91; }
+.tour-card.under-modal    { z-index:95; }
+
+/* Accent ring drawn around the spotlight hole. Purely decorative (no pointer
+   events) so it never steals taps from the highlighted element. */
+.tour-ring {
+  position:fixed; z-index:201; display:none; pointer-events:none;
+  box-shadow:0 0 0 2px var(--blue), 0 0 0 6px color-mix(in srgb, var(--blue) 26%, transparent);
+  opacity:0; transition:opacity .28s ease, left .3s ease, top .3s ease, width .3s ease, height .3s ease;
+}
+.tour-ring.show { opacity:1; }
+
+.tour-card {
+  position:fixed; z-index:202;
+  left:50%; transform:translateX(-50%) translateY(10px);
+  width:min(420px, calc(100% - 28px));
+  max-height:min(58vh, 460px); overflow-y:auto; scrollbar-width:none;
+  touch-action:pan-y; overscroll-behavior:contain;
+  display:flex; flex-direction:column; gap:9px;
+  padding:16px 16px 14px; border-radius:20px;
+  background:var(--surf); border:1px solid var(--bdr); box-shadow:var(--sh);
+  opacity:0; pointer-events:none; transition:opacity .28s ease, transform .28s ease;
+}
+.tour-card::-webkit-scrollbar { display:none; }
+.tour-card.show { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+.tour-card.pos-bottom { bottom:calc(20px + var(--safe-b)); top:auto; }
+/* Clear the ~58px tab bar so a bottom-pinned card doesn't cover a spotlight there. */
+.tour-card.pos-bottom.lift { bottom:calc(74px + var(--safe-b)); }
+.tour-card.pos-top    { top:calc(20px + var(--safe-t)); bottom:auto; }
+.tour-card.pos-center { top:50%; bottom:auto; transform:translate(-50%, calc(-50% + 10px)); }
+.tour-card.pos-center.show { transform:translate(-50%, -50%); }
+
+.tour-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tour-section {
+  font-size:.62rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--blue); background:var(--blue-bg);
+  padding:4px 10px; border-radius:999px;
+}
+.tour-skip {
+  font-size:.72rem; font-weight:600; color:var(--faint);
+  padding:4px 6px; background:none; border:none; cursor:pointer;
+}
+.tour-skip:active { opacity:.6; }
+.tour-img { display:block; width:100%; max-height:200px; object-fit:contain; border-radius:14px; margin:2px 0 4px; }
+.tour-title { font-size:1rem; font-weight:800; color:var(--txt); letter-spacing:-.01em; }
+.tour-body { font-size:.82rem; line-height:1.55; color:var(--muted); }
+.tour-body b { color:var(--txt); font-weight:700; }
+.tour-body ul { margin:8px 0; padding-left:18px; display:flex; flex-direction:column; gap:4px; }
+.tour-body li { line-height:1.5; }
+
+.tour-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:4px; }
+/* One dot per section: hollow = upcoming, filled = completed, larger = current. */
+.tour-dots { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.tour-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:transparent; box-shadow:inset 0 0 0 1.5px var(--bdr);
+  transition:background .2s, box-shadow .2s, transform .2s;
+}
+.tour-dot.seen   { background:color-mix(in srgb, var(--blue) 45%, transparent); box-shadow:none; }
+.tour-dot.active { background:var(--blue); box-shadow:0 0 0 3px var(--blue-bg); transform:scale(1.15); }
+.tour-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.tour-back, .tour-next {
+  font-size:.8rem; font-weight:700; cursor:pointer;
+  padding:8px 16px; border-radius:999px; border:1px solid var(--bdr);
+}
+.tour-back { background:var(--surf); color:var(--muted); }
+.tour-back:active { background:var(--surf2); }
+.tour-next { background:var(--blue); color:#fff; border-color:var(--blue); }
+.tour-next:active { opacity:.85; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-overlay, .tour-ring, .tour-card { transition:opacity .2s ease; }
+}
 
 /* ── STROKE ORDER (stroke-order.js) ── */
 /* The character in the modal is a button that opens the stroke animation, with a

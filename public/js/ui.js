@@ -10,6 +10,7 @@ import { applyLanguage, applyStaticTranslations, t } from './i18n.js';
 import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from './virtual-grid.js';
 import { maybeShowGroupsCoach } from './coach.js';
 import { openStrokeOrder } from './stroke-order.js';
+import { startTour } from './tour.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -854,6 +855,7 @@ export function closeResetModal() {
 }
 
 export async function openModal(card, backStack = []) {
+  if (tourSuppressModal) return;   // tour "mark" step: taps must not pop the modal
   await fetchWordsForChar(card);
   const cardWords = (state.wordsByChar[card.char] || []);
   const groupMap = {};
@@ -1069,6 +1071,7 @@ function wireStrokeOpen(glyph) {
 }
 
 function openRadicalModal(rad, backStack = []) {
+  if (tourSuppressModal) return;   // tour "filter" step: taps must not pop the modal
   const chars = state.CHARACTERS.filter(c => c.radical === rad.radical);
   const charsHTML = compoundCharsHTML(chars);
 
@@ -1094,6 +1097,7 @@ function openRadicalModal(rad, backStack = []) {
 }
 
 function openComponentModal(comp, backStack = []) {
+  if (tourSuppressModal) return;   // tour "filter" step: taps must not pop the modal
   const set = state.charsByComponent[comp.id];
   const chars = set ? state.CHARACTERS.filter(c => set.has(c.id)) : [];
   const charsHTML = compoundCharsHTML(chars);
@@ -1175,6 +1179,7 @@ function wireStatusChip(container, item, key) {
 }
 
 export async function openWordModal(word, backStack = []) {
+  if (tourSuppressModal) return;   // tour "mark" step: taps must not pop the modal
   const hskColors = { 1: 'hsk-1', 2: 'hsk-2', 3: 'hsk-3', 4: 'hsk-4', 5: 'hsk-5', 6: 'hsk-6', 7: 'hsk-7' };
 
   const posDesc = state.POS_TAGS?.[word.pos];
@@ -1471,6 +1476,91 @@ export function showTab(tab) {
   else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
   movePill();
   refreshGroupsScrollbar();   // shows on Groups, hides itself on every other tab
+}
+
+// Used by the Learn Shuazi tour: clear any active filter/search and reveal the
+// Radicals grid + HSK 1 group so the "filter" and "tap a character" steps have
+// real tiles to spotlight. Safe to call repeatedly.
+export function tourPrepareGroups() {
+  state.gridSearch   = '';
+  activeRadical      = null;
+  activeComponent    = null;
+  radicalsCollapsed  = false;
+  collapsedGroups.delete(1);
+  renderGroups();
+}
+
+// True when the grid is already fully collapsed and unfiltered — lets the tour
+// helpers skip a redundant renderGroups() (avoids a visible "reload" between two
+// steps that share the same grid layout).
+function gridIsCollapsed() {
+  return radicalsCollapsed && componentsCollapsed && !activeRadical && !activeComponent && !state.gridSearch
+    && [1, 2, 3, 4, 5, 6, 7].every(h => collapsedGroups.has(h) && collapsedWordGroups.has(h));
+}
+// True when only HSK 1 is expanded (both modes) and nothing is filtered.
+function gridIsHsk1Open() {
+  return radicalsCollapsed && componentsCollapsed && !activeRadical && !activeComponent && !state.gridSearch
+    && !collapsedGroups.has(1) && !collapsedWordGroups.has(1)
+    && [2, 3, 4, 5, 6, 7].every(h => collapsedGroups.has(h) && collapsedWordGroups.has(h));
+}
+
+// Used by the tour's Groups intro step: clear filters and collapse every grid
+// (Radicals, Components and all HSK groups) so the screen shows its resting
+// state. Undoes any expansion a later step's tourPrepareGroups() left behind.
+export function tourCollapseGroups() {
+  if (gridIsCollapsed()) return;   // already collapsed — don't reload the grid
+  state.gridSearch    = '';
+  activeRadical       = null;
+  activeComponent     = null;
+  radicalsCollapsed   = true;
+  componentsCollapsed = true;
+  [1, 2, 3, 4, 5, 6, 7].forEach(h => { collapsedGroups.add(h); collapsedWordGroups.add(h); });
+  renderGroups();
+}
+
+// While the tour's "mark a character" step is active, a single tap on a tile
+// must not pop the detail modal (it would cover the tour) — only the long-press
+// mark gesture is allowed. openModal / openWordModal honour this flag.
+let tourSuppressModal = false;
+export function setTourSuppressModal(v) { tourSuppressModal = !!v; }
+
+// Used by the tour's "mark a character" step: collapse everything except HSK 1,
+// which is opened (in both words and characters modes) so its tiles are visible
+// and ready to long-press.
+export function tourOpenHsk1() {
+  if (gridIsHsk1Open()) return;   // already open on the same character — no reload
+  state.gridSearch    = '';
+  activeRadical       = null;
+  activeComponent     = null;
+  radicalsCollapsed   = true;
+  componentsCollapsed = true;
+  [2, 3, 4, 5, 6, 7].forEach(h => { collapsedGroups.add(h); collapsedWordGroups.add(h); });
+  collapsedGroups.delete(1);
+  collapsedWordGroups.delete(1);
+  renderGroups();
+}
+
+// Tour: force the grid sort mode (and its button label), returning the previous
+// mode so the tour can restore the user's choice when it ends.
+export function tourSetSort(mode) {
+  const prev = state.gridSort;
+  state.gridSort = mode;
+  const el = document.getElementById('sortLabel');
+  if (el) el.textContent = sortLabelText(mode);
+  renderGroups();
+  return prev;
+}
+
+// Used by the tour's "filter" step: open the Radicals grid (everything else
+// collapsed and unfiltered) so its first tile can be spotlit and long-pressed.
+export function tourOpenRadicals() {
+  state.gridSearch    = '';
+  activeRadical       = null;
+  activeComponent     = null;
+  radicalsCollapsed   = false;
+  componentsCollapsed = true;
+  [1, 2, 3, 4, 5, 6, 7].forEach(h => { collapsedGroups.add(h); collapsedWordGroups.add(h); });
+  renderGroups();
 }
 // Position the pill once layout is ready, and keep it aligned on resize.
 requestAnimationFrame(movePill);
@@ -2250,6 +2340,11 @@ profileLangBtn?.addEventListener('click', () => {
   document.getElementById('settingsAccountBtn')?.addEventListener('click', () => {
     closeSettings();
     openAccountMenu();
+  });
+
+  document.getElementById('settingsLearnBtn')?.addEventListener('click', () => {
+    closeSettings();
+    startTour();
   });
 
   document.getElementById('settingsInviteBtn')?.addEventListener('click', async () => {
