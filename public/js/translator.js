@@ -1002,6 +1002,8 @@ export function initTranslator() {
   document.addEventListener('touchstart', e => {
     // The tour owns horizontal swipes while it's open — don't pull in Recents.
     if (document.body.classList.contains('tour-active')) { active = false; return; }
+    // Nor should a swipe pull in Recents while a modal sheet is open.
+    if (document.querySelector('.modal-backdrop.open')) { active = false; return; }
     opened = isOpen();
     // Only engage on the translator tab (to open), or whenever it's already open (to close).
     if (e.touches.length !== 1 || (!opened && !trScreen.classList.contains('active'))) { active = false; return; }

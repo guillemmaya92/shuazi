@@ -872,13 +872,15 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 
 #reset-backdrop,
-#delacct-backdrop {
+#delacct-backdrop,
+#review-backdrop {
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease;
 }
 #reset-backdrop.open,
-#delacct-backdrop.open {
+#delacct-backdrop.open,
+#review-backdrop.open {
   opacity: 1;
   pointer-events: all;
 }
@@ -953,6 +955,22 @@ body.account-open .account-scrim { pointer-events: auto; }
   flex:0 0 18px; width:18px; text-align:center;
   color:var(--muted); font-size:18px; line-height:1; font-weight:700;
 }
+/* Review modal — star rating + comment */
+.review-stars { display:flex; justify-content:center; gap:8px; touch-action:none; }
+.review-star {
+  padding:2px; background:none; border:none; cursor:pointer;
+  color:var(--bdr); -webkit-tap-highlight-color:transparent; touch-action:none; transition:transform .1s;
+}
+.review-star svg { width:34px; height:34px; display:block; fill:currentColor; }
+.review-star.on { color:#f5b301; }
+.review-star:active { transform:scale(.88); }
+.review-comment {
+  width:100%; box-sizing:border-box; resize:none;
+  background:var(--bg); border:1px solid var(--bdr); border-radius:12px;
+  padding:10px 12px; font:inherit; font-size:.82rem; color:var(--txt); outline:none;
+}
+.review-comment:focus { border-color:var(--blue); }
+
 /* Small legal links pinned to the bottom of the Settings panel (not main items). */
 .settings-panel-foot {
   display:flex; align-items:center; justify-content:flex-end; gap:12px;

@@ -2420,6 +2420,8 @@ profileLangBtn?.addEventListener('click', () => {
   document.addEventListener('touchstart', e => {
     // The tour owns horizontal swipes while it's open — don't reveal Settings.
     if (document.body.classList.contains('tour-active')) { stActive = false; return; }
+    // Nor should a swipe reveal Settings while a modal sheet (review, etc.) is open.
+    if (document.querySelector('.modal-backdrop.open')) { stActive = false; return; }
     stOpened = document.body.classList.contains('settings-open');
     if (e.touches.length !== 1 || (!stOpened && !profileScreen.classList.contains('active'))) { stActive = false; return; }
     if (e.target.closest('.tabbar')) { stActive = false; return; }
@@ -2449,6 +2451,96 @@ profileLangBtn?.addEventListener('click', () => {
     if (stMode === 'open') stSettle(-dx > stWidth * 0.35);
     else                   stSettle(dx < stWidth * 0.35);
   }, { passive: true });
+})();
+
+/* ── REVIEW MODAL (1–5 stars + comment → Supabase `reviews`) ── */
+(() => {
+  const backdrop  = document.getElementById('review-backdrop');
+  const modal     = document.getElementById('review-modal');
+  const starsEl   = document.getElementById('reviewStars');
+  const commentEl = document.getElementById('reviewComment');
+  const msgEl     = document.getElementById('review-msg');
+  const submitBtn = document.getElementById('reviewSubmitBtn');
+  const cancelBtn = document.getElementById('reviewCancelBtn');
+  if (!backdrop) return;
+
+  let rating = 0;
+  const stars = [...starsEl.querySelectorAll('.review-star')];
+  const syncStars = () => stars.forEach(s => s.classList.toggle('on', +s.dataset.val <= rating));
+
+  // Tap or drag a finger across the stars to set the rating.
+  const ratingAtX = x => { let r = 0; for (const s of stars) if (x >= s.getBoundingClientRect().left) r = +s.dataset.val; return r; };
+  const setStars  = x => { const v = ratingAtX(x); if (v) { rating = v; syncStars(); msgEl.textContent = ''; } };
+  let starsDrag = false;
+  starsEl.addEventListener('pointerdown', e => { starsDrag = true; try { starsEl.setPointerCapture(e.pointerId); } catch {} setStars(e.clientX); });
+  starsEl.addEventListener('pointermove', e => { if (starsDrag) setStars(e.clientX); });
+  const endStars = () => { starsDrag = false; };
+  starsEl.addEventListener('pointerup', endStars);
+  starsEl.addEventListener('pointercancel', endStars);
+
+  const open = () => {
+    rating = 0; syncStars();
+    commentEl.value = '';
+    msgEl.textContent = ''; msgEl.style.color = '';
+    submitBtn.disabled = false; submitBtn.textContent = t('review.submit');
+    backdrop.style.display = 'flex';
+    requestAnimationFrame(() => backdrop.classList.add('open'));
+  };
+  const close = () => {
+    backdrop.classList.remove('open');
+    backdrop.addEventListener('transitionend', () => { backdrop.style.display = 'none'; }, { once: true });
+    modal.style.transition = ''; modal.style.transform = '';
+  };
+
+  // Open from Settings (close the panel first).
+  document.getElementById('settingsReviewBtn')?.addEventListener('click', () => {
+    document.body.classList.remove('settings-open');
+    document.getElementById('settingsPanel')?.setAttribute('aria-hidden', 'true');
+    open();
+  });
+
+  cancelBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+
+  submitBtn.addEventListener('click', async () => {
+    if (!rating) { msgEl.style.color = '#c04050'; msgEl.textContent = t('review.needStars'); return; }
+    submitBtn.disabled = true;
+    submitBtn.textContent = t('review.sending');
+    try {
+      const { error } = await supa.from('reviews').insert({
+        user_id: state.supaUser?.id ?? null,
+        email:   state.supaUser?.email ?? null,
+        rating,
+        comment: commentEl.value.trim() || null,
+        lang:    state.lang,
+      });
+      if (error) throw error;
+      msgEl.style.color = 'var(--green)';
+      msgEl.textContent = t('review.thanks');
+      submitBtn.textContent = t('review.submit');   // don't leave it on "Sending…"
+      setTimeout(close, 1300);
+    } catch (e) {
+      console.error('Review submit failed:', e);
+      msgEl.style.color = '#c04050';
+      msgEl.textContent = t('review.error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = t('review.submit');
+    }
+  });
+
+  // Swipe-down to dismiss (mirrors the reset/delete sheets), ignoring drags that
+  // start on the stars, textarea or buttons.
+  let sy = 0, dy = 0, dragging = false;
+  modal.addEventListener('pointerdown', e => {
+    if (e.target.closest('.review-stars, .review-comment, button')) return;
+    sy = e.clientY; dy = 0; dragging = true; modal.style.transition = 'none';
+  });
+  modal.addEventListener('pointermove', e => { if (!dragging) return; dy = e.clientY - sy; if (dy > 0) modal.style.transform = `translateY(${dy}px)`; });
+  modal.addEventListener('pointerup', () => {
+    if (!dragging) return; dragging = false;
+    modal.style.transition = 'transform 300ms ease';
+    if (dy > 80) close(); else modal.style.transform = '';
+  });
 })();
 
 /* ── ACCOUNT PANEL (Reset progress / Delete account) ── */
