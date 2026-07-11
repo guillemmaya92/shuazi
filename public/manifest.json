@@ -1,7 +1,7 @@
 {
   "name": "刷字 shuazi",
   "short_name": "shuazi",
-  "description": "Learn Chinese Hanzi with interactive flashcards, an HSK 1-6 character dictionary, and a radicals reference.",
+  "description": "Learn Chinese Hanzi with interactive flashcards, an HSK 1-9 character dictionary, and a radicals reference.",
   "lang": "en",
   "dir": "ltr",
   "categories": ["education", "books", "productivity"],

@@ -287,6 +287,7 @@ function place(el, step) {
   // the animation underneath stays fully visible and interactive.
   const noDim = step.dim === false;
   overlay.classList.toggle('no-dim', noDim);
+  applyStatusBar(!noDim);   // dimmed tint on spotlight steps, normal tint on no-dim swipe steps
   // Some steps invite opening the detail modal, which sits at z-index 100; drop
   // the whole tour beneath it so the modal is fully visible and interactive.
   for (const n of [overlay, ring, card]) n.classList.toggle('under-modal', !!step.underModal);
@@ -431,10 +432,37 @@ async function goToStep(i) {
   if (step.demo) playDemoSwipe();   // replay the card-swipe animation for this step
 }
 
+// Match the phone's status-bar tint (theme-color) to the tour screen so the top
+// area (time/battery zone) blends in: the dimmed colour on spotlight steps, and
+// the app's normal tint on no-dim steps (Cards/Slang swipe). Restored on exit.
+let savedThemeColor = null;
+// The app's actual screen colour (used on no-dim steps so the status bar matches
+// the plain screen, not the fixed dark default).
+function plainTopColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0e1215';
+}
+// The dimmed screen colour: the tour overlay (rgba(8,10,12,.62)) over --bg.
+function dimmedTopColor() {
+  const css = plainTopColor().replace('#', '');
+  const hex6 = css.length === 3 ? css.split('').map(c => c + c).join('') : css;
+  const n = parseInt(hex6, 16);
+  if (Number.isNaN(n)) return '#0a0d0f';
+  const bg = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const a = 0.62, dim = [8, 10, 12];                 // matches .tour-overlay background
+  const to = v => v.toString(16).padStart(2, '0');
+  return '#' + bg.map((s, i) => to(Math.round(a * dim[i] + (1 - a) * s))).join('');
+}
+function applyStatusBar(dimmed) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dimmed ? dimmedTopColor() : plainTopColor());
+}
+
 export function startTour() {
   if (active) return;
   active = true;
   prevTab = null;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  savedThemeColor = meta ? meta.getAttribute('content') : null;   // per-step tint set in place()
   document.body.classList.add('tour-active');   // suppress app swipe gestures (Settings / Recents)
   savedSort = tourSetSort('frequency');   // show the grid sorted by frequency during the tour
   buildDom();
@@ -463,6 +491,9 @@ function endTour() {
   token++;
   markSeen();
   document.body.classList.remove('tour-active');
+  const meta = document.querySelector('meta[name="theme-color"]');   // restore the status-bar tint
+  if (meta && savedThemeColor != null) meta.setAttribute('content', savedThemeColor);
+  savedThemeColor = null;
   setTourSuppressModal(false);   // restore normal tap-to-open behaviour
   if (savedSort != null) { tourSetSort(savedSort); savedSort = null; }   // restore sort
   stopObservingTarget();
