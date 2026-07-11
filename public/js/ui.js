@@ -2418,6 +2418,8 @@ profileLangBtn?.addEventListener('click', () => {
   };
 
   document.addEventListener('touchstart', e => {
+    // The tour owns horizontal swipes while it's open — don't reveal Settings.
+    if (document.body.classList.contains('tour-active')) { stActive = false; return; }
     stOpened = document.body.classList.contains('settings-open');
     if (e.touches.length !== 1 || (!stOpened && !profileScreen.classList.contains('active'))) { stActive = false; return; }
     if (e.target.closest('.tabbar')) { stActive = false; return; }

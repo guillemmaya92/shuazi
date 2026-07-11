@@ -240,12 +240,26 @@ function buildDom() {
     next:    card.querySelector('.tour-next'),
   };
 
+  const goNext = () => { if (index < STEPS.length - 1) goToStep(index + 1); else endTour(); };
+  const goBack = () => { if (index > 0) goToStep(index - 1); };
+
   els.skip.addEventListener('click', () => endTour(true));
-  els.back.addEventListener('click', () => { if (index > 0) goToStep(index - 1); });
-  els.next.addEventListener('click', () => {
-    if (index < STEPS.length - 1) goToStep(index + 1);
-    else endTour(true);
+  els.back.addEventListener('click', goBack);
+  els.next.addEventListener('click', goNext);
+
+  // Swipe the card left/right to go next/back (in addition to the buttons).
+  // `touch-action: pan-y` on the card leaves horizontal gestures free for us,
+  // while vertical drags still scroll the card's content.
+  let swX = 0, swY = 0, swId = null;
+  card.addEventListener('pointerdown', e => { swId = e.pointerId; swX = e.clientX; swY = e.clientY; });
+  card.addEventListener('pointerup', e => {
+    if (e.pointerId !== swId) return;
+    swId = null;
+    const dx = e.clientX - swX, dy = e.clientY - swY;
+    if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;   // not a horizontal swipe
+    if (dx < 0) goNext(); else goBack();
   });
+  card.addEventListener('pointercancel', () => { swId = null; });
 
   els.dots.innerHTML = SECTIONS.map(sec =>
     `<span class="tour-dot" title="${t('tour.section.' + sec)}"></span>`).join('');
@@ -409,6 +423,7 @@ export function startTour() {
   if (active) return;
   active = true;
   prevTab = null;
+  document.body.classList.add('tour-active');   // suppress app swipe gestures (Settings / Recents)
   savedSort = tourSetSort('frequency');   // show the grid sorted by frequency during the tour
   buildDom();
   requestAnimationFrame(() => { overlay.classList.add('show'); card.classList.add('show'); ring.classList.add('show'); });
@@ -435,6 +450,7 @@ function endTour() {
   active = false;
   token++;
   markSeen();
+  document.body.classList.remove('tour-active');
   setTourSuppressModal(false);   // restore normal tap-to-open behaviour
   if (savedSort != null) { tourSetSort(savedSort); savedSort = null; }   // restore sort
   stopObservingTarget();
