@@ -953,6 +953,16 @@ body.account-open .account-scrim { pointer-events: auto; }
   flex:0 0 18px; width:18px; text-align:center;
   color:var(--muted); font-size:18px; line-height:1; font-weight:700;
 }
+/* Small legal links pinned to the bottom of the Settings panel (not main items). */
+.settings-panel-foot {
+  display:flex; align-items:center; justify-content:flex-end; gap:12px;
+  padding:14px 2px max(6px, var(--safe-b)); margin-top:6px;
+  font-size:.7rem; color:var(--faint);
+}
+.settings-panel-foot a { color:var(--faint); text-decoration:none; }
+.settings-panel-foot a:active { opacity:.6; }
+.settings-panel-foot .sep { opacity:.5; }
+@media (hover:hover) and (pointer:fine) { .settings-panel-foot a:hover { color:var(--muted); text-decoration:underline; } }
 /* Language toggle — compact pill sized to the active language only; EN shows its
    flag on the left, ES on the right, and a tap flips between them. */
 .lang-toggle {
