@@ -2343,8 +2343,10 @@ profileLangBtn?.addEventListener('click', () => {
   });
 
   document.getElementById('settingsLearnBtn')?.addEventListener('click', () => {
+    // Let the settings panel finish sliding shut before the tour appears, so the
+    // two animations don't overlap and jump. Matches the .root .3s transition.
     closeSettings();
-    startTour();
+    setTimeout(startTour, 300);
   });
 
   document.getElementById('settingsInviteBtn')?.addEventListener('click', async () => {

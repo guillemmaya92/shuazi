@@ -60,8 +60,8 @@ async function scrollIntoCenter(el) {
 // element to highlight (null → centered card, full dim), and title/body keys.
 // `pad` / `radius` shape the spotlight hole.
 const STEPS = [
-  // 0 · WELCOME — centered card with the RTFM image, no spotlight. Shares the
-  // "Cards" section dot (no chip of its own) so there are 5 dots, not 6.
+  // 0 · WELCOME — centered card with the RTFM image, no spotlight, over the Cards
+  // screen. Shares the "Cards" section dot (no chip of its own) → 5 dots, not 6.
   { section: 'cards', noChip: true, tab: 'cards', image: './images/rtfm.png',
     title: 'tour.welcome.title', body: 'tour.welcome.body' },
 
@@ -404,16 +404,28 @@ async function goToStep(i) {
   // Drive the app to the right tab (only when it actually changes — re-showing a
   // tab re-renders it, which reads as a "reload"), run any per-step setup, then
   // let the screen transition (opacity 220ms) and any re-render settle.
-  if (step.tab !== prevTab) showTab(step.tab);
-  prevTab = step.tab;
+  const switched = step.tab && step.tab !== prevTab;
+  if (switched) showTab(step.tab);
+  if (step.tab) prevTab = step.tab;
   if (step.prepare) { try { step.prepare(); } catch (e) { console.error('tour prepare failed', e); } }
-  await sleep(240);
-  if (myToken !== token || !active) return;
+  // Only wait for a screen transition / re-render to settle when one happened.
+  if (switched || step.prepare) { await sleep(240); if (myToken !== token || !active) return; }
 
   const el = step.locate ? await step.locate() : null;
   if (myToken !== token || !active) return;   // user advanced/closed while we waited
 
+  // First reveal: snap the card into its positioned state with the transition off,
+  // then fade it in — otherwise applying the position class animates `transform`
+  // ~200px from the card's base position (a visible slide). Later steps keep the
+  // transition so the card glides smoothly between positions.
+  const firstReveal = !card.classList.contains('show');
+  if (firstReveal) card.style.transition = 'none';
   place(el, step);
+  if (firstReveal) {
+    void card.offsetWidth;                          // commit the un-transitioned position
+    card.style.transition = '';
+    requestAnimationFrame(() => { if (active && myToken === token) card.classList.add('show'); });
+  }
   observeTarget(el, step);          // keep the spotlight matched to the target's size
   watchContent(step);               // re-anchor the spotlight when the grid re-renders
   if (step.demo) playDemoSwipe();   // replay the card-swipe animation for this step
@@ -426,7 +438,7 @@ export function startTour() {
   document.body.classList.add('tour-active');   // suppress app swipe gestures (Settings / Recents)
   savedSort = tourSetSort('frequency');   // show the grid sorted by frequency during the tour
   buildDom();
-  requestAnimationFrame(() => { overlay.classList.add('show'); card.classList.add('show'); ring.classList.add('show'); });
+  requestAnimationFrame(() => { overlay.classList.add('show'); ring.classList.add('show'); });
   window.addEventListener('resize', reposition, { passive: true });
   window.addEventListener('orientationchange', reposition, { passive: true });
   goToStep(0);
