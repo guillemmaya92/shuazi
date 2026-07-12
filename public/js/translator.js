@@ -336,6 +336,7 @@ function escapeHtml(s) {
 const COPY_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 const EDIT_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
 
 // Write text to the clipboard, with a fallback for older / insecure contexts.
 async function copyToClipboard(text) {
@@ -368,7 +369,7 @@ function closeCopyPop() {
 // The sent message isn't text-selectable; tapping its bubble raises a small popover
 // with Copy — and, when `onEdit` is given, Edit — instead of the native selection
 // menu. Edit hands the text back to the composer to be corrected and re-sent.
-function wireCopyPopover(bubbleEl, getText, onEdit) {
+function wireCopyPopover(bubbleEl, getText, onEdit, onDelete) {
   bubbleEl.addEventListener('click', e => {
     e.stopPropagation();
     // A second tap on the same bubble dismisses; any other tap replaces the pop.
@@ -403,6 +404,19 @@ function wireCopyPopover(bubbleEl, getText, onEdit) {
       editBtn.innerHTML = `${EDIT_ICON}<span>${t('tr.edit')}</span>`;
       editBtn.addEventListener('click', () => { closeCopyPop(); onEdit(); });
       pop.appendChild(editBtn);
+    }
+
+    if (onDelete) {
+      const sep = document.createElement('div');
+      sep.className = 'tr-pop-sep';
+      pop.appendChild(sep);
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'tr-pop-btn danger icon-only';
+      delBtn.setAttribute('aria-label', t('tr.delete'));
+      delBtn.innerHTML = TRASH_ICON;
+      delBtn.addEventListener('click', () => { closeCopyPop(); onDelete(); });
+      pop.appendChild(delBtn);
     }
 
     bubbleEl.closest('.tr-user-msg').appendChild(pop);
@@ -638,8 +652,10 @@ export function initTranslator() {
     originalEl.textContent = original;
     zhLineEl.textContent   = translation;
 
-    // The sent bubble isn't text-selectable — tap it for a Copy / Edit popover.
-    wireCopyPopover(originalEl, () => original, () => startEdit(msg, original, target));
+    // The sent bubble isn't text-selectable — tap it for a Copy / Edit / Delete popover.
+    wireCopyPopover(originalEl, () => original,
+      () => startEdit(msg, original, target),
+      () => deleteMessage(msg));
 
     if (isZh) {
       renderTokens(translation, tokens, resultEl);
@@ -744,6 +760,32 @@ export function initTranslator() {
     editBanner.style.display = 'none';
     input.value = '';
     autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
+  }
+
+  // Remove a sent message from the conversation (and from the persisted chat).
+  // The DOM order mirrors `messages`, so the node's child index is its array index.
+  // Deleting the last remaining message discards the whole chat from Recents.
+  async function deleteMessage(msgEl) {
+    const idx = [...conversationEl.children].indexOf(msgEl);
+    if (idx < 0) return;
+    if (editing && editing.el === msgEl) cancelEdit();
+    stopPlayback();               // in case this message was the one speaking
+    msgEl.remove();
+    messages.splice(idx, 1);
+    syncNewChatBtn();
+
+    const id = chatId;
+    if (!messages.length) {
+      // Nothing left — drop the chat entirely rather than leaving an empty entry.
+      chatId = null;
+      if (id) {
+        if (!state.supaUser) localChatsSet(localChatsGet().filter(x => x.chat_id !== id));
+        else { try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('chat_id', id); } catch {} }
+      }
+    } else if (id) {
+      saveChat({ chat_id: id, title: chatTitle(messages), messages, updated_at: new Date().toISOString() });
+    }
+    if (document.body.classList.contains('recents-open')) loadHistory();
   }
 
   async function handleSubmit() {

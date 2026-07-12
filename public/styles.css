@@ -1548,6 +1548,9 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-pop-btn svg { width:14px; height:14px; flex-shrink:0; }
 .tr-pop-btn:active { background:color-mix(in srgb, var(--muted) 20%, transparent); transform:scale(.97); }
 .tr-pop-btn.copied { color:var(--green); }
+.tr-pop-btn.danger { color:var(--red); }
+.tr-pop-btn.danger:active { background:color-mix(in srgb, var(--red) 18%, transparent); }
+.tr-pop-btn.icon-only { padding:5px 9px; }
 .tr-pop-sep { width:1px; background:var(--bdr); margin:4px 0; flex-shrink:0; }
 
 /* The message currently being edited: a fine iOS-style green hairline on its bubble. */
