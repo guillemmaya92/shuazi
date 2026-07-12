@@ -428,11 +428,28 @@ function wireCopyPopover(bubbleEl, getText, onEdit, onDelete) {
   });
 }
 
+// Index of the first occurrence of the `needle` char sequence in `hay`, at or
+// after `from` (−1 if none). Used to align a token to its position in the sentence.
+function indexOfSeq(hay, needle, from) {
+  outer: for (let i = from; i + needle.length <= hay.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (hay[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
 // Normalises the server tokens ({ zh, gloss }) into the render shape, computing
 // pinyin per word locally. `gloss` is the literal per-word meaning (in the app's
 // language) shown as a legend. Falls back to the legacy `en` key so tokens saved by
 // older builds (in history / the localStorage cache) still show their glosses.
-function tokensFromServer(tokens) {
+//
+// Pinyin is read from the whole-sentence pinyin (aligning each token to its place
+// in `zhText`) rather than per isolated token, so polyphonic characters get their
+// contextual reading — e.g. the particle 了 is "le", not the isolated default "liǎo".
+function tokensFromServer(tokens, zhText = '') {
+  const chars = [...zhText];
+  const sentencePy = zhText ? pinyin(zhText, { type: 'array' }) : [];
+  let cursor = 0;
   return tokens
     .filter(t => t && typeof t.zh === 'string' && t.zh.length)
     .map(t => {
@@ -440,13 +457,19 @@ function tokensFromServer(tokens) {
       const latin = !CJK_RE.test(origin) && WORD_RE.test(origin);
       const punct = !latin && PUNCT_RE.test(origin);
       const gloss = typeof t.gloss === 'string' ? t.gloss : (typeof t.en === 'string' ? t.en : '');
-      return {
-        origin,
-        result: latin || punct ? '' : pinyin(origin),
-        en: gloss,
-        latin,
-        punct,
-      };
+      let result = '';
+      if (!latin && !punct) {
+        const oc = [...origin];
+        let start = sentencePy.length ? indexOfSeq(chars, oc, cursor) : -1;
+        if (start < 0 && sentencePy.length) start = indexOfSeq(chars, oc, 0);
+        if (start >= 0) {
+          result = sentencePy.slice(start, start + oc.length).join(' ');
+          cursor = start + oc.length;
+        } else {
+          result = pinyin(origin);   // no sentence context available — isolated reading
+        }
+      }
+      return { origin, result, en: gloss, latin, punct };
     });
 }
 
@@ -476,7 +499,7 @@ function tokensFromSegment(zhText) {
 
 function renderTokens(zhText, tokens, resultEl) {
   resultEl.innerHTML = '';
-  const list = (tokens && tokens.length) ? tokensFromServer(tokens) : tokensFromSegment(zhText);
+  const list = (tokens && tokens.length) ? tokensFromServer(tokens, zhText) : tokensFromSegment(zhText);
 
   for (const seg of list) {
     const isPunct = !seg.latin && (seg.punct ?? PUNCT_RE.test(seg.origin));
@@ -783,7 +806,7 @@ export function initTranslator() {
         else { try { await supa.from('chats').delete().eq('user_id', state.supaUser.id).eq('chat_id', id); } catch {} }
       }
     } else if (id) {
-      saveChat({ chat_id: id, title: chatTitle(messages), messages, updated_at: new Date().toISOString() });
+      saveChat({ chat_id: id, title: titleFor(id, messages), messages, updated_at: new Date().toISOString() });
     }
     if (document.body.classList.contains('recents-open')) loadHistory();
   }
@@ -827,7 +850,7 @@ export function initTranslator() {
       if (!editCtx) scrollToBottom();
       // Append to the current chat and save the whole conversation as one entry.
       if (!chatId) chatId = newChatId();
-      saveChat({ chat_id: chatId, title: chatTitle(messages), messages, updated_at: new Date().toISOString() })
+      saveChat({ chat_id: chatId, title: titleFor(chatId, messages), messages, updated_at: new Date().toISOString() })
         .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
       console.error(e);
@@ -1006,6 +1029,10 @@ export function initTranslator() {
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
        <span class="tr-menu-pin-label">Pin</span>
      </button>
+     <button class="tr-menu-rename" type="button">
+       ${EDIT_ICON}
+       <span>Rename</span>
+     </button>
      <button class="tr-menu-del" type="button">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
        <span>Delete</span>
@@ -1013,6 +1040,10 @@ export function initTranslator() {
   document.body.appendChild(menu);
   const pinLabel = menu.querySelector('.tr-menu-pin-label');
   let menuRow = null, menuItem = null;
+  // Chats renamed this session. Their custom title overrides the one auto-derived
+  // from the first message, so an autosave of the chat can't clobber the rename.
+  const customTitles = new Map();
+  const titleFor = (id, msgs) => customTitles.get(id) ?? chatTitle(msgs);
 
   function openMenu(x, y, row, item) {
     menuRow = row; menuItem = item;
@@ -1047,6 +1078,11 @@ export function initTranslator() {
     } catch {}
     loadHistory();   // reorder (pinned first)
   });
+  menu.querySelector('.tr-menu-rename').addEventListener('click', () => {
+    const row = menuRow, item = menuItem;
+    closeMenu();
+    if (row && item) startRename(row, item);
+  });
   menu.querySelector('.tr-menu-del').addEventListener('click', async () => {
     const row = menuRow, item = menuItem;
     closeMenu();
@@ -1065,6 +1101,55 @@ export function initTranslator() {
     if (menu.classList.contains('open') && !menu.contains(e.target)) closeMenu();
   }, true);
   historyList.addEventListener('scroll', () => { if (menu.classList.contains('open')) closeMenu(); });
+
+  // Persist a chat's new title (Supabase or localStorage) and remember it for the
+  // session so a later autosave of the same chat won't overwrite it.
+  async function saveTitle(row, title) {
+    customTitles.set(row.chat_id, title);
+    if (!state.supaUser) {
+      const rows = localChatsGet();
+      const r = rows.find(x => x.chat_id === row.chat_id);
+      if (r) { r.title = title; localChatsSet(rows); }
+    } else {
+      try {
+        await supa.from('chats').update({ title })
+          .eq('user_id', state.supaUser.id).eq('chat_id', row.chat_id);
+      } catch {}
+    }
+  }
+
+  // Inline-edit a history item's title: swap the row for a text field, commit on
+  // Enter / blur, discard on Escape.
+  function startRename(row, item) {
+    if (item.querySelector('.tr-history-rename')) return;
+    const openBtn = item.querySelector('.tr-history-open');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tr-history-rename';
+    input.value = row.title || '';
+    input.maxLength = 120;
+    openBtn.style.display = 'none';
+    item.insertBefore(input, openBtn);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const finish = async (save) => {
+      if (done) return;
+      done = true;
+      const val = input.value.trim();
+      const changed = save && val && val !== row.title;
+      if (changed) { row.title = val; await saveTitle(row, val); }
+      input.remove();
+      openBtn.style.display = '';
+      if (changed) loadHistory();
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')       { e.preventDefault(); input.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); done = true; input.remove(); openBtn.style.display = ''; }
+    });
+    input.addEventListener('blur', () => finish(true));
+  }
 
   const isOpen = () => document.body.classList.contains('recents-open');
 

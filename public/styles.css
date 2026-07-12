@@ -1182,10 +1182,19 @@ body.account-open .account-scrim { pointer-events: auto; }
 /* iOS-style ratchet: 12 discrete steps so the bright bar chases around. */
 .pull-disc.spinning .pull-spinner { animation:pull-spin .85s steps(12,end) infinite; }
 @keyframes pull-spin { to { transform:rotate(360deg); } }
-.translator-scroll::-webkit-scrollbar { width:3px; }
-.translator-scroll::-webkit-scrollbar-track { background:transparent; }
-.translator-scroll::-webkit-scrollbar-thumb { background:var(--bdr); border-radius:999px; }
-.translator-scroll { scrollbar-width:thin; scrollbar-color:var(--bdr) transparent; }
+/* A visible, draggable scrollbar for long conversations (iOS-style capsule). */
+.translator-scroll::-webkit-scrollbar { width:7px; }
+.translator-scroll::-webkit-scrollbar-track { background:transparent; margin:4px 0; }
+.translator-scroll::-webkit-scrollbar-thumb {
+  min-height:40px; border-radius:999px;
+  border:2px solid transparent; background-clip:padding-box;
+  background-color:color-mix(in srgb, var(--muted) 55%, transparent);
+}
+.translator-scroll::-webkit-scrollbar-thumb:hover,
+.translator-scroll::-webkit-scrollbar-thumb:active {
+  background-color:color-mix(in srgb, var(--muted) 80%, transparent);
+}
+.translator-scroll { scrollbar-width:thin; scrollbar-color:color-mix(in srgb, var(--muted) 55%, transparent) transparent; }
 
 /* Bottom composer (ChatGPT-style): pinned below the results scroll. */
 .tr-composer { flex:0 0 auto; padding-top:8px; }
@@ -1726,10 +1735,19 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   font-size:.84rem; font-weight:600;
 }
 .tr-menu button svg { width:17px; height:17px; }
-.tr-menu-pin { color:var(--txt); -webkit-text-fill-color:var(--txt); }
-.tr-menu-pin:hover, .tr-menu-pin:active { background:var(--surf); }
+.tr-menu-pin, .tr-menu-rename { color:var(--txt); -webkit-text-fill-color:var(--txt); }
+.tr-menu-pin:hover, .tr-menu-pin:active,
+.tr-menu-rename:hover, .tr-menu-rename:active { background:var(--surf); }
 .tr-menu-del { color:var(--red); -webkit-text-fill-color:var(--red); }
 .tr-menu-del:hover, .tr-menu-del:active { background:var(--red-bg); }
+/* Inline title editor shown while renaming a history item. */
+.tr-history-rename {
+  flex:1; min-width:0; margin:2px 0;
+  padding:9px 10px; border-radius:12px;
+  background:var(--surf); border:1px solid color-mix(in srgb, var(--blue) 45%, var(--bdr));
+  color:var(--txt); font-size:.82rem; font-weight:600;
+  outline:none; -webkit-appearance:none; appearance:none;
+}
 /* Pin indicator on a pinned history item. */
 .tr-history-pin { width:11px; height:11px; margin-right:4px; vertical-align:-1px; color:var(--faint); }
 .tr-history-item {
