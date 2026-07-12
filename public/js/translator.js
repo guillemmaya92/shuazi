@@ -58,21 +58,20 @@ function ensureLibs() {
 // translation already segmented into word tokens, each with a per-word gloss in the
 // app's language; for other targets it returns just the translation (tokens null).
 // Resolves to { translation, tokens } — tokens may be null.
-async function translate(text, target) {
-  // Only short-circuit when the text is already in the requested language.
-  if (target === 'zh' && CJK_RE.test(text)) return { translation: text, tokens: null };
+// A result only counts as a real translation if it actually looks like one, so a
+// model that echoes/garbles the input (e.g. returning the source words in the token
+// "zh" fields, which get joined into "holaquétaltodobien") is caught, not shown.
+function isValidTranslation(out, text, target) {
+  if (!out || !out.trim()) return false;
+  // A Chinese translation must contain Han characters — without them it's not one.
+  if (target === 'zh') return CJK_RE.test(out);
+  // Other targets: reject a verbatim echo of the input (ignoring spaces and case).
+  const norm = s => s.replace(/\s+/g, '').toLowerCase();
+  return norm(out) !== norm(text);
+}
 
-  // Per-word glosses (Chinese mode) are written in the app's UI language.
-  const gloss = state.lang === 'es' ? 'es' : 'en';
-
-  // Cache identical inputs in localStorage — repeats return instantly. The key
-  // includes the gloss language for Chinese, whose tokens depend on it.
-  const cacheKey = target === 'zh' ? `tr:${target}:${gloss}:${text}` : `tr:${target}:${text}`;
-  try {
-    const hit = localStorage.getItem(cacheKey);
-    if (hit) return JSON.parse(hit);
-  } catch { /* ignore parse/quota errors */ }
-
+// One round-trip to the translator Edge Function, returning { translation, tokens }.
+async function requestTranslation(text, target, gloss) {
   const response = await fetch(`${SUPA_URL}/functions/v1/translator`, {
     method: 'POST',
     headers: {
@@ -103,7 +102,34 @@ async function translate(text, target) {
       } catch { /* leave out as-is */ }
     }
   }
-  const result = { translation: out, tokens };
+  return { translation: out, tokens };
+}
+
+async function translate(text, target) {
+  // Only short-circuit when the text is already in the requested language.
+  if (target === 'zh' && CJK_RE.test(text)) return { translation: text, tokens: null };
+
+  // Per-word glosses (Chinese mode) are written in the app's UI language.
+  const gloss = state.lang === 'es' ? 'es' : 'en';
+
+  // Cache identical inputs in localStorage — repeats return instantly. The key
+  // includes the gloss language for Chinese, whose tokens depend on it.
+  const cacheKey = target === 'zh' ? `tr:${target}:${gloss}:${text}` : `tr:${target}:${text}`;
+  try {
+    const hit = localStorage.getItem(cacheKey);
+    if (hit) return JSON.parse(hit);
+  } catch { /* ignore parse/quota errors */ }
+
+  // Validate the result; the model is non-deterministic, so a bad reply (an echo of
+  // the input rather than a translation) is retried once before surfacing an error.
+  let result = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = await requestTranslation(text, target, gloss);
+    if (isValidTranslation(r.translation, text, target)) { result = r; break; }
+  }
+  if (!result) throw new Error(t('tr.invalid'));
+
+  // Never cache an invalid result — only reached with a validated translation.
   try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch { /* quota full — skip */ }
   return result;
 }

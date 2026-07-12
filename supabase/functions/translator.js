@@ -13,7 +13,8 @@
 const MODEL = "deepseek/deepseek-v4-flash";
 const MAX_CHARS = 2000;
 const MAX_TOKENS = 4000;
-const MAX_RETRIES = 2; // retries on transient upstream errors (429/5xx)
+const MAX_RETRIES = 2;         // retries on transient upstream errors (429/5xx)
+const MAX_CONTENT_RETRIES = 1; // extra model calls when a reply fails validation
 
 // Supported output languages. Chinese ("zh") is the rich mode (tokenized with
 // per-word glosses); the others return a plain translation only.
@@ -21,6 +22,11 @@ const LANGS = { zh: "Simplified Chinese", en: "English", es: "Spanish" };
 
 // The language the per-word glosses are written in (the app's UI language).
 const GLOSS_LANGS = { en: "English", es: "Spanish" };
+
+// A Chinese translation must contain Han characters. When the model fails it tends
+// to echo the source words in the token "zh" fields, which then join into strings
+// like "holaquétaltodobien" — this catches that so the reply is retried, not shown.
+const HAN_RE = /[㐀-鿿豈-﫿]/;
 
 // Chinese mode. Compact output keeps generated tokens (and therefore latency)
 // low: the model returns just an array of [word, gloss] pairs — the full
@@ -32,6 +38,7 @@ const GLOSS_LANGS = { en: "English", es: "Spanish" };
 const zhPrompt = (glossName) =>
   `You are a professional translator. Every "gloss" you output MUST be written in ${glossName} — never in English or any other language (unless ${glossName} is English). ` +
   "Translate the user message into Simplified Chinese, then segment it into natural word-level tokens. " +
+  `Each token's "zh" field MUST contain Simplified Chinese characters (or a punctuation mark) only — never the source language; always translate, never echo the input. ` +
   `For each token: "zh" is one Chinese word (or punctuation mark); "gloss" is that word's short literal meaning in ${glossName} — ideally 1 word, at most 2; no articles, no slashes or alternatives, just the single best meaning (empty string for punctuation). ` +
   "No pinyin, no explanations.";
 
@@ -175,44 +182,21 @@ function json(body, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-
-  let text, target, gloss;
-  try {
-    ({ text, target, gloss } = await req.json());
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400);
-  }
-
-  if (typeof text !== "string" || !text.trim()) {
-    return json({ error: 'Missing "text"' }, 400);
-  }
-  if (text.length > MAX_CHARS) {
-    return json({ error: `Text too long (max ${MAX_CHARS} chars)` }, 413);
-  }
-  // Default to Chinese for older clients that don't send a target; glosses default
-  // to English if the client doesn't specify (or sends an unsupported language).
-  target = typeof target === "string" && LANGS[target] ? target : "zh";
-  gloss = typeof gloss === "string" && GLOSS_LANGS[gloss] ? gloss : "en";
-  const isZh = target === "zh";
-  const system = isZh ? zhPrompt(GLOSS_LANGS[gloss]) : plainPrompt(LANGS[target]);
-  const schema = isZh ? TOKENS_SCHEMA : PLAIN_SCHEMA;
-
-  const key = Deno.env.get("OPENROUTER_API_KEY")?.trim();
-  if (!key) return json({ error: "Server not configured" }, 500);
-
+// One full translation attempt: calls the model, parses its JSON and (for zh)
+// rebuilds the translation from tokens. Returns one of:
+//   { errorResponse }              — a hard failure to return to the client as-is
+//   { invalid: true, finish_reason} — parsed but not a usable translation (retry)
+//   { translation, tokens }         — a validated translation
+async function attemptTranslation(key, text, system, schema, isZh) {
   let resp;
   try {
     resp = await callOpenRouterWithRetry(key, text, system, schema);
   } catch (e) {
-    return json({ error: "Upstream request failed", detail: String(e) }, 502);
+    return { errorResponse: json({ error: "Upstream request failed", detail: String(e) }, 502) };
   }
-
   if (!resp.ok) {
     const detail = await resp.text().catch(() => "");
-    return json({ error: `OpenRouter ${resp.status}`, detail }, 502);
+    return { errorResponse: json({ error: `OpenRouter ${resp.status}`, detail }, 502) };
   }
 
   const data = await resp.json();
@@ -221,14 +205,8 @@ Deno.serve(async (req) => {
   if (!content) {
     // Surface finish_reason so logs tell you why: "length" = truncated by
     // max_tokens, anything else = model genuinely returned nothing.
-    console.error("Empty content from OpenRouter", {
-      finish_reason: choice?.finish_reason,
-      choice,
-    });
-    return json(
-      { error: "Empty translation", finish_reason: choice?.finish_reason },
-      502,
-    );
+    console.error("Empty content from OpenRouter", { finish_reason: choice?.finish_reason, choice });
+    return { invalid: true, finish_reason: choice?.finish_reason };
   }
 
   const parsed = parseModelJson(content);
@@ -238,8 +216,8 @@ Deno.serve(async (req) => {
     const out = (typeof parsed?.translation === "string" && parsed.translation.trim())
       ? parsed.translation.trim()
       : content;
-    if (!out) return json({ error: "Empty translation" }, 502);
-    return json({ translation: out, tokens: null }, 200);
+    if (!out) return { invalid: true, finish_reason: choice?.finish_reason };
+    return { translation: out, tokens: null };
   }
 
   // Expand the compact pairs into { zh, gloss } tokens and rebuild the full
@@ -269,12 +247,62 @@ Deno.serve(async (req) => {
       ? parsed.translation.trim()
       : content;
     tokens = null;
-    console.error("Unparseable model JSON", {
+  }
+
+  // Validate: a Chinese translation must contain Han characters. Without them the
+  // model echoed/garbled the input instead of translating — treat it as invalid so
+  // the caller retries (and, failing that, returns an error) rather than showing it.
+  if (!translation || !HAN_RE.test(translation)) {
+    console.error("Invalid zh translation (no Han characters)", {
       finish_reason: choice?.finish_reason,
       contentPreview: content.slice(0, 300),
     });
+    return { invalid: true, finish_reason: choice?.finish_reason };
   }
-  if (!translation) return json({ error: "Empty translation" }, 502);
 
-  return json({ translation, tokens }, 200);
+  return { translation, tokens };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  let text, target, gloss;
+  try {
+    ({ text, target, gloss } = await req.json());
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (typeof text !== "string" || !text.trim()) {
+    return json({ error: 'Missing "text"' }, 400);
+  }
+  if (text.length > MAX_CHARS) {
+    return json({ error: `Text too long (max ${MAX_CHARS} chars)` }, 413);
+  }
+  // Default to Chinese for older clients that don't send a target; glosses default
+  // to English if the client doesn't specify (or sends an unsupported language).
+  target = typeof target === "string" && LANGS[target] ? target : "zh";
+  gloss = typeof gloss === "string" && GLOSS_LANGS[gloss] ? gloss : "en";
+  const isZh = target === "zh";
+  const system = isZh ? zhPrompt(GLOSS_LANGS[gloss]) : plainPrompt(LANGS[target]);
+  const schema = isZh ? TOKENS_SCHEMA : PLAIN_SCHEMA;
+
+  const key = Deno.env.get("OPENROUTER_API_KEY")?.trim();
+  if (!key) return json({ error: "Server not configured" }, 500);
+
+  // Retry the whole model call when a reply parses but fails validation (e.g. a
+  // Chinese result with no Han characters) — the model is non-deterministic, so a
+  // second attempt usually succeeds. Hard upstream errors return immediately.
+  let result;
+  for (let attempt = 0; attempt <= MAX_CONTENT_RETRIES; attempt++) {
+    result = await attemptTranslation(key, text, system, schema, isZh);
+    if (result.errorResponse) return result.errorResponse;
+    if (!result.invalid) break;
+  }
+  if (!result || result.invalid) {
+    return json({ error: "Empty translation", finish_reason: result?.finish_reason }, 502);
+  }
+
+  return json({ translation: result.translation, tokens: result.tokens }, 200);
 });
