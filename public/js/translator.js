@@ -594,11 +594,10 @@ export function initTranslator() {
     if (document.body.classList.contains('recents-open')) loadHistory();
   }
 
-  // Appends one resolved translation as a chat message. For Chinese it's the rich
-  // layout (Original / Hanzi / Tokens); for other targets just Original / Translation
-  // — the tokenized section and glosses are dropped and TTS uses Web Speech.
-  // Builds one chat message node (Original / Hanzi / Tokens) without inserting it,
-  // so callers can either append it or swap it in place for an edited message.
+  // Builds one chat message node without inserting it, so callers can append it or
+  // swap it in place for an edited message. For Chinese it's the rich layout
+  // (Original / Hanzi / Tokens); other targets drop the tokenized block and use
+  // Web Speech for TTS.
   function buildMessageEl(original, translation, tokens, target = 'zh') {
     const isZh = target === 'zh';
     const msg = msgTemplate.content.firstElementChild.cloneNode(true);
@@ -671,6 +670,22 @@ export function initTranslator() {
     return msg;
   }
 
+  // A pending message: the sent bubble shown instantly, with three "thinking" dots
+  // where the translation will go. The resolved message replaces the whole node.
+  function makePendingEl(original) {
+    const msg = msgTemplate.content.firstElementChild.cloneNode(true);
+    const originalEl = msg.querySelector('.js-original');
+    originalEl.textContent = original;
+    wireCopyPopover(originalEl, () => original);   // copy only while it loads
+    // Drop the (empty) translation sections; show the thinking dots in their place.
+    msg.querySelectorAll('.tr-section').forEach(s => s.remove());
+    const thinking = document.createElement('div');
+    thinking.className = 'tr-thinking';
+    thinking.innerHTML = '<span></span><span></span><span></span>';
+    msg.appendChild(thinking);
+    return msg;
+  }
+
   // ── EDIT A SENT MESSAGE ──
   // A small banner in the composer signals edit mode and offers a way out.
   const composerEl = input.closest('.tr-composer');
@@ -678,7 +693,8 @@ export function initTranslator() {
   editBanner.className = 'tr-edit-banner';
   editBanner.style.display = 'none';
   editBanner.innerHTML = `<span class="js-editing-label">${t('tr.editing')}</span>` +
-    `<button type="button" class="tr-edit-cancel">${t('tr.cancel')}</button>`;
+    `<button type="button" class="tr-edit-cancel" aria-label="${t('tr.cancel')}">` +
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   composerEl?.insertBefore(editBanner, composerEl.firstChild);
   editBanner.querySelector('.tr-edit-cancel').addEventListener('click', () => cancelEdit());
 
@@ -688,7 +704,7 @@ export function initTranslator() {
     conversationEl.querySelectorAll('.tr-message.editing').forEach(m => m.classList.remove('editing'));
     msgEl.classList.add('editing');
     editBanner.querySelector('.js-editing-label').textContent = t('tr.editing');
-    editBanner.querySelector('.tr-edit-cancel').textContent = t('tr.cancel');
+    editBanner.querySelector('.tr-edit-cancel').setAttribute('aria-label', t('tr.cancel'));
     editBanner.style.display = '';
     input.value = original;
     autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
@@ -716,28 +732,43 @@ export function initTranslator() {
     editing = null;
     editBanner.style.display = 'none';
     autoGrow(); syncCount(); updateComposerMode();
+
+    // Show the sent message instantly with thinking dots where the translation
+    // will go: an edit swaps it into the edited slot, a new send appends it.
+    const idx = editCtx ? [...conversationEl.children].indexOf(editCtx.el) : -1;
+    const pendingEl = makePendingEl(text);
+    if (editCtx && idx >= 0) {
+      conversationEl.replaceChild(pendingEl, editCtx.el);
+    } else {
+      conversationEl.appendChild(pendingEl);
+      syncNewChatBtn();
+      scrollToBottom();
+    }
     try {
       // An edit keeps the message's original output language; new sends use the picker.
       const target = editCtx ? editCtx.target : trTarget;
       // pinyin-pro is only needed for the Chinese (tokenized) path.
       if (target === 'zh') await ensureLibs();
       const { translation: zh, tokens } = await translate(text, target);
+      // Skip if the pending message was cleared meanwhile (e.g. a new chat opened).
+      if (!pendingEl.parentNode) return;
       const row = { source_text: text, translation: zh, tokens: tokens ?? null, target };
-      const idx = editCtx ? [...conversationEl.children].indexOf(editCtx.el) : -1;
-      if (editCtx && idx >= 0) {
-        // Swap the corrected translation into the same slot, on screen and in state.
-        conversationEl.replaceChild(buildMessageEl(text, zh, tokens, target), editCtx.el);
-        messages[idx] = row;
-      } else {
-        appendMessage(text, zh, tokens, target);
-        messages.push(row);
-      }
+      // Replace the dots with the resolved translation, in the same slot and state.
+      conversationEl.replaceChild(buildMessageEl(text, zh, tokens, target), pendingEl);
+      if (editCtx && idx >= 0) messages[idx] = row; else messages.push(row);
+      if (!editCtx) scrollToBottom();
       // Append to the current chat and save the whole conversation as one entry.
       if (!chatId) chatId = newChatId();
       saveChat({ chat_id: chatId, title: chatTitle(messages), messages, updated_at: new Date().toISOString() })
         .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
       console.error(e);
+      // Translation failed: restore the original message on an edit, or drop the
+      // pending bubble on a new send — then surface the error.
+      if (pendingEl.parentNode) {
+        if (editCtx && idx >= 0) { editCtx.el.classList.remove('editing'); conversationEl.replaceChild(editCtx.el, pendingEl); }
+        else pendingEl.remove();
+      }
       emptyEl.textContent = t('tr.error') + e.message;
       emptyEl.className = 'tr-empty err';
       emptyEl.style.display = 'block';

@@ -1132,6 +1132,20 @@ body.account-open .account-scrim { pointer-events: auto; }
 .tr-message { display:flex; flex-direction:column; gap:12px; }
 .tr-message + .tr-message { border-top:1px solid var(--bdr); padding-top:12px; }
 
+/* "Thinking" placeholder shown in an edited slot while its translation loads. */
+.tr-thinking { display:flex; gap:6px; padding:4px 2px; }
+.tr-thinking span {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--muted); opacity:.35;
+  animation:tr-think 1.2s infinite ease-in-out;
+}
+.tr-thinking span:nth-child(2) { animation-delay:.16s; }
+.tr-thinking span:nth-child(3) { animation-delay:.32s; }
+@keyframes tr-think {
+  0%, 70%, 100% { opacity:.3; transform:translateY(0); }
+  35%           { opacity:1; transform:translateY(-3px); }
+}
+
 /* ── Shared pull-to-refresh (translator results, groups filters, …) ── */
 /* Content wrapper that follows the pull and snaps back with a soft spring. */
 .pull-follow:not(.dragging) { transition:transform .34s cubic-bezier(.22,1,.36,1); }
@@ -1545,18 +1559,28 @@ body.account-open .account-scrim { pointer-events: auto; }
   border-color:color-mix(in srgb, var(--green) 60%, transparent);
   box-shadow:0 0 0 .5px color-mix(in srgb, var(--green) 45%, transparent);
 }
-/* Edit-mode banner pinned above the composer. */
+/* Edit-mode banner pinned above the composer — iOS Messages "edit" styling:
+   a soft tinted card with a rounded accent bar and a tappable Cancel pill. */
 .tr-edit-banner {
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:6px 12px; margin-bottom:6px;
-  background:color-mix(in srgb, var(--green) 12%, var(--surf2));
-  border:1px solid color-mix(in srgb, var(--green) 30%, var(--bdr));
-  border-radius:11px; font-size:.76rem; font-weight:600; color:var(--txt);
+  display:flex; align-items:center; gap:10px;
+  padding:8px 8px 8px 11px; margin-bottom:8px;
+  background:color-mix(in srgb, var(--green) 8%, var(--surf2));
+  border:1px solid color-mix(in srgb, var(--green) 16%, transparent);
+  border-radius:13px; font-size:.78rem;
 }
+.tr-edit-banner::before {
+  content:''; align-self:stretch; width:3px; margin:1px 0;
+  border-radius:2px; background:var(--green); flex-shrink:0;
+}
+.js-editing-label { flex:1; font-weight:600; color:var(--txt); letter-spacing:-.01em; }
 .tr-edit-cancel {
-  background:none; border:none; color:var(--green);
-  font-size:.76rem; font-weight:700; cursor:pointer; padding:2px 4px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:24px; height:24px; padding:0; border:none; border-radius:50%;
+  background:color-mix(in srgb, var(--muted) 16%, transparent);
+  color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
+.tr-edit-cancel svg { width:13px; height:13px; }
+.tr-edit-cancel:active { background:color-mix(in srgb, var(--muted) 28%, transparent); transform:scale(.94); }
 .tr-zh-line {
   font-family:var(--cjk);
   font-size:1rem; line-height:1.5; color:var(--txt);   /* match the sent bubble (.tr-bubble) */
