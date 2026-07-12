@@ -105,7 +105,7 @@ const STRINGS = {
     'settings.language': 'Language',
     'settings.terms': 'Terms of Use',
     'settings.privacy': 'Privacy Policy',
-    'settings.hanzi': 'Hanzi',
+    'settings.hanzi': '汉字雨',
     'settings.learn': 'How to use',
     'settings.review': 'Review',
     // Review modal
@@ -342,7 +342,7 @@ const STRINGS = {
     'settings.language': 'Idioma',
     'settings.terms': 'Términos de uso',
     'settings.privacy': 'Política de privacidad',
-    'settings.hanzi': 'Hanzi',
+    'settings.hanzi': '汉字雨',
     'settings.learn': 'Cómo usar',
     'settings.review': 'Valorar',
     // Review modal

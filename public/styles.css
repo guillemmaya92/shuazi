@@ -951,10 +951,6 @@ body.account-open .account-scrim { pointer-events: auto; }
 #settingsLearnBtn > svg:first-child { color:#b04030; }   /* slightly dark red */
 .settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
 .settings-item > .settings-item-value { flex:0 0 auto; color:var(--muted); font-weight:600; }
-.settings-item > .settings-item-hanzi {
-  flex:0 0 18px; width:18px; text-align:center;
-  color:var(--muted); font-size:18px; line-height:1; font-weight:700;
-}
 /* Review modal — star rating + comment */
 .review-stars { display:flex; justify-content:center; gap:8px; touch-action:none; }
 .review-star {
