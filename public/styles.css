@@ -628,20 +628,19 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .groups-scroll::-webkit-scrollbar { width:0; height:0; }
 .groups-scroll { scrollbar-width:none; }
 
-/* Cards, Groups, Slang, Profile and Translator are touch-only surfaces: no
-   accidental text selection or iOS long-press callout on any text or tile. */
-#screen-cards, #screen-groups, #screen-slang, #screen-profile, #screen-translator {
+/* The whole app is a touch-only surface: no accidental text selection or iOS
+   long-press callout on any text, tile or empty gap. Applied at the root so it
+   also covers body-level overlays (modals, toast, coach tip, scroll thumb) that
+   sit outside the per-screen containers. */
+body {
   user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
 }
-/* Opt selectable content back in: form fields everywhere, plus — on the Translator
-   — the sent message (.js-original) and the hanzi translation (.js-zh), the only
-   two things meant to be copied. */
-#screen-cards input, #screen-cards textarea,
-#screen-groups input, #screen-groups textarea,
-#screen-slang input, #screen-slang textarea,
-#screen-profile input, #screen-profile textarea,
-#screen-translator input, #screen-translator textarea,
-#screen-translator .js-original, #screen-translator .js-zh {
+/* Opt selectable content back in — anywhere in the app: form fields; the Translator
+   sent message (.js-original) and hanzi translation (.js-zh); and the example
+   phrases in the Word modal (.word-phrases-list) and Char modal (.phrase-body). */
+input, textarea, [contenteditable="true"],
+.js-original, .js-zh,
+.word-phrases-list, .phrase-body {
   user-select:text; -webkit-user-select:text; -webkit-touch-callout:default;
 }
 
