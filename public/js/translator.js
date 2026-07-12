@@ -754,6 +754,91 @@ export function initTranslator() {
   // ── EDIT A SENT MESSAGE ──
   // A small banner in the composer signals edit mode and offers a way out.
   const composerEl = input.closest('.tr-composer');
+  // Floating composer: keep the scroll's bottom padding matched to the composer's
+  // live height (grows with multiline text / the edit banner) so the newest message
+  // always clears the pill instead of hiding behind it.
+  if (composerEl && scrollEl) {
+    const syncComposerH = () => scrollEl.style.setProperty('--composer-h', composerEl.offsetHeight + 'px');
+    new ResizeObserver(syncComposerH).observe(composerEl);
+    syncComposerH();
+  }
+
+  // ── CUSTOM SCROLLBAR ──
+  // The scroll fills the whole screen so messages pass behind the frosted composer;
+  // a native scrollbar would therefore run behind the pill too. This overlay bar is
+  // laid out to stop at the composer's top edge, and is draggable to scroll.
+  if (scrollEl && composerEl?.parentElement) {
+    const scrollbar = document.createElement('div');
+    scrollbar.className = 'tr-scrollbar';
+    const thumb = document.createElement('div');
+    thumb.className = 'tr-scrollbar-thumb';
+    scrollbar.appendChild(thumb);
+    composerEl.parentElement.appendChild(scrollbar);   // sibling of the scroll, in .screen
+
+    let dragging = false, hideTimer = null;
+    // Recompute geometry (bar extent + thumb size/position). Doesn't change visibility.
+    const refresh = () => {
+      const top = scrollEl.offsetTop;
+      const barH = Math.max(0, composerEl.offsetTop - top - 8);   // stop 8px above the pill
+      scrollbar.style.top = top + 'px';
+      scrollbar.style.height = barH + 'px';
+      const viewH = scrollEl.clientHeight, scrollH = scrollEl.scrollHeight;
+      if (scrollH <= viewH + 1 || barH <= 0) { scrollbar.classList.remove('visible'); return; }
+      const thumbH = Math.max(36, barH * viewH / scrollH);
+      const maxTop = barH - thumbH;
+      const y = (scrollEl.scrollTop / (scrollH - viewH)) * maxTop;
+      thumb.style.height = thumbH + 'px';
+      thumb.style.transform = `translateY(${y}px)`;
+    };
+    const scheduleHide = () => {
+      clearTimeout(hideTimer);
+      if (!dragging) hideTimer = setTimeout(() => scrollbar.classList.remove('visible'), 900);
+    };
+    // Show the bar on a *user* scroll gesture (wheel / touch / thumb drag), then fade
+    // it out once idle. Programmatic scrolls (e.g. scrollToBottom after sending) only
+    // reposition the thumb via the scroll handler below — they never reveal the bar.
+    const show = () => {
+      refresh();
+      if (scrollEl.scrollHeight <= scrollEl.clientHeight + 1) return;
+      scrollbar.classList.add('visible');
+      scheduleHide();
+    };
+    scrollEl.addEventListener('scroll', () => {
+      refresh();
+      // Keep it alive through momentum while already visible; don't wake it if hidden.
+      if (scrollbar.classList.contains('visible')) scheduleHide();
+    }, { passive: true });
+    scrollEl.addEventListener('wheel', show, { passive: true });
+    scrollEl.addEventListener('touchmove', show, { passive: true });
+    const ro = new ResizeObserver(refresh);
+    ro.observe(scrollEl);
+    ro.observe(composerEl);
+    ro.observe(conversationEl);   // recompute when messages are added / removed
+    window.addEventListener('resize', refresh);
+
+    // Drag the thumb to scroll.
+    let startY = 0, startScroll = 0;
+    thumb.addEventListener('pointerdown', e => {
+      dragging = true; startY = e.clientY; startScroll = scrollEl.scrollTop;
+      thumb.setPointerCapture(e.pointerId);
+      clearTimeout(hideTimer);
+      scrollbar.classList.add('visible');
+      e.preventDefault();
+    });
+    thumb.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const barH = scrollbar.offsetHeight, thumbH = thumb.offsetHeight;
+      const viewH = scrollEl.clientHeight, scrollH = scrollEl.scrollHeight;
+      const maxTop = barH - thumbH;
+      if (maxTop <= 0) return;
+      scrollEl.scrollTop = startScroll + ((e.clientY - startY) / maxTop) * (scrollH - viewH);
+    });
+    const endDrag = () => { dragging = false; show(); };
+    thumb.addEventListener('pointerup', endDrag);
+    thumb.addEventListener('pointercancel', endDrag);
+    refresh();
+  }
+
   const editBanner = document.createElement('div');
   editBanner.className = 'tr-edit-banner';
   editBanner.style.display = 'none';
