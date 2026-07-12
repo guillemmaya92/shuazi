@@ -223,6 +223,7 @@ function buildDom() {
     <div class="tour-body"></div>
     <div class="tour-nav">
       <div class="tour-dots"></div>
+      <span class="tour-count"></span>
       <div class="tour-actions">
         <button class="tour-back" type="button"></button>
         <button class="tour-next" type="button"></button>
@@ -236,6 +237,7 @@ function buildDom() {
     title:   card.querySelector('.tour-title'),
     body:    card.querySelector('.tour-body'),
     dots:    card.querySelector('.tour-dots'),
+    count:   card.querySelector('.tour-count'),
     back:    card.querySelector('.tour-back'),
     next:    card.querySelector('.tour-next'),
   };
@@ -388,6 +390,7 @@ function renderCardText(step) {
     d.classList.toggle('seen', i < curSec);      // completed sections
     d.classList.toggle('active', i === curSec);  // current section
   });
+  els.count.textContent = `${index + 1}/${STEPS.length}`;
 }
 
 async function goToStep(i) {

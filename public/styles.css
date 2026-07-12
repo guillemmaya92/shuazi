@@ -1851,7 +1851,9 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
    events) so it never steals taps from the highlighted element. */
 .tour-ring {
   position:fixed; z-index:201; display:none; pointer-events:none;
-  box-shadow:0 0 0 2px var(--blue), 0 0 0 6px color-mix(in srgb, var(--blue) 26%, transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--blue) 90%, transparent),
+             0 0 0 4px color-mix(in srgb, var(--blue) 14%, transparent),
+             0 4px 16px color-mix(in srgb, var(--blue) 20%, transparent);
   opacity:0; transition:opacity .28s ease, left .3s ease, top .3s ease, width .3s ease, height .3s ease;
 }
 .tour-ring.show { opacity:1; }
@@ -1866,6 +1868,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
   padding:16px 16px 14px; border-radius:20px;
   background:var(--surf); border:1px solid var(--bdr); box-shadow:var(--sh);
   opacity:0; pointer-events:none; transition:opacity .28s ease, transform .28s ease;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
 }
 .tour-card::-webkit-scrollbar { display:none; }
 .tour-card.show { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
@@ -1906,6 +1909,7 @@ body.recents-open .tr-history-scrim { pointer-events:auto; }
 }
 .tour-dot.seen   { background:color-mix(in srgb, var(--blue) 45%, transparent); box-shadow:none; }
 .tour-dot.active { background:var(--blue); box-shadow:0 0 0 3px var(--blue-bg); transform:scale(1.15); }
+.tour-count { margin-right:auto; font-size:.62rem; font-weight:500; color:var(--muted); opacity:.6; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 .tour-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .tour-back, .tour-next {
   font-size:.8rem; font-weight:700; cursor:pointer;
