@@ -636,10 +636,11 @@ body {
   user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
 }
 /* Opt selectable content back in — anywhere in the app: form fields; the Translator
-   sent message (.js-original) and hanzi translation (.js-zh); and the example
-   phrases in the Word modal (.word-phrases-list) and Char modal (.phrase-body). */
+   hanzi translation (.js-zh); and the example phrases in the Word modal
+   (.word-phrases-list) and Char modal (.phrase-body). The sent message (.js-original)
+   is deliberately NOT selectable — tapping it raises a "Copy" popover instead. */
 input, textarea, [contenteditable="true"],
-.js-original, .js-zh,
+.js-zh,
 .word-phrases-list, .phrase-body {
   user-select:text; -webkit-user-select:text; -webkit-touch-callout:default;
 }
@@ -1507,13 +1508,54 @@ body.account-open .account-scrim { pointer-events: auto; }
 }
 
 /* The user's input as a ChatGPT-style bubble, aligned to the right. */
-.tr-user-msg { display:flex; justify-content:flex-end; }
+.tr-user-msg { display:flex; justify-content:flex-end; position:relative; }
 .tr-bubble {
   max-width:85%;
   background:var(--surf2); border:1px solid var(--bdr); border-radius:18px;
   padding:8px 14px;
   font-size:1rem; line-height:1.5; color:var(--txt);
   white-space:pre-wrap; word-break:break-word;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+
+/* Copy / Edit popover raised below the sent bubble (built in translator.js). */
+.tr-copy-pop {
+  position:absolute; top:calc(100% + 6px); right:6px; z-index:6;
+  display:flex; align-items:stretch; gap:2px;
+  background:var(--surf2); border:1px solid var(--bdr); border-radius:11px;
+  padding:3px; white-space:nowrap;
+  opacity:0; transform:translateY(-4px) scale(.96);
+  transition:opacity .14s ease, transform .14s ease;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+}
+.tr-copy-pop.show { opacity:1; transform:translateY(0) scale(1); }
+.tr-pop-btn {
+  display:flex; align-items:center; gap:6px;
+  background:none; border:none; color:var(--txt);
+  font-size:.78rem; font-weight:600; white-space:nowrap;
+  padding:5px 11px; border-radius:8px; cursor:pointer;
+}
+.tr-pop-btn svg { width:14px; height:14px; flex-shrink:0; }
+.tr-pop-btn:active { background:color-mix(in srgb, var(--muted) 20%, transparent); transform:scale(.97); }
+.tr-pop-btn.copied { color:var(--green); }
+.tr-pop-sep { width:1px; background:var(--bdr); margin:4px 0; flex-shrink:0; }
+
+/* The message currently being edited: a fine iOS-style green hairline on its bubble. */
+.tr-message.editing .tr-bubble {
+  border-color:color-mix(in srgb, var(--green) 60%, transparent);
+  box-shadow:0 0 0 .5px color-mix(in srgb, var(--green) 45%, transparent);
+}
+/* Edit-mode banner pinned above the composer. */
+.tr-edit-banner {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:6px 12px; margin-bottom:6px;
+  background:color-mix(in srgb, var(--green) 12%, var(--surf2));
+  border:1px solid color-mix(in srgb, var(--green) 30%, var(--bdr));
+  border-radius:11px; font-size:.76rem; font-weight:600; color:var(--txt);
+}
+.tr-edit-cancel {
+  background:none; border:none; color:var(--green);
+  font-size:.76rem; font-weight:700; cursor:pointer; padding:2px 4px;
 }
 .tr-zh-line {
   font-family:var(--cjk);

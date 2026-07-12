@@ -306,6 +306,88 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+// ── Tap-to-copy / edit popover (sent message bubbles) ───────────────────────
+const COPY_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const EDIT_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
+// Write text to the clipboard, with a fallback for older / insecure contexts.
+async function copyToClipboard(text) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch {}
+    ta.remove();
+  }
+}
+
+let openCopyPop = null;
+function closeCopyPop() {
+  if (!openCopyPop) return;
+  const pop = openCopyPop;
+  openCopyPop = null;
+  document.removeEventListener('click', closeCopyPop);
+  window.removeEventListener('scroll', closeCopyPop, { capture: true });
+  window.removeEventListener('resize', closeCopyPop);
+  pop.classList.remove('show');
+  setTimeout(() => pop.remove(), 200);
+}
+
+// The sent message isn't text-selectable; tapping its bubble raises a small popover
+// with Copy — and, when `onEdit` is given, Edit — instead of the native selection
+// menu. Edit hands the text back to the composer to be corrected and re-sent.
+function wireCopyPopover(bubbleEl, getText, onEdit) {
+  bubbleEl.addEventListener('click', e => {
+    e.stopPropagation();
+    // A second tap on the same bubble dismisses; any other tap replaces the pop.
+    const sameAnchor = openCopyPop && openCopyPop._anchor === bubbleEl;
+    closeCopyPop();
+    if (sameAnchor) return;
+
+    const pop = document.createElement('div');
+    pop.className = 'tr-copy-pop';
+    pop._anchor = bubbleEl;
+    pop.addEventListener('click', ev => ev.stopPropagation());   // tapping the pill never dismisses
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'tr-pop-btn';
+    copyBtn.innerHTML = `${COPY_ICON}<span>${t('tr.copy')}</span>`;
+    copyBtn.addEventListener('click', async () => {
+      await copyToClipboard(getText());
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = `${CHECK_ICON}<span>${t('tr.copied')}</span>`;
+      setTimeout(closeCopyPop, 750);
+    });
+    pop.appendChild(copyBtn);
+
+    if (onEdit) {
+      const sep = document.createElement('div');
+      sep.className = 'tr-pop-sep';
+      pop.appendChild(sep);
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'tr-pop-btn';
+      editBtn.innerHTML = `${EDIT_ICON}<span>${t('tr.edit')}</span>`;
+      editBtn.addEventListener('click', () => { closeCopyPop(); onEdit(); });
+      pop.appendChild(editBtn);
+    }
+
+    bubbleEl.closest('.tr-user-msg').appendChild(pop);
+    openCopyPop = pop;
+    requestAnimationFrame(() => pop.classList.add('show'));
+    document.addEventListener('click', closeCopyPop);
+    window.addEventListener('scroll', closeCopyPop, { capture: true, passive: true });
+    window.addEventListener('resize', closeCopyPop);
+  });
+}
+
 // Normalises the server tokens ({ zh, gloss }) into the render shape, computing
 // pinyin per word locally. `gloss` is the literal per-word meaning (in the app's
 // language) shown as a legend. Falls back to the legacy `en` key so tokens saved by
@@ -416,6 +498,9 @@ export function initTranslator() {
   // persisted; the first translation mints one.
   let chatId = null;
   let messages = [];
+  // When set, the next submit re-translates and replaces this message in place
+  // instead of appending a new one: { el: the .tr-message node, target }.
+  let editing = null;
 
   // "New chat" only makes sense once there's something to clear — a message on
   // screen or text being typed. Hidden on an empty, fresh chat.
@@ -434,6 +519,8 @@ export function initTranslator() {
     input.value = '';
     chatId = null;
     messages = [];
+    editing = null;
+    if (editBanner) editBanner.style.display = 'none';
     autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
   }
 
@@ -510,7 +597,9 @@ export function initTranslator() {
   // Appends one resolved translation as a chat message. For Chinese it's the rich
   // layout (Original / Hanzi / Tokens); for other targets just Original / Translation
   // — the tokenized section and glosses are dropped and TTS uses Web Speech.
-  function appendMessage(original, translation, tokens, target = 'zh') {
+  // Builds one chat message node (Original / Hanzi / Tokens) without inserting it,
+  // so callers can either append it or swap it in place for an edited message.
+  function buildMessageEl(original, translation, tokens, target = 'zh') {
     const isZh = target === 'zh';
     const msg = msgTemplate.content.firstElementChild.cloneNode(true);
     applyStaticTranslations(msg);   // localize the cloned section titles
@@ -523,6 +612,9 @@ export function initTranslator() {
 
     originalEl.textContent = original;
     zhLineEl.textContent   = translation;
+
+    // The sent bubble isn't text-selectable — tap it for a Copy / Edit popover.
+    wireCopyPopover(originalEl, () => original, () => startEdit(msg, original, target));
 
     if (isZh) {
       renderTokens(translation, tokens, resultEl);
@@ -547,18 +639,7 @@ export function initTranslator() {
     copyBtn.addEventListener('click', async () => {
       const text = zhLineEl.textContent;
       if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        // Fallback for older / insecure contexts without the async clipboard API.
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.cssText = 'position:fixed;opacity:0';
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); } catch {}
-        ta.remove();
-      }
+      await copyToClipboard(text);
       copyBtn.classList.add('copied');
       copyBtn.blur();   // drop focus/active so no pressed state lingers on touch
       clearTimeout(copiedTimer);
@@ -578,30 +659,81 @@ export function initTranslator() {
       eyeBtn.style.display = 'none';
     }
 
+    return msg;
+  }
+
+  function appendMessage(original, translation, tokens, target = 'zh') {
+    const msg = buildMessageEl(original, translation, tokens, target);
     emptyEl.style.display = 'none';
     conversationEl.appendChild(msg);
     scrollToBottom();
     syncNewChatBtn();
+    return msg;
+  }
+
+  // ── EDIT A SENT MESSAGE ──
+  // A small banner in the composer signals edit mode and offers a way out.
+  const composerEl = input.closest('.tr-composer');
+  const editBanner = document.createElement('div');
+  editBanner.className = 'tr-edit-banner';
+  editBanner.style.display = 'none';
+  editBanner.innerHTML = `<span class="js-editing-label">${t('tr.editing')}</span>` +
+    `<button type="button" class="tr-edit-cancel">${t('tr.cancel')}</button>`;
+  composerEl?.insertBefore(editBanner, composerEl.firstChild);
+  editBanner.querySelector('.tr-edit-cancel').addEventListener('click', () => cancelEdit());
+
+  // Load a sent message's text back into the composer to be corrected and re-sent.
+  function startEdit(msgEl, original, target) {
+    editing = { el: msgEl, target };
+    conversationEl.querySelectorAll('.tr-message.editing').forEach(m => m.classList.remove('editing'));
+    msgEl.classList.add('editing');
+    editBanner.querySelector('.js-editing-label').textContent = t('tr.editing');
+    editBanner.querySelector('.tr-edit-cancel').textContent = t('tr.cancel');
+    editBanner.style.display = '';
+    input.value = original;
+    autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function cancelEdit() {
+    if (editing) editing.el.classList.remove('editing');
+    editing = null;
+    editBanner.style.display = 'none';
+    input.value = '';
+    autoGrow(); syncCount(); syncNewChatBtn(); updateComposerMode();
   }
 
   async function handleSubmit() {
     const text = input.value.trim();
     if (!text) return;
+    const editCtx = editing;   // capture: this submit is an edit iff set
     emptyEl.style.display = 'none';
     button.disabled = true;
     button.classList.add('tr-loading');
     // Clear the box right after sending (chat-style); it reappears as a message.
     input.value = '';
+    editing = null;
+    editBanner.style.display = 'none';
     autoGrow(); syncCount(); updateComposerMode();
     try {
-      const target = trTarget;
+      // An edit keeps the message's original output language; new sends use the picker.
+      const target = editCtx ? editCtx.target : trTarget;
       // pinyin-pro is only needed for the Chinese (tokenized) path.
       if (target === 'zh') await ensureLibs();
       const { translation: zh, tokens } = await translate(text, target);
-      appendMessage(text, zh, tokens, target);
+      const row = { source_text: text, translation: zh, tokens: tokens ?? null, target };
+      const idx = editCtx ? [...conversationEl.children].indexOf(editCtx.el) : -1;
+      if (editCtx && idx >= 0) {
+        // Swap the corrected translation into the same slot, on screen and in state.
+        conversationEl.replaceChild(buildMessageEl(text, zh, tokens, target), editCtx.el);
+        messages[idx] = row;
+      } else {
+        appendMessage(text, zh, tokens, target);
+        messages.push(row);
+      }
       // Append to the current chat and save the whole conversation as one entry.
       if (!chatId) chatId = newChatId();
-      messages.push({ source_text: text, translation: zh, tokens: tokens ?? null, target });
       saveChat({ chat_id: chatId, title: chatTitle(messages), messages, updated_at: new Date().toISOString() })
         .then(() => { if (document.body.classList.contains('recents-open')) loadHistory(); });
     } catch (e) {
