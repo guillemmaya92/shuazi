@@ -127,8 +127,10 @@ export function renderGroups() {
   };
 
   // A filter active in one grid forces the other grid closed.
-  const radClosed  = activeComponent ? true : (q ? false : radicalsCollapsed);
-  const compClosed = activeRadical   ? true : (q ? false : componentsCollapsed);
+  // A text search leaves Radicals/Components closed — they only open on manual tap
+  // (unlike the HSK grids, which force-open to reveal matches).
+  const radClosed  = activeComponent ? true : radicalsCollapsed;
+  const compClosed = activeRadical   ? true : componentsCollapsed;
 
   if (state.RADICALS?.length || state.COMPONENTS?.length) sectionTitle(t('groups.filtersTitle'), t('groups.filtersHint'));
 
@@ -342,7 +344,6 @@ export function renderGroups() {
        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>${t('stat.review')}</span>
      </div>`);
 
-  const wordGroupEls = {};
   if (state.groupsContent === 'words') levels.forEach(hsk => {
     let wgroup = state.WORDS.filter(w => w.hsk === hsk);
     if (!wgroup.length) return;
@@ -427,7 +428,6 @@ export function renderGroups() {
     const wwrap   = wdiv.querySelector('.char-grid-wrap');
     const wgrid   = wdiv.querySelector(`#wgrid-${hsk}`);
     const wchev   = wdiv.querySelector('.chevron');
-    wordGroupEls[hsk] = { wwrap, wchev, wgrid };
 
     // One delegated listener set on the grid — no per-tile listeners
     const wordMap = new Map(wtiles.map(w => [w.word, w]));
@@ -544,22 +544,6 @@ export function renderGroups() {
       // Decide from the real open/closed state (see the char handler): a filter
       // force-opens grids without updating the set, so relying on it needed two taps.
       if (wwrap.classList.contains('collapsed')) {
-        levels.forEach(otherHsk => {
-          if (otherHsk !== hsk && !collapsedWordGroups.has(otherHsk) && wordGroupEls[otherHsk]) {
-            collapsedWordGroups.add(otherHsk);
-            const el = wordGroupEls[otherHsk];
-            clearGrid(el.wgrid);
-            el.wwrap.style.transition = 'none';
-            el.wwrap.classList.add('collapsed');
-            el.wchev.classList.remove('open');
-          }
-        });
-        void scrollEl.offsetHeight;
-        requestAnimationFrame(() => {
-          levels.forEach(otherHsk => {
-            if (wordGroupEls[otherHsk]) wordGroupEls[otherHsk].wwrap.style.transition = '';
-          });
-        });
         collapsedWordGroups.delete(hsk);
         if (!wgrid.childElementCount) renderWordTiles();
         animateGridWrap(wwrap, true);
@@ -581,7 +565,6 @@ export function renderGroups() {
        <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>${t('stat.review')}</span>
      </div>`);
 
-  const charGroupEls = {};
   if (state.groupsContent === 'characters') levels.forEach(hsk => {
     let group = state.CHARACTERS.filter(c => c.hsk === hsk);
     if (!group.length) return;
@@ -661,7 +644,6 @@ export function renderGroups() {
     const wrap   = div.querySelector('.char-grid-wrap');
     const grid   = div.querySelector(`#grid-${hsk}`);
     const chev   = div.querySelector('.chevron');
-    charGroupEls[hsk] = { wrap, chev, grid };
 
     // One delegated listener set on the grid — no per-tile listeners
     const cardMap = new Map(tiles.map(c => [c.char, c]));
@@ -765,22 +747,6 @@ export function renderGroups() {
       // a radical/component filter force-opens every grid without updating the set,
       // which otherwise made the first close-click a no-op (needed two taps).
       if (wrap.classList.contains('collapsed')) {
-        levels.forEach(otherHsk => {
-          if (otherHsk !== hsk && !collapsedGroups.has(otherHsk) && charGroupEls[otherHsk]) {
-            collapsedGroups.add(otherHsk);
-            const el = charGroupEls[otherHsk];
-            clearGrid(el.grid);
-            el.wrap.style.transition = 'none';
-            el.wrap.classList.add('collapsed');
-            el.chev.classList.remove('open');
-          }
-        });
-        void scrollEl.offsetHeight;
-        requestAnimationFrame(() => {
-          levels.forEach(otherHsk => {
-            if (charGroupEls[otherHsk]) charGroupEls[otherHsk].wrap.style.transition = '';
-          });
-        });
         collapsedGroups.delete(hsk);
         if (!grid.childElementCount) renderTiles();
         animateGridWrap(wrap, true);
