@@ -5,7 +5,7 @@
 --
 -- Run once in the Supabase SQL editor (Dashboard → SQL). Safe to re-run.
 
-alter table public.progress
+alter table public.char_progress
   add column if not exists due_at        timestamptz,
   add column if not exists interval_days integer,
   add column if not exists ease          real,
@@ -20,7 +20,7 @@ alter table public.word_progress
   add column if not exists last_reviewed timestamptz;
 
 -- Speeds up "what's due for this user" lookups (optional but cheap).
-create index if not exists progress_due_idx
-  on public.progress (user_id, due_at);
+create index if not exists char_progress_due_idx
+  on public.char_progress (user_id, due_at);
 create index if not exists word_progress_due_idx
   on public.word_progress (user_id, due_at);

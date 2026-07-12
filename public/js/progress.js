@@ -29,9 +29,9 @@ export async function syncProgressToSupabase() {
   });
   const upsertRows = [...knownRows, ...reviewRows];
   if (upsertRows.length > 0)
-    await supa.from('progress').upsert(upsertRows, { onConflict: 'user_id,char_id' });
+    await supa.from('char_progress').upsert(upsertRows, { onConflict: 'user_id,char_id' });
   if (leftIds.length > 0)
-    await supa.from('progress').delete().eq('user_id', state.supaUser.id).in('char_id', leftIds);
+    await supa.from('char_progress').delete().eq('user_id', state.supaUser.id).in('char_id', leftIds);
 
   // Words
   const wKnownRows = [], wReviewRows = [], wLeftIds = [];
@@ -55,7 +55,7 @@ export async function loadProgressFromSupabase() {
 
   const cols = 'state, due_at, interval_days, ease, reps, last_reviewed';
   const [{ data: charData }, { data: wordData }] = await Promise.all([
-    supa.from('progress').select(`char_id, ${cols}`).eq('user_id', state.supaUser.id),
+    supa.from('char_progress').select(`char_id, ${cols}`).eq('user_id', state.supaUser.id),
     supa.from('word_progress').select(`word_id, ${cols}`).eq('user_id', state.supaUser.id),
   ]);
 
@@ -109,7 +109,7 @@ export async function clearProgressInSupabase() {
   if (!state.supaUser) return;
   clearTimeout(state.syncTimer);   // cancel any pending partial sync
   await Promise.all([
-    supa.from('progress').delete().eq('user_id', state.supaUser.id),
+    supa.from('char_progress').delete().eq('user_id', state.supaUser.id),
     supa.from('word_progress').delete().eq('user_id', state.supaUser.id),
   ]);
 }
