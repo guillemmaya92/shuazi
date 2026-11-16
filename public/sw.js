@@ -17,6 +17,7 @@ const SHELL_ASSETS = [
   '/js/progress.js',
   '/js/state.js',
   '/js/ui.js',
+  '/js/texts.js',
   '/js/translator.js',
   '/js/pwa-install.js',
   '/js/coach.js',

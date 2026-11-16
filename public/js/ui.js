@@ -11,6 +11,7 @@ import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from '
 import { maybeShowGroupsCoach } from './coach.js';
 import { openStrokeOrder } from './stroke-order.js';
 import { startTour } from './tour.js';
+import { renderTexts, closeText, toggleTextHighlight, toggleTextPinyin, toggleTextStatus } from './texts.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -46,7 +47,7 @@ const collapsedWordGroups = new Set([1, 2, 3, 4, 5, 6, 7]);
 // steady state is max-height:none (set in CSS) so very tall grids — e.g. HSK7
 // with 5000+ tiles — are never clipped. We only pin a pixel height for the
 // duration of the transition so it can animate to/from 0, then release it.
-function animateGridWrap(wrap, open) {
+export function animateGridWrap(wrap, open) {
   if (open) {
     wrap.style.maxHeight = '0px';
     wrap.classList.remove('collapsed');
@@ -1331,16 +1332,18 @@ modalSheet.addEventListener('pointercancel', e => { if (e.pointerId === mDragId)
 /* ── TABS ── */
 const tabCards     = document.getElementById('tab-cards');
 const tabGroups    = document.getElementById('tab-groups');
+const tabTexts     = document.getElementById('tab-texts');
 const tabPhrases   = document.getElementById('tab-slang');
 const tabTranslate = document.getElementById('tab-translator');
 const tabProfile   = document.getElementById('tab-profile');
 const scrCards     = document.getElementById('screen-cards');
 const scrGroups    = document.getElementById('screen-groups');
+const scrTexts     = document.getElementById('screen-texts');
 const scrPhrases   = document.getElementById('screen-slang');
 const scrTranslate = document.getElementById('screen-translator');
 const scrProfile   = document.getElementById('screen-profile');
 
-const TAB_ORDER = ['cards', 'groups', 'slang', 'translator', 'profile'];
+const TAB_ORDER = ['cards', 'groups', 'texts', 'slang', 'translator', 'profile'];
 let activeTab = 'cards';
 
 /* Sliding pill that tracks the active tab. */
@@ -1433,10 +1436,11 @@ function movePill() {
 
 export function showTab(tab) {
   activeTab = tab;
-  [scrCards, scrGroups, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
-  [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
+  [scrCards, scrGroups, scrTexts, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
+  [tabCards, tabGroups, tabTexts, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
   if (tab === 'cards')          { scrCards.classList.add('active');     tabCards.classList.add('active'); }
   else if (tab === 'groups')    { scrGroups.classList.add('active');    tabGroups.classList.add('active'); renderGroups(); maybeShowGroupsCoach(); }
+  else if (tab === 'texts')     { scrTexts.classList.add('active');     tabTexts.classList.add('active'); renderTexts(); }
   else if (tab === 'slang')     { scrPhrases.classList.add('active');   tabPhrases.classList.add('active'); renderSlang(); }
   else if (tab === 'translator'){ scrTranslate.classList.add('active'); tabTranslate.classList.add('active'); initTranslator(); }
   else                          { scrProfile.classList.add('active');   tabProfile.classList.add('active'); renderProfile(); }
@@ -1534,7 +1538,12 @@ window.addEventListener('resize', movePill);
 window.addEventListener('load', movePill);
 tabCards.onclick     = () => showTab('cards');
 tabGroups.onclick    = () => showTab('groups');
+tabTexts.onclick     = () => showTab('texts');
 tabPhrases.onclick   = () => showTab('slang');
+document.getElementById('textsBack').onclick = closeText;
+document.getElementById('textsHlBtn').onclick = toggleTextHighlight;
+document.getElementById('textsPyBtn').onclick = toggleTextPinyin;
+document.getElementById('textsStBtn').onclick = toggleTextStatus;
 tabTranslate.onclick = () => showTab('translator');
 tabProfile.onclick   = () => showTab('profile');
 
@@ -1542,7 +1551,7 @@ tabProfile.onclick   = () => showTab('profile');
    (used by the landing page mockup previews). */
 {
   const scr = new URLSearchParams(window.location.search).get('screen');
-  if (['cards', 'groups', 'slang', 'translator', 'profile'].includes(scr)) {
+  if (['cards', 'groups', 'texts', 'slang', 'translator', 'profile'].includes(scr)) {
     requestAnimationFrame(() => showTab(scr));
   }
 }
@@ -1553,7 +1562,7 @@ tabProfile.onclick   = () => showTab('profile');
 (function () {
   const barEl = document.querySelector('.tabbar');
   if (!barEl || !tabPill) return;
-  const tabEls = [tabCards, tabGroups, tabPhrases, tabTranslate, tabProfile];
+  const tabEls = [tabCards, tabGroups, tabTexts, tabPhrases, tabTranslate, tabProfile];
   const PAD_X = 10, PAD_Y = 4, GROW = 1.18;
   let dragging = false, moved = false, suppressClick = false;
   let startX = 0, startY = 0, pillW = 0, pillTop = 0, minX = 0, maxX = 0;
@@ -2147,8 +2156,8 @@ document.getElementById('sortBtn').onclick = () => {
 };
 
 /* ── PINYIN TOGGLE (eye) ── */
-const EYE_SVG     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-const EYE_OFF_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+export const EYE_SVG     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+export const EYE_OFF_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 const pinyinToggleBtn = document.getElementById('pinyinToggleBtn');
 function syncPinyinToggle() {
   pinyinToggleBtn.innerHTML = state.showPinyin ? EYE_SVG : EYE_OFF_SVG;
@@ -2241,7 +2250,7 @@ export function setTheme(t) {
   try { localStorage.setItem('shuazi-theme', t); } catch (e) {}
   saveSettings();
   const icon = THEME_ICONS[t];
-  ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
+  ['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT', 'themeBtnTx'].forEach(id => {
     document.getElementById(id).innerHTML = icon;
   });
   // No grid rebuild here: every tile colour comes from CSS variables that are
@@ -2251,7 +2260,7 @@ export function setTheme(t) {
 }
 
 const toggleTheme = () => setTheme(nextTheme(document.documentElement.getAttribute('data-theme')));
-['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT'].forEach(id => {
+['themeBtn', 'themeBtnG', 'themeBtnP', 'themeBtnPh', 'themeBtnT', 'themeBtnTx'].forEach(id => {
   document.getElementById(id).onclick = toggleTheme;
 });
 

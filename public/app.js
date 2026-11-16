@@ -6,6 +6,7 @@ import { loadProgressFromSupabase, loadSettingsFromSupabase, loadState } from '.
 import { buildDeck, buildWordDeck, render, init, stats } from './js/cards.js';
 import { renderGroups, renderProfile, renderSlang, setTheme } from './js/ui.js';
 import { initPwaInstall } from './js/pwa-install.js';
+import { refreshTexts } from './js/texts.js';
 import { maybeDemoSwipe } from './js/coach.js';
 import { showPasswordReset } from './js/password-reset.js';
 
@@ -223,6 +224,7 @@ loadCritical(bootMode).then(() => {
   // The remaining tables stream in behind the first paint.
   const restReady = loadRest(bootMode).then(() => {
     renderGroups();
+    refreshTexts();
     // Refresh the card so its info page fills in (radical pinyin in chars mode,
     // per-character chips in words mode) — but only while the user is in a
     // neutral state, so we never interrupt a swipe or a revealed answer.

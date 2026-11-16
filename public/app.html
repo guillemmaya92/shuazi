@@ -260,6 +260,36 @@
       </div>
     </div>
 
+    <!-- ── SCREEN: TEXTS ── -->
+    <div class="screen" id="screen-texts">
+      <div class="groups-header">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <button class="icon-btn" id="textsBack" aria-label="Back" style="display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div style="min-width:0">
+            <div class="groups-title" id="textsTitle" data-i18n="texts.title">Texts</div>
+            <div class="groups-sub" id="textsSub" data-i18n="texts.sub">Short readings</div>
+          </div>
+        </div>
+<div style="display:flex;align-items:center;gap:8px">
+        <button class="icon-btn" id="textsStBtn" aria-label="Color words by progress" aria-pressed="false" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>
+        </button>
+        <button class="icon-btn" id="textsPyBtn" aria-label="Show pinyin" aria-pressed="false" style="display:none">
+
+        </button>
+        <button class="icon-btn" id="textsHlBtn" aria-label="Underline words by HSK level" aria-pressed="false" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M4 21h16"/></svg>
+        </button>
+        <button class="icon-btn" id="themeBtnTx" aria-label="Theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        </div>
+      </div>
+      <div class="groups-scroll" id="texts-scroll"><div id="texts-content"></div></div>
+    </div>
+
     <!-- ── SCREEN 3: PHRASES ── -->
     <div class="screen" id="screen-slang">
       <header class="header">
@@ -425,6 +455,16 @@
         <rect x="13" y="13" width="8" height="8" rx="2"/>
       </svg>
       <span data-i18n="tab.groups">Groups</span>
+    </button>
+    <button class="tab" id="tab-texts" aria-label="Texts">
+      <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>
+        <path d="M8 8h8M8 12h8M8 16h5"/>
+      </svg>
+      <svg class="ic-fill" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
+        <path d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm2 5a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H8Zm0 4a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8Zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8Z"/>
+      </svg>
+      <span data-i18n="tab.texts">Text</span>
     </button>
     <button class="tab" id="tab-slang" aria-label="Slang">
       <svg class="ic-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">

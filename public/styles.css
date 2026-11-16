@@ -625,6 +625,48 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 
 /* The native scrollbar can't be dragged on touch, so it's hidden in favour of the
    custom fast-scroll thumb below (see js/groups-scrollbar.js). */
+/* ── TEXTS ── */
+/* padding-top matches the sticky header's -6px margin: without it the first
+   header is stuck 6px lower than its natural spot and its opaque background
+   covers most of its own progress bar. */
+.texts-list { display:flex; flex-direction:column; gap:8px; padding-top:6px; }
+.texts-items { display:flex; flex-direction:column; gap:8px; padding-bottom:8px; }
+.texts-item {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 16px; text-align:left; color:var(--txt);
+  background:var(--surf); border:1px solid var(--bdr); border-radius:16px;
+  -webkit-touch-callout:none; user-select:none; -webkit-user-select:none;   /* long-press marks read */
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.texts-item-title { font-size:1rem; font-weight:600; }
+.texts-item-meta  { font-size:.65rem; color:var(--faint); flex-shrink:0; }
+/* Read texts: same green as known tiles in the Groups grid. */
+.texts-item.read { background:var(--green-bg); border-color:rgba(104,191,138,.3); }
+.texts-item.read .texts-item-title { color:var(--green); }
+.texts-item.read .texts-item-meta  { color:var(--green); opacity:.6; }
+.texts-done {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  margin:18px auto 8px; min-height:40px; padding:0 18px; border-radius:999px;
+  background:var(--surf); border:1px solid var(--bdr); color:var(--muted);
+  font-size:.78rem; font-weight:600; text-indent:0;
+}
+.texts-done:active { opacity:.7; transform:scale(.97); }
+.texts-done.active { background:var(--green-bg); border-color:var(--green); color:var(--green); }
+.texts-msg { padding:32px 8px; text-align:center; font-size:.8rem; color:var(--faint); }
+.texts-reader { padding:4px 2px 24px; user-select:text; -webkit-user-select:text; }
+.tx-w { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.tx-b { text-decoration:underline solid 2px var(--hc, var(--faint)); text-underline-offset:.28em; }
+.texts-reader rt { font-size:.5em; line-height:1.2; color:color-mix(in srgb, var(--faint) 65%, transparent); text-indent:0; user-select:none; -webkit-user-select:none; }
+.texts-reader:not(.tx-py) rt { display:none; }
+.tx-w:active { background:var(--blue-bg); border-radius:4px; }
+.tx-h1 { --hc:#d89e32; } .tx-h2 { --hc:#3a9aaf; } .tx-h3 { --hc:#c8612a; } .tx-h4 { --hc:#c04050; }
+.tx-h5 { --hc:#6890c8; } .tx-h6 { --hc:#9e6e9c; } .tx-h7 { --hc:#6b6f78; }
+.texts-reader.tx-off .tx-b { text-decoration:none; }
+.texts-reader.tx-st .tx-b { border-radius:4px; }
+.texts-reader.tx-st .tx-known  .tx-b { background:var(--green-bg); }
+.texts-reader.tx-st .tx-review .tx-b { background:var(--blue-bg); }
+.texts-reader p { font-size:1.15rem; line-height:2; text-indent:2em; margin:0 0 .6em; }
+
 .groups-scroll::-webkit-scrollbar { width:0; height:0; }
 .groups-scroll { scrollbar-width:none; }
 
