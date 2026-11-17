@@ -37,9 +37,9 @@ async function loadTextBody(id) {
   bodyState.set(id, 'loading');
   try {
     await window._supabaseReady;
-    const { data, error } = await supa.from('texts').select('text').eq('id', id).single();
+    const { data, error } = await supa.from('texts').select('text, text_en, text_es').eq('id', id).single();
     if (error) throw error;
-    bodyCache.set(id, data.text || '');
+    bodyCache.set(id, { zh: data.text || '', en: data.text_en || '', es: data.text_es || '' });
     bodyState.delete(id);
   } catch (e) {
     console.error('text failed to load:', e);
@@ -140,16 +140,220 @@ export function tokenize(str) {
 function plainHTML(text) {
   return [...text].map(ch => {
     const py = HAN.test(ch) ? state.CHARACTERS?.find(c => c.char === ch)?.pinyin : null;
-    return py ? `<ruby>${esc(ch)}<rt>${esc(py)}</rt></ruby>` : esc(ch);
+    return py ? `<span class="tx-c">${esc(ch)}<span class="tx-p" aria-hidden="true">${esc(py)}</span></span>` : esc(ch);
   }).join('');
 }
 
-function paragraphHTML(p) {
-  return '<p>' + tokenize(p).map(tok =>
-    tok.word
-      ? `<span class="tx-w tx-h${tok.word.hsk ?? 0}${state.known.has(tok.text) ? ' tx-known' : state.unknown.has(tok.text) ? ' tx-review' : ''}" data-w="${esc(tok.text)}"><ruby><span class="tx-b">${esc(tok.text)}</span><rt>${esc(tok.word.pinyin ?? '')}</rt></ruby></span>`
-      : plainHTML(tok.text)
-  ).join('') + '</p>';
+// Word pinyin is placed one syllable per character when the counts match
+// ("zǎo fàn" over 早饭), so long pinyin never spills over the next word.
+// Otherwise (儿化, apostrophes…) it is centred over the whole word.
+function wordInnerHTML(text, pinyin) {
+  const chars = [...text];
+  const syl   = String(pinyin ?? '').trim().split(/\s+/).filter(Boolean);
+  if (chars.length > 1 && syl.length === chars.length) {
+    return `<span class="tx-b">${chars.map((c, i) =>
+      `<span class="tx-c">${esc(c)}<span class="tx-p" aria-hidden="true">${esc(syl[i])}</span></span>`).join('')}</span>`;
+  }
+  return `<span class="tx-b">${esc(text)}</span><span class="tx-p" aria-hidden="true">${esc(pinyin ?? '')}</span>`;
+}
+
+function tokenHTML(tok) {
+  return tok.word
+    ? `<span class="tx-w tx-h${tok.word.hsk ?? 0}${state.known.has(tok.text) ? ' tx-known' : state.unknown.has(tok.text) ? ' tx-review' : ''}" data-w="${esc(tok.text)}">${wordInnerHTML(tok.text, tok.word.pinyin)}</span>`
+    : plainHTML(tok.text);
+}
+
+/* ── Sentences ──
+   A Chinese sentence ends at 。！？ (plus any closing quotes/brackets right
+   after it). Translations are split the same way on . ! ? and matched to the
+   Chinese sentences of the same paragraph by position. */
+const ZH_END  = /^[。！？!?…]$/;
+const CLOSERS = /^[”’」』）)》\]"']$/;
+
+function sentencesOf(tokens) {
+  // Plain (non-word) chunks are split per character so punctuation inside them
+  // can end a sentence. Rendering is unchanged: plainHTML is per character anyway.
+  const toks = tokens.flatMap(t => t.word ? [t] : [...t.text].map(c => ({ text: c })));
+  const out = [];
+  let cur = [], ended = false;
+  for (const tok of toks) {
+    if (ended && !CLOSERS.test(tok.text) && !ZH_END.test(tok.text)) { out.push(cur); cur = []; ended = false; }
+    cur.push(tok);
+    if (ZH_END.test(tok.text)) ended = true;
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
+// "|" in a translated paragraph marks sentence boundaries explicitly (one piece
+// per Chinese sentence). Without it, the paragraph is split on . ! ? instead.
+function splitTranslation(p) {
+  if (String(p).includes(SEP)) return String(p).split(SEP).map(s => s.trim()).filter(Boolean);
+  return (String(p).match(/[^.!?…]+(?:[.!?…]+["”’)»\]]*|$)/g) || [])
+    .map(s => s.trim()).filter(Boolean);
+}
+
+function paragraphHTML(p, pi) {
+  const sents = sentencesOf(tokenize(p));
+  return `<p data-p="${pi}" data-n="${sents.length}">`
+    + sents.map((s, si) => `<span class="tx-s" data-s="${si}">${s.map(tokenHTML).join('')}</span>`).join('')
+    + '</p>';
+}
+
+// Translation of the text in the app language (falls back to the other one).
+function translationOf(doc) {
+  return (state.lang === 'es' ? doc.es : doc.en) || doc.en || doc.es || '';
+}
+
+// Translation for sentence `si` of paragraph `pi`. When the translated paragraph
+// has a different number of sentences, the whole paragraph is returned instead.
+function sentenceTranslation(doc, pi, si, n) {
+  const para = paragraphsOf(translationOf(doc))[pi];
+  if (!para) return null;
+  const sents = splitTranslation(para);
+  return sents.length === n ? { text: sents[si], whole: false } : { text: para, whole: true };
+}
+
+function paintTr(html, empty) {
+  const box = document.getElementById('textsTr');
+  if (!box) return;
+  box.classList.toggle('empty', !!empty);
+  box.innerHTML = html;
+  box.style.display = '';   // the box only exists while a sentence is selected
+}
+
+function hideTr() {
+  const box = document.getElementById('textsTr');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+}
+
+/* ── Full-translation page ──
+   Swipe left on the reader to slide in the whole translation (it sits to the
+   right of the Chinese); swipe right to return. Horizontal drags only (touch-action: pan-y keeps
+   vertical scrolling native). */
+let trPage   = false;   // true while the translation page is shown
+let pagerFor = null;    // text id the pager state belongs to
+
+function setPage(pager, toTr, animate = true) {
+  trPage = toTr;
+  const track = pager.querySelector('.tx-track');
+  const pages = pager.querySelectorAll('.tx-page');
+  pages.forEach(p => p.classList.remove('off'));               // both laid out while moving
+  track.classList.toggle('dragging', !animate);
+  track.style.transform = toTr ? 'translateX(-50%)' : 'translateX(0)';
+  const settle = () => {
+    // Collapse the hidden page so the scroll height follows the visible one.
+    pager.querySelector(toTr ? '.tx-page-zh' : '.tx-page-tr').classList.add('off');
+  };
+  if (animate) {
+    // transitionend can be skipped (interrupted / no movement), so a timeout backs it up.
+    let fired = false;
+    const once = () => { if (fired) return; fired = true; track.removeEventListener('transitionend', onEnd); if (trPage === toTr) settle(); };
+    const onEnd = e => { if (e.target === track) once(); };
+    track.addEventListener('transitionend', onEnd);
+    setTimeout(once, 400);
+  } else settle();
+  if (toTr) clearSentence();   // the box never shows over the full translation
+}
+
+function wirePager(pager) {
+  if (!pager) return;
+  const track = pager.querySelector('.tx-track');
+  setPage(pager, trPage, false);
+  let id = null, sx = 0, sy = 0, dx = 0, axis = null;
+  pager.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    id = e.pointerId; sx = e.clientX; sy = e.clientY; dx = 0; axis = null;
+  });
+  pager.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const mx = e.clientX - sx, my = e.clientY - sy;
+    if (!axis) {
+      if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
+      axis = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y';
+      if (axis === 'x') {
+        try { pager.setPointerCapture(id); } catch (err) {}
+        pager.querySelectorAll('.tx-page').forEach(p => p.classList.remove('off'));
+        track.classList.add('dragging');
+      }
+    }
+    if (axis !== 'x') return;
+    // Rubber-band when dragging past either end.
+    dx = (trPage ? mx < 0 : mx > 0) ? mx * 0.25 : mx;
+    track.style.transform = `translateX(calc(${trPage ? '-50%' : '0%'} + ${dx}px))`;
+  });
+  const end = e => {
+    if (e.pointerId !== id) return;
+    id = null;
+    if (axis !== 'x') return;
+    suppressTap = true;   // the click that ends a drag must not open a word
+    const w = pager.offsetWidth || 1;
+    const flip = Math.abs(dx) > Math.min(80, w * 0.22);
+    const toTr = trPage ? !(flip && dx > 0) : (flip && dx < 0);
+    setPage(pager, toTr, true);
+  };
+  pager.addEventListener('pointerup', end);
+  pager.addEventListener('pointercancel', end);
+}
+
+// Deselect the sentence and hide the translation box.
+function clearSentence() {
+  const host = document.getElementById('texts-content');
+  host?.querySelectorAll('.tx-s.sel').forEach(x => x.classList.remove('sel'));
+  hideTr();
+}
+
+// A tap anywhere on the Texts screen outside the selected sentence clears it
+// (capture phase, so it runs before the reader's own click handler; the click
+// that ends a long-press is skipped). Wired once.
+let outsideTapWired = false;
+function wireOutsideTap() {
+  if (outsideTapWired) return;
+  const screen = document.getElementById('screen-texts');
+  if (!screen) return;
+  outsideTapWired = true;
+  // A new touch anywhere starts fresh (a long-press on mobile may not be
+  // followed by a click, which would leave the flag set).
+  screen.addEventListener('pointerdown', () => { suppressTap = false; }, true);
+  screen.addEventListener('click', e => {
+    if (suppressTap) return;
+    if (!e.target.closest('.tx-s.sel')) clearSentence();
+  }, true);
+}
+
+// Long-press a sentence (450ms, like the Groups tiles) to show its translation
+// in the panel above the text; long-press it again to hide it. A normal tap
+// still opens the word panel.
+let suppressTap = false;
+function wireSentencePress(host, doc) {
+  let timer = null, sx = 0, sy = 0;
+  const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  host.onpointerdown = e => {
+    suppressTap = false;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const sEl = e.target.closest('.tx-s');
+    if (!sEl) return;
+    sx = e.clientX; sy = e.clientY;
+    cancel();
+    timer = setTimeout(() => {
+      timer = null;
+      suppressTap = true;   // eat the click that follows the long-press
+      if (navigator.vibrate) navigator.vibrate(30);
+      if (sEl.classList.contains('sel')) { clearSentence(); return; }   // second long-press hides it
+      const pEl = sEl.closest('p');
+      const tr  = sentenceTranslation(doc, Number(pEl.dataset.p), Number(sEl.dataset.s), Number(pEl.dataset.n));
+      host.querySelectorAll('.tx-s.sel').forEach(x => x.classList.remove('sel'));
+      if (tr && tr.whole) pEl.querySelectorAll('.tx-s').forEach(x => x.classList.add('sel'));
+      else sEl.classList.add('sel');
+      paintTr(esc(tr ? tr.text : t('texts.trNone')), !tr);
+    }, 450);
+  };
+  host.onpointermove = e => {
+    if (timer && (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8)) cancel();
+  };
+  host.onpointerup = cancel;
+  host.onpointercancel = cancel;
+  host.oncontextmenu = e => { if (e.target.closest('.tx-s')) e.preventDefault(); };
 }
 
 function onWordTap(e) {
@@ -257,7 +461,11 @@ export function renderTexts() {
   const hlBtn  = document.getElementById('textsHlBtn');
   const pyBtn  = document.getElementById('textsPyBtn');
   const stBtn  = document.getElementById('textsStBtn');
+  const trBox  = document.getElementById('textsTr');
   if (!host) return;
+  // Reset the reader-only handlers; the reader branch re-wires them.
+  host.onpointerdown = host.onpointermove = host.onpointerup = host.onpointercancel = host.oncontextmenu = null;
+  if (trBox) trBox.style.display = 'none';
 
   const text = openId != null ? TEXTS.find(x => x.id === openId) : null;
   if (openId != null && !text) openId = null;   // list changed under us
@@ -388,11 +596,40 @@ export function renderTexts() {
     }
     return;
   }
+  const doc = bodyCache.get(text.id);
+  const trFull = translationOf(doc);
+  if (pagerFor !== text.id) { pagerFor = text.id; trPage = false; }   // new text opens on the Chinese page
   host.className = 'texts-reader' + (hlOn ? '' : ' tx-off') + (pyOn ? ' tx-py' : '') + (stOn ? ' tx-st' : '');
-  host.innerHTML = paragraphsOf(bodyCache.get(text.id)).map(paragraphHTML).join('')
+  const zhHTML = paragraphsOf(doc.zh).map(paragraphHTML).join('')
     + `<button class="texts-done" type="button"></button>`;
+
+  if (trFull) {
+    // Two pages side by side: the full translation sits to the RIGHT of the
+    // Chinese text, so swiping left slides it in (and swiping right goes back).
+    const trHTML = paragraphsOf(trFull)
+      .map(p => `<p>${esc(p.split(SEP).map(s => s.trim()).filter(Boolean).join(' '))}</p>`).join('');
+    host.innerHTML = `
+      <div class="tx-pager">
+        <div class="tx-track">
+          <div class="tx-page tx-page-zh" lang="zh">${zhHTML}</div>
+          <div class="tx-page tx-page-tr" lang="${state.lang === 'es' && doc.es ? 'es' : 'en'}">${trHTML}</div>
+        </div>
+      </div>`;
+  } else {
+    host.innerHTML = zhHTML;
+  }
   paintDoneBtn(host.querySelector('.texts-done'), text.id);
+
+  // Translation panel above the text: only when the passage has a translation.
+  // The box stays hidden until a sentence is long-pressed (see paintTr / hideTr).
+  if (trBox && trFull) {
+    wireSentencePress(host, doc);
+    wireOutsideTap();
+    wirePager(host.querySelector('.tx-pager'));
+  }
+
   host.onclick = e => {
+    if (suppressTap) { suppressTap = false; return; }
     if (e.target.closest('.texts-done')) return toggleRead(text.id, host.querySelector('.texts-done'));
     onWordTap(e);
   };
