@@ -638,8 +638,15 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
   -webkit-touch-callout:none; user-select:none; -webkit-user-select:none;   /* long-press marks read */
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-.texts-item-title { font-size:1rem; font-weight:600; }
-.texts-item-meta  { font-size:.65rem; color:var(--faint); flex-shrink:0; }
+.texts-item { width:100%; }
+.texts-item-title {
+  font-size:1rem; font-weight:600; line-height:1.3;
+  flex:1 1 0; min-width:0; overflow-wrap:anywhere;
+}
+.texts-item-meta {
+  font-size:.65rem; line-height:1.3; color:var(--faint);
+  flex:0 1 auto; max-width:45%; min-width:0; text-align:right; overflow-wrap:anywhere;
+}
 /* Read texts: same green as known tiles in the Groups grid. */
 .texts-item.read { background:var(--green-bg); border-color:rgba(104,191,138,.3); }
 .texts-item.read .texts-item-title { color:var(--green); }
@@ -696,7 +703,10 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .texts-reader.tx-st .tx-b { border-radius:4px; }
 /* Pastel mint / sky highlights (like a highlighter pen) for known / review words. */
 .texts-reader { --tx-known-bg:#c4ece1; --tx-review-bg:#cde1f8; }
-[data-theme="dark"] .texts-reader { --tx-known-bg:rgba(95,201,173,.30); --tx-review-bg:rgba(100,160,230,.30); }
+/* Medium (warm paper): translucent tints of the theme's green/blue so they blend with the beige. */
+[data-theme="medium"] .texts-reader { --tx-known-bg:rgba(58,122,86,.20); --tx-review-bg:rgba(37,96,176,.17); }
+/* Dark: softer tints so the light text stays crisp against them. */
+[data-theme="dark"] .texts-reader { --tx-known-bg:rgba(104,191,138,.22); --tx-review-bg:rgba(100,160,230,.24); }
 .texts-reader.tx-st .tx-known  .tx-b { background:var(--tx-known-bg); }
 .texts-reader.tx-st .tx-review .tx-b { background:var(--tx-review-bg); }
 .texts-reader p { font-size:1.15rem; line-height:2.4; text-indent:2em; margin:0 0 .6em; }

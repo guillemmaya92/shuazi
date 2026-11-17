@@ -1,12 +1,13 @@
 import { t } from './i18n.js';
 import { state } from './state.js';
 import { hskLabel, supa } from './config.js';
+import { isAvailable } from './cards.js';
 import { openWordModal, animateGridWrap, EYE_SVG, EYE_OFF_SVG } from './ui.js';
 
 /* ── TEXTS: graded reading passages ──
    Loaded from the Supabase `texts` table. The list only fetches light columns;
    a passage's `text` is fetched when it is opened. `text` is pre-segmented with
-   "|" between words and a blank line between paragraphs; it is matched against
+   "|" between words and a line break between paragraphs; it is matched against
    the `words` table and tapping a word opens its detail panel. */
 let TEXTS = [];                 // list rows: id, title, title_en, title_es, hsk, position
 let listState = 'idle';         // idle | loading | ready | error
@@ -33,6 +34,8 @@ async function loadTextList() {
 }
 
 async function loadTextBody(id) {
+  const row = TEXTS.find(x => x.id === id);
+  if (!row || !isAvailable(row.hsk)) return;   // never fetch a locked passage
   if (bodyState.get(id) === 'loading') return;
   bodyState.set(id, 'loading');
   try {
@@ -51,7 +54,9 @@ async function loadTextBody(id) {
 // Title in the app language (Chinese title stays the main line; this is the gloss).
 const glossTitle = x => (state.lang === 'es' ? x.title_es : x.title_en) || x.title_en || x.title_es || '';
 
-const paragraphsOf = s => String(s).split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean);
+// Any line break (single or blank-line separated, real or a literal "\n" typed
+// into the database) starts a new paragraph, so dialogues render one line each.
+const paragraphsOf = s => String(s).split(/(?:\r?\n|\\n|\u2028|\u2029)+/).map(p => p.trim()).filter(Boolean);
 
 let openId = null;
 
@@ -467,7 +472,8 @@ export function renderTexts() {
   host.onpointerdown = host.onpointermove = host.onpointerup = host.onpointercancel = host.oncontextmenu = null;
   if (trBox) trBox.style.display = 'none';
 
-  const text = openId != null ? TEXTS.find(x => x.id === openId) : null;
+  let text = openId != null ? TEXTS.find(x => x.id === openId) : null;
+  if (text && !isAvailable(text.hsk)) text = null;   // locked level (e.g. plan changed): never open
   if (openId != null && !text) openId = null;   // list changed under us
   back.style.display = text ? '' : 'none';
   hlBtn.style.display = text ? '' : 'none';
@@ -502,17 +508,33 @@ export function renderTexts() {
     }
     const levels = [...new Set(TEXTS.map(x => x.hsk))].sort((a, b) => a - b);
     // Same collapsible HSK sections as the Groups screen (shared classes + animation).
-    host.innerHTML = levels.map(lv => {
-      const items  = TEXTS.filter(x => x.hsk === lv);
-      const closed = collapsedLevels.has(lv);
+    const sectionTitleHTML = `
+      <div class="groups-section-title">
+        <div class="groups-section-titletext">${esc(t('texts.sectionTitle'))}<span class="groups-section-sub">${esc(t('texts.markHint'))}</span></div>
+        <div class="groups-legend">
+          <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>${esc(t('texts.readLegend'))}</span>
+        </div>
+      </div>`;
+    host.innerHTML = sectionTitleHTML + levels.map(lv => {
+      const locked = !isAvailable(lv);   // same rule as Groups: free plan = FREE_HSK only
+      // Locked levels never render their titles: only the lock placeholder.
+      const items  = locked ? [] : TEXTS.filter(x => x.hsk === lv);
+      const closed = locked || collapsedLevels.has(lv);
       const readN  = items.filter(x => readIds.has(x.id)).length;
       const pct    = items.length ? Math.round(readN / items.length * 100) : 0;
+      const lockHTML = locked ? `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--faint)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <p style="font-size:.75rem;color:var(--faint);text-align:center;margin:0">${esc(hskLabel(lv))} ${esc(t('msg.availablePro'))}</p>
+          </div>` : '';
       return `
-      <div class="hsk-group" data-lv="${lv}">
-        <div class="hsk-group-header">
+      <div class="hsk-group" data-lv="${lv}"${locked ? ' data-locked="1"' : ''}>
+        <div class="hsk-group-header" ${locked ? 'style="opacity:.5;pointer-events:none"' : ''}>
           <div class="hsk-group-label">
             <span class="badge hsk-${lv}">${esc(hskLabel(lv))}</span>
-            <span class="count">${readN}/${items.length} ${esc(t('texts.read'))}</span>
+            ${locked
+              ? `<span style="font-size:.6rem;color:var(--faint);display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${state.supaUser ? 'Pro' : esc(t('badge.signUp'))}</span>`
+              : `<span class="count">${readN}/${items.length} ${esc(t('texts.read'))}</span>`}
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="hsk-prog-bar"><div class="hsk-prog-fill hsk-${lv}-fill" style="width:${pct}%"></div></div>
@@ -526,12 +548,13 @@ export function renderTexts() {
               <span class="texts-item-title">${esc(x.title)}</span>
               <span class="texts-item-meta">${esc(glossTitle(x))}</span>
             </button>`).join('')}
-          </div>
+          </div>${lockHTML}
         </div>
       </div>`;
     }).join('');
 
     host.querySelectorAll('.hsk-group').forEach(g => {
+      if (g.dataset.locked) return;
       const lv   = Number(g.dataset.lv);
       const wrap = g.querySelector('.char-grid-wrap');
       const chev = g.querySelector('.chevron');
