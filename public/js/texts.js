@@ -239,10 +239,31 @@ let trAvailable = false;
 
 // Back to the idle state: the hint on the Chinese page, hidden otherwise
 // (no translation, list view, or the full-translation page).
+// Shows the translation of sentence `si` of paragraph `pi` in the box (used by
+// the read-aloud queue, and to restore a selected sentence when it stops).
+function paintSentenceTr(pi, si) {
+  if (!trAvailable) return;
+  const doc = openId != null ? bodyCache.get(openId) : null;
+  const pEl = document.querySelector(`#texts-content .tx-page-zh p[data-p="${pi}"]`);
+  if (!doc || !pEl) return;
+  const tr = sentenceTranslation(doc, pi, si, Number(pEl.dataset.n));
+  paintTr(esc(tr ? tr.text : t('texts.trNone')), !tr);
+}
+
+// Back to the box's idle content: the selected sentence's translation if any,
+// otherwise the hint.
+function restoreTr() {
+  const sel = document.querySelector('#texts-content .tx-s.sel');
+  const pEl = sel?.closest('p');
+  if (pEl) paintSentenceTr(Number(pEl.dataset.p), Number(sel.dataset.s));
+  else hideTr();
+}
+
 function hideTr() {
   const box = document.getElementById('textsTr');
   if (!box) return;
-  if (trAvailable && !trPage) return paintTr(esc(t('texts.trHint')), true);
+  // The box lives inside the Chinese page, so it never shows over the translation.
+  if (trAvailable) return paintTr(esc(t('texts.trHint')), true);
   box.style.display = 'none'; box.innerHTML = '';
 }
 
@@ -253,16 +274,52 @@ function hideTr() {
 let trPage   = false;   // true while the translation page is shown
 let pagerFor = null;    // text id the pager state belongs to
 
+// The two pages share one scroll container but behave as separate pages: the
+// translation always opens at its top, and the Chinese page comes back to where
+// the user left it. While both are laid out (dragging / sliding), the incoming
+// page is shifted so it already shows at its own scroll position.
+let zhScroll = 0;
+// Track offset that shows the translation page (accounts for the --tx-gap gutter).
+const TR_OFFSET = 'calc(-50% - var(--tx-gap) / 2)';
+const readerScroll = () => document.getElementById('texts-scroll');
+
+function alignIncoming(pager) {
+  const sc = readerScroll();
+  if (!sc) return;
+  if (!trPage) zhScroll = sc.scrollTop;                  // remember where Chinese was left
+  const other  = pager.querySelector(trPage ? '.tx-page-zh' : '.tx-page-tr');
+  const target = trPage ? zhScroll : 0;
+  const shift  = sc.scrollTop - target;
+  other.style.transform = `translateY(${shift}px)`;
+  // The sticky box is stuck relative to the current scroll, so undo the page
+  // shift on it to keep it at the top of the incoming Chinese page.
+  if (trPage) {
+    const box = other.querySelector('.texts-tr');
+    if (box) box.style.transform = `translateY(${-shift}px)`;
+  }
+}
+
 function setPage(pager, toTr, animate = true) {
-  trPage = toTr;
+  const from = trPage;
   const track = pager.querySelector('.tx-track');
   const pages = pager.querySelectorAll('.tx-page');
+  if (from !== toTr && !pages[0].style.transform && !pages[1].style.transform) {
+    pages.forEach(p => p.classList.remove('off'));
+    alignIncoming(pager);                                  // programmatic flip (no drag)
+  }
+  trPage = toTr;
   pages.forEach(p => p.classList.remove('off'));               // both laid out while moving
   track.classList.toggle('dragging', !animate);
-  track.style.transform = toTr ? 'translateX(-50%)' : 'translateX(0)';
+  track.style.transform = toTr ? `translateX(${TR_OFFSET})` : 'translateX(0)';
   const settle = () => {
-    // Collapse the hidden page so the scroll height follows the visible one.
+    // Collapse the hidden page so the scroll height follows the visible one,
+    // then drop the alignment shift and jump to the page's own position.
     pager.querySelector(toTr ? '.tx-page-zh' : '.tx-page-tr').classList.add('off');
+    pages.forEach(p => { p.style.transform = ''; });
+    const box = pager.querySelector('.texts-tr');
+    if (box) box.style.transform = '';
+    const sc = readerScroll();
+    if (sc && from !== toTr) sc.scrollTop = toTr ? 0 : zhScroll;
   };
   if (animate) {
     // transitionend can be skipped (interrupted / no movement), so a timeout backs it up.
@@ -291,86 +348,115 @@ let swipeBackWired = false;
 function wireSwipeBack(host) {
   if (swipeBackWired) return;
   swipeBackWired = true;
-  let id = null, sx = 0, sy = 0, axis = null, dx = 0;
-  const reset = () => { host.style.transition = 'transform .25s ease'; host.style.transform = ''; };
-  host.addEventListener('pointerdown', e => {
-    id = null;
-    if (!host.classList.contains('texts-reader') || host.querySelector('.tx-pager')) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    id = e.pointerId; sx = e.clientX; sy = e.clientY; axis = null; dx = 0;
+  let dx = 0;
+  horizontalSwipe(host, {
+    accept: () => host.classList.contains('texts-reader') && !host.querySelector('.tx-pager'),
+    start:  () => { host.style.transition = 'none'; },
+    move:   mx => { dx = mx > 0 ? mx : mx * 0.25; host.style.transform = `translateX(${dx}px)`; },
+    end:    (vx, cancelled) => {
+      suppressTap = true;
+      host.style.transition = 'transform .25s ease';
+      host.style.transform = '';
+      if (!cancelled && isFlip(dx, vx, host.offsetWidth) && dx > 0) { host.style.transition = ''; swipeBack(); }
+    },
   });
-  host.addEventListener('pointermove', e => {
+}
+
+/* ── Horizontal swipe detection (shared by the pager and swipe-back) ──
+   touch-action: pan-y leaves vertical scrolling to the browser, which picks its
+   axis by comparing |dx| and |dy| — so we use the same plain comparison (no
+   extra ratio that would leave a "dead" diagonal where neither moves). If the
+   browser takes the gesture for scrolling anyway it sends pointercancel: the
+   drag then snaps back instead of being treated as a release. A gesture first
+   read as vertical but that keeps coming (so the browser didn't scroll) and
+   turns clearly sideways is promoted to a horizontal drag. */
+function horizontalSwipe(el, { accept, start, move, end }) {
+  let id = null, sx = 0, sy = 0, axis = null, lastX = 0, lastT = 0, vx = 0;
+  el.addEventListener('pointerdown', e => {
+    id = null;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (accept && !accept()) return;
+    id = e.pointerId; sx = e.clientX; sy = e.clientY; axis = null;
+    lastX = e.clientX; lastT = e.timeStamp; vx = 0;
+  });
+  el.addEventListener('pointermove', e => {
     if (e.pointerId !== id) return;
     const mx = e.clientX - sx, my = e.clientY - sy;
-    if (!axis) {
-      if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
-      axis = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y';
-      if (axis === 'x') { try { host.setPointerCapture(id); } catch (err) {} host.style.transition = 'none'; }
+    if (axis !== 'x') {
+      if (!axis) {
+        if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
+        axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
+      } else if (Math.abs(mx) > 24 && Math.abs(mx) > Math.abs(my) * 1.5) {
+        axis = 'x'; sx = e.clientX;   // promoted: start from here, no jump
+      }
+      if (axis !== 'x') return;
+      try { el.setPointerCapture(id); } catch (err) {}
+      start();
     }
-    if (axis !== 'x') return;
-    dx = mx > 0 ? mx : mx * 0.25;
-    host.style.transform = `translateX(${dx}px)`;
+    // Velocity (px/ms), smoothed, for flick detection on release.
+    const dt = e.timeStamp - lastT;
+    if (dt > 0) vx = vx * 0.6 + ((e.clientX - lastX) / dt) * 0.4;
+    lastX = e.clientX; lastT = e.timeStamp;
+    move(e.clientX - sx);
   });
-  const end = e => {
+  const finish = cancelled => e => {
     if (e.pointerId !== id) return;
     id = null;
     if (axis !== 'x') return;
-    suppressTap = true;
-    const w = host.offsetWidth || 1;
-    if (dx > Math.min(80, w * 0.22)) { host.style.transition = ''; host.style.transform = ''; return swipeBack(); }
-    reset();
+    // A finger that stopped before lifting isn't a flick.
+    if (e.timeStamp - lastT > 80) vx = 0;
+    end(vx, cancelled);
   };
-  host.addEventListener('pointerup', end);
-  host.addEventListener('pointercancel', end);
+  el.addEventListener('pointerup', finish(false));
+  el.addEventListener('pointercancel', finish(true));
+}
+
+// Page change: dragged past ~22% of the width (max 80px), or a quick flick of
+// at least 24px in the same direction.
+function isFlip(dx, vx, width) {
+  const w = width || 1;
+  return Math.abs(dx) > Math.min(80, w * 0.22)
+    || (Math.abs(dx) > 24 && Math.abs(vx) > 0.45 && Math.sign(vx) === Math.sign(dx));
 }
 
 function wirePager(pager) {
   if (!pager) return;
   const track = pager.querySelector('.tx-track');
   setPage(pager, trPage, false);
-  let id = null, sx = 0, sy = 0, dx = 0, axis = null;
-  pager.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    id = e.pointerId; sx = e.clientX; sy = e.clientY; dx = 0; axis = null;
+  let dx = 0;
+  horizontalSwipe(pager, {
+    start: () => {
+      dx = 0;
+      pager.querySelectorAll('.tx-page').forEach(p => p.classList.remove('off'));
+      alignIncoming(pager);
+      track.classList.add('dragging');
+    },
+    move: mx => {
+      // Rubber-band past the translation page; on the Chinese page a drag to the
+      // right follows the finger freely (it's the "back to the list" gesture).
+      dx = (trPage && mx < 0) ? mx * 0.25 : mx;
+      track.style.transform = `translateX(calc(${trPage ? TR_OFFSET : '0%'} + ${dx}px))`;
+    },
+    end: (vx, cancelled) => {
+      suppressTap = true;   // the click that ends a drag must not open a word
+      // Browser took over (scrolling) or the system cancelled: snap back.
+      if (cancelled) return setPage(pager, trPage, true);
+      const flip = isFlip(dx, vx, pager.offsetWidth);
+      if (!trPage && flip && dx > 0) return swipeBack();
+      const toTr = trPage ? !(flip && dx > 0) : (flip && dx < 0);
+      setPage(pager, toTr, true);
+    },
   });
-  pager.addEventListener('pointermove', e => {
-    if (e.pointerId !== id) return;
-    const mx = e.clientX - sx, my = e.clientY - sy;
-    if (!axis) {
-      if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
-      axis = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y';
-      if (axis === 'x') {
-        try { pager.setPointerCapture(id); } catch (err) {}
-        pager.querySelectorAll('.tx-page').forEach(p => p.classList.remove('off'));
-        track.classList.add('dragging');
-      }
-    }
-    if (axis !== 'x') return;
-    // Rubber-band past the translation page; on the Chinese page a drag to the
-    // right follows the finger freely (it's the "back to the list" gesture).
-    dx = (trPage && mx < 0) ? mx * 0.25 : mx;
-    track.style.transform = `translateX(calc(${trPage ? '-50%' : '0%'} + ${dx}px))`;
-  });
-  const end = e => {
-    if (e.pointerId !== id) return;
-    id = null;
-    if (axis !== 'x') return;
-    suppressTap = true;   // the click that ends a drag must not open a word
-    const w = pager.offsetWidth || 1;
-    const flip = Math.abs(dx) > Math.min(80, w * 0.22);
-    if (!trPage && flip && dx > 0) return swipeBack();
-    const toTr = trPage ? !(flip && dx > 0) : (flip && dx < 0);
-    setPage(pager, toTr, true);
-  };
-  pager.addEventListener('pointerup', end);
-  pager.addEventListener('pointercancel', end);
 }
 
 // Deselect the sentence and hide the translation box.
 function clearSentence() {
   const host = document.getElementById('texts-content');
   host?.querySelectorAll('.tx-s.sel').forEach(x => x.classList.remove('sel'));
-  hideTr();
+  // While reading aloud the box keeps following the sentence being read.
+  const p = listening && readingSentEl?.isConnected ? readingSentEl.closest('p') : null;
+  if (p) paintSentenceTr(Number(p.dataset.p), Number(readingSentEl.dataset.s));
+  else hideTr();
 }
 
 // A tap anywhere on the Texts screen outside the selected sentence clears it
@@ -533,12 +619,10 @@ export function renderTexts() {
   const hlBtn  = document.getElementById('textsHlBtn');
   const pyBtn  = document.getElementById('textsPyBtn');
   const stBtn  = document.getElementById('textsStBtn');
-  const trBox  = document.getElementById('textsTr');
   if (!host) return;
   // Reset the reader-only handlers; the reader branch re-wires them.
   host.onpointerdown = host.onpointermove = host.onpointerup = host.onpointercancel = host.oncontextmenu = null;
-  if (trBox) trBox.style.display = 'none';
-  trAvailable = false;
+  trAvailable = false;   // the translation box is re-created inside the Chinese page
 
   let text = openId != null ? TEXTS.find(x => x.id === openId) : null;
   if (text && !isAvailable(text.hsk)) text = null;   // locked level (e.g. plan changed): never open
@@ -693,7 +777,7 @@ export function renderTexts() {
   }
   const doc = bodyCache.get(text.id);
   const trFull = translationOf(doc);
-  if (pagerFor !== text.id) { pagerFor = text.id; trPage = false; }   // new text opens on the Chinese page
+  if (pagerFor !== text.id) { pagerFor = text.id; trPage = false; zhScroll = 0; }   // new text opens on the Chinese page
   host.className = 'texts-reader' + (hlOn ? '' : ' tx-off') + (pyOn ? ' tx-py' : '') + (stOn ? ' tx-st' : '');
   const zhHTML = paragraphsOf(doc.zh).map(paragraphHTML).join('')
     + `<button class="texts-done" type="button"></button>`;
@@ -706,7 +790,7 @@ export function renderTexts() {
     host.innerHTML = `
       <div class="tx-pager">
         <div class="tx-track">
-          <div class="tx-page tx-page-zh" lang="zh">${zhHTML}</div>
+          <div class="tx-page tx-page-zh" lang="zh"><div class="texts-tr" id="textsTr" aria-live="polite" lang="${state.lang === 'es' && doc.es ? 'es' : 'en'}"></div>${zhHTML}</div>
           <div class="tx-page tx-page-tr" lang="${state.lang === 'es' && doc.es ? 'es' : 'en'}">${trHTML}</div>
         </div>
       </div>`;
@@ -717,7 +801,7 @@ export function renderTexts() {
 
   // Translation panel above the text: only when the passage has a translation.
   // It shows a hint until a sentence is long-pressed (see paintTr / hideTr).
-  if (trBox && trFull) {
+  if (trFull) {
     trAvailable = true;
     wireSentencePress(host, doc);
     wireOutsideTap();
@@ -820,7 +904,7 @@ export function stopTextAudio() {
   if (curLine?.audio) curLine.audio.pause();
   curLine = null;
   if (resumeWait) { resumeWait(); resumeWait = null; }
-  if (wasActive) stopSpeaking();
+  if (wasActive) { stopSpeaking(); restoreTr(); }
   syncListenBtn();
 }
 
@@ -949,7 +1033,10 @@ async function startListen(from) {
       speak(L.line, on => {
         if (on) {
           t0 = performance.now();   // (re)start the estimate when the voice really starts
-          if (!started) { started = true; words = pick(); raf = requestAnimationFrame(tick); }
+          if (!started) {
+            started = true; words = pick(); raf = requestAnimationFrame(tick);
+            paintSentenceTr(L.pi, L.si);   // the box follows the sentence being read
+          }
         }
         else if (started) finish();
       }, a => {
@@ -970,7 +1057,7 @@ async function startListen(from) {
     if (curLine === line) curLine = null;
     if (!line.interrupted) i++;   // an interrupted sentence is replayed after resume
   }
-  if (run === listenRun) { listening = false; paused = false; syncListenBtn(); }
+  if (run === listenRun) { listening = false; paused = false; syncListenBtn(); restoreTr(); }
 }
 
 // The sentence being read gets a gray background (same as a selected one).

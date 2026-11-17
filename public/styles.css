@@ -687,10 +687,16 @@ body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
    the iOS callout are disabled in the reader. */
 .texts-reader { padding:4px 2px 24px; touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 /* Reader pager: [Chinese][full translation]. Swipe left reveals the translation. */
-.tx-pager { overflow:hidden; touch-action:pan-y; margin:0 -2px; }
-.tx-track { display:flex; align-items:flex-start; width:200%; transform:translateX(0); transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
+/* overflow:clip (not hidden) so the pager isn't a scroll container and the
+   translation box can stick to the top of #texts-scroll. */
+.tx-pager { overflow:hidden; overflow:clip; touch-action:pan-y; margin:0 -2px; }
+/* --tx-gap: empty gutter between the two pages, only seen while sliding, so the
+   translation never looks glued to the Chinese page's box. Pages stay exactly
+   one pager wide; the translation page sits at -(50% + gap/2) of the track. */
+.tx-pager { --tx-gap:24px; }
+.tx-track { display:flex; align-items:flex-start; gap:var(--tx-gap); width:calc(200% + var(--tx-gap)); transform:translateX(0); transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
 .tx-track.dragging { transition:none; }
-.tx-page { width:50%; flex:none; padding:0 2px; box-sizing:border-box; }
+.tx-page { width:calc(50% - var(--tx-gap) / 2); flex:none; padding:0 2px; box-sizing:border-box; }
 /* Off-screen page collapsed so the scroll height follows the visible one. No
    `visibility` here: the global reduced-motion rule gives every property a
    0.01ms transition, and the page must never depend on that finishing. */
@@ -700,8 +706,13 @@ body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
 .tx-s { border-radius:4px; transition:background-color 160ms ease; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
 .tx-s.sel,
 .tx-s.tx-reading { background:color-mix(in srgb, var(--txt) 9%, transparent); }   /* light gray: selected / being read aloud */
+/* Sentence-translation box: belongs to the Chinese page (slides with it) and
+   sticks to the top while the text scrolls. The background-coloured ring hides
+   the text passing behind its rounded corners. */
 .texts-tr {
-  flex:none; max-height:32%; overflow-y:auto;
+  position:sticky; top:0; z-index:3; margin:0 0 10px;
+  box-shadow:0 0 0 6px var(--bg);
+  max-height:32vh; overflow-y:auto;
   padding:10px 14px; border-radius:14px;
   background:var(--surf); border:1px solid var(--bdr);
   font-size:.84rem; line-height:1.5; color:var(--txt);
