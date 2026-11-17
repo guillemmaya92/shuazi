@@ -251,6 +251,29 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tab.active .ic-line { display:none; }
 .tab.active .ic-fill { display:block; }
 
+/* Reader mode (a text is open): tabs fade out and one centred play button takes
+   the bar. The bar keeps its height so the layout doesn't jump. */
+.tab { transition: color 180ms ease, opacity .2s ease; }
+.tx-play {
+  position:absolute; left:50%; top:calc(50% - var(--safe-b, 0px) / 2); z-index:2;
+  translate:-50% -50%; scale:.8;
+  width:48px; height:48px; padding:0; border:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--blue); color:#fff;
+  box-shadow:0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent);
+  opacity:0; pointer-events:none;
+  transition:opacity .2s ease, scale .25s cubic-bezier(.34,1.45,.5,1), background .15s;
+  -webkit-tap-highlight-color:transparent; cursor:pointer;
+}
+.tx-play svg { width:22px; height:22px; }
+.tx-play .tx-pause-ic { display:none; }
+.tx-play.active .tx-play-ic { display:none; }
+.tx-play.active .tx-pause-ic { display:block; }
+.tx-play:active { scale:.92; }
+body.reader-open .tab,
+body.reader-open .tab-pill { opacity:0; pointer-events:none; }
+body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
+
 /* ══════════════════════════════
    SCREEN 1 — FLASHCARDS
 ══════════════════════════════ */
@@ -662,7 +685,7 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .texts-msg { padding:32px 8px; text-align:center; font-size:.8rem; color:var(--faint); }
 /* Long-press on a sentence shows its translation, so native text selection and
    the iOS callout are disabled in the reader. */
-.texts-reader { padding:4px 2px 24px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.texts-reader { padding:4px 2px 24px; touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 /* Reader pager: [Chinese][full translation]. Swipe left reveals the translation. */
 .tx-pager { overflow:hidden; touch-action:pan-y; margin:0 -2px; }
 .tx-track { display:flex; align-items:flex-start; width:200%; transform:translateX(0); transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
@@ -675,14 +698,18 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tx-page.off { height:0; overflow:hidden; }
 .texts-reader .tx-page-tr p { font-size:.9rem; line-height:1.7; text-indent:0; margin:0 0 .9em; color:var(--txt); }
 .tx-s { border-radius:4px; transition:background-color 160ms ease; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
-.tx-s.sel { background:color-mix(in srgb, var(--txt) 9%, transparent); }   /* light gray */
+.tx-s.sel,
+.tx-s.tx-reading { background:color-mix(in srgb, var(--txt) 9%, transparent); }   /* light gray: selected / being read aloud */
 .texts-tr {
   flex:none; max-height:32%; overflow-y:auto;
   padding:10px 14px; border-radius:14px;
   background:var(--surf); border:1px solid var(--bdr);
   font-size:.84rem; line-height:1.5; color:var(--txt);
 }
-.texts-tr.empty { color:var(--faint); font-size:.72rem; text-align:center; }
+.texts-tr.empty {
+  color:color-mix(in srgb, var(--faint) 60%, transparent);   /* quiet: it's just a hint */
+  font-size:.72rem; font-weight:400; text-align:center;
+}
 .tx-w { cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .tx-b { text-decoration:underline solid 1.5px var(--hc, var(--faint)); text-underline-offset:.28em; }
 /* Pinyin floats above its word/character without taking layout space, so the
@@ -707,6 +734,13 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 [data-theme="medium"] .texts-reader { --tx-known-bg:rgba(58,122,86,.20); --tx-review-bg:rgba(37,96,176,.17); }
 /* Dark: softer tints so the light text stays crisp against them. */
 [data-theme="dark"] .texts-reader { --tx-known-bg:rgba(104,191,138,.22); --tx-review-bg:rgba(100,160,230,.24); }
+/* Word currently being read aloud. Declared after the known/review tints so it wins. */
+/* The word being read aloud lights up in the accent colour (glyphs only — the
+   background is left alone so the known/review tints still show). */
+.texts-reader .tx-w, .texts-reader .tx-u { transition:color .12s; }
+.tx-u { position:relative; }
+.texts-reader .tx-w.tx-playing,
+.texts-reader .tx-u.tx-playing { color:var(--blue); }
 .texts-reader.tx-st .tx-known  .tx-b { background:var(--tx-known-bg); }
 .texts-reader.tx-st .tx-review .tx-b { background:var(--tx-review-bg); }
 .texts-reader p { font-size:1.15rem; line-height:2.4; text-indent:2em; margin:0 0 .6em; }

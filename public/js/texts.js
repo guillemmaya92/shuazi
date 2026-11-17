@@ -2,6 +2,7 @@ import { t } from './i18n.js';
 import { state } from './state.js';
 import { hskLabel, supa } from './config.js';
 import { isAvailable } from './cards.js';
+import { speak, stopSpeaking } from './translator.js';
 import { openWordModal, animateGridWrap, EYE_SVG, EYE_OFF_SVG } from './ui.js';
 
 /* ── TEXTS: graded reading passages ──
@@ -165,6 +166,7 @@ function wordInnerHTML(text, pinyin) {
 function tokenHTML(tok) {
   return tok.word
     ? `<span class="tx-w tx-h${tok.word.hsk ?? 0}${state.known.has(tok.text) ? ' tx-known' : state.unknown.has(tok.text) ? ' tx-review' : ''}" data-w="${esc(tok.text)}">${wordInnerHTML(tok.text, tok.word.pinyin)}</span>`
+    : tok.han ? `<span class="tx-u">${plainHTML(tok.text)}</span>`
     : plainHTML(tok.text);
 }
 
@@ -178,7 +180,11 @@ const CLOSERS = /^[”’」』）)》\]"']$/;
 function sentencesOf(tokens) {
   // Plain (non-word) chunks are split per character so punctuation inside them
   // can end a sentence. Rendering is unchanged: plainHTML is per character anyway.
-  const toks = tokens.flatMap(t => t.word ? [t] : [...t.text].map(c => ({ text: c })));
+  // Runs of Han characters stay together (one `han` token, e.g. a name not in
+  // `words`) so they can be lit as a unit while the text is read aloud.
+  const toks = tokens.flatMap(t => t.word ? [t]
+    : (t.text.match(/\p{Script=Han}+|[^\p{Script=Han}]/gu) || [])
+        .map(c => HAN.test(c) ? { text: c, han: true } : { text: c }));
   const out = [];
   let cur = [], ended = false;
   for (const tok of toks) {
@@ -224,12 +230,20 @@ function paintTr(html, empty) {
   if (!box) return;
   box.classList.toggle('empty', !!empty);
   box.innerHTML = html;
-  box.style.display = '';   // the box only exists while a sentence is selected
+  box.style.display = '';
 }
 
+// True while a reader with a translation is open: the box then stays visible on
+// the Chinese page, showing a hint until a sentence is long-pressed.
+let trAvailable = false;
+
+// Back to the idle state: the hint on the Chinese page, hidden otherwise
+// (no translation, list view, or the full-translation page).
 function hideTr() {
   const box = document.getElementById('textsTr');
-  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (!box) return;
+  if (trAvailable && !trPage) return paintTr(esc(t('texts.trHint')), true);
+  box.style.display = 'none'; box.innerHTML = '';
 }
 
 /* ── Full-translation page ──
@@ -258,7 +272,56 @@ function setPage(pager, toTr, animate = true) {
     track.addEventListener('transitionend', onEnd);
     setTimeout(once, 400);
   } else settle();
-  if (toTr) clearSentence();   // the box never shows over the full translation
+  clearSentence();   // hidden over the full translation; back to the hint on the Chinese page
+}
+
+// Back to the texts list from a swipe. The click that the browser may fire right
+// after the gesture is swallowed so it can't open a text in the freshly drawn list.
+function swipeBack() {
+  const eat = e => { e.stopPropagation(); e.preventDefault(); };
+  window.addEventListener('click', eat, { capture: true, once: true });
+  setTimeout(() => window.removeEventListener('click', eat, { capture: true }), 400);
+  closeText();
+}
+
+// Texts without a translation have no pager: a plain right swipe goes back.
+// #texts-content survives re-renders, so this is wired once and only acts while
+// a reader without pager is shown.
+let swipeBackWired = false;
+function wireSwipeBack(host) {
+  if (swipeBackWired) return;
+  swipeBackWired = true;
+  let id = null, sx = 0, sy = 0, axis = null, dx = 0;
+  const reset = () => { host.style.transition = 'transform .25s ease'; host.style.transform = ''; };
+  host.addEventListener('pointerdown', e => {
+    id = null;
+    if (!host.classList.contains('texts-reader') || host.querySelector('.tx-pager')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    id = e.pointerId; sx = e.clientX; sy = e.clientY; axis = null; dx = 0;
+  });
+  host.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const mx = e.clientX - sx, my = e.clientY - sy;
+    if (!axis) {
+      if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
+      axis = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y';
+      if (axis === 'x') { try { host.setPointerCapture(id); } catch (err) {} host.style.transition = 'none'; }
+    }
+    if (axis !== 'x') return;
+    dx = mx > 0 ? mx : mx * 0.25;
+    host.style.transform = `translateX(${dx}px)`;
+  });
+  const end = e => {
+    if (e.pointerId !== id) return;
+    id = null;
+    if (axis !== 'x') return;
+    suppressTap = true;
+    const w = host.offsetWidth || 1;
+    if (dx > Math.min(80, w * 0.22)) { host.style.transition = ''; host.style.transform = ''; return swipeBack(); }
+    reset();
+  };
+  host.addEventListener('pointerup', end);
+  host.addEventListener('pointercancel', end);
 }
 
 function wirePager(pager) {
@@ -283,8 +346,9 @@ function wirePager(pager) {
       }
     }
     if (axis !== 'x') return;
-    // Rubber-band when dragging past either end.
-    dx = (trPage ? mx < 0 : mx > 0) ? mx * 0.25 : mx;
+    // Rubber-band past the translation page; on the Chinese page a drag to the
+    // right follows the finger freely (it's the "back to the list" gesture).
+    dx = (trPage && mx < 0) ? mx * 0.25 : mx;
     track.style.transform = `translateX(calc(${trPage ? '-50%' : '0%'} + ${dx}px))`;
   });
   const end = e => {
@@ -294,6 +358,7 @@ function wirePager(pager) {
     suppressTap = true;   // the click that ends a drag must not open a word
     const w = pager.offsetWidth || 1;
     const flip = Math.abs(dx) > Math.min(80, w * 0.22);
+    if (!trPage && flip && dx > 0) return swipeBack();
     const toTr = trPage ? !(flip && dx > 0) : (flip && dx < 0);
     setPage(pager, toTr, true);
   };
@@ -351,6 +416,8 @@ function wireSentencePress(host, doc) {
       if (tr && tr.whole) pEl.querySelectorAll('.tx-s').forEach(x => x.classList.add('sel'));
       else sEl.classList.add('sel');
       paintTr(esc(tr ? tr.text : t('texts.trNone')), !tr);
+      // Whole-paragraph selection (translation not split per sentence) reads from its start.
+      listenFromSelection(Number(pEl.dataset.p), tr && tr.whole ? 0 : Number(sEl.dataset.s));
     }, 450);
   };
   host.onpointermove = e => {
@@ -471,6 +538,7 @@ export function renderTexts() {
   // Reset the reader-only handlers; the reader branch re-wires them.
   host.onpointerdown = host.onpointermove = host.onpointerup = host.onpointercancel = host.oncontextmenu = null;
   if (trBox) trBox.style.display = 'none';
+  trAvailable = false;
 
   let text = openId != null ? TEXTS.find(x => x.id === openId) : null;
   if (text && !isAvailable(text.hsk)) text = null;   // locked level (e.g. plan changed): never open
@@ -479,6 +547,10 @@ export function renderTexts() {
   hlBtn.style.display = text ? '' : 'none';
   pyBtn.style.display = text ? '' : 'none';
   stBtn.style.display = text ? '' : 'none';
+  // Reader mode: the bottom tab bar is replaced by the play button.
+  setReaderMode(!!text);
+  if (!text) stopTextAudio();
+  else syncListenBtn();
   stBtn.classList.toggle('active', stOn);
   stBtn.setAttribute('aria-pressed', String(stOn));
   syncPyBtn();
@@ -644,12 +716,14 @@ export function renderTexts() {
   paintDoneBtn(host.querySelector('.texts-done'), text.id);
 
   // Translation panel above the text: only when the passage has a translation.
-  // The box stays hidden until a sentence is long-pressed (see paintTr / hideTr).
+  // It shows a hint until a sentence is long-pressed (see paintTr / hideTr).
   if (trBox && trFull) {
+    trAvailable = true;
     wireSentencePress(host, doc);
     wireOutsideTap();
     wirePager(host.querySelector('.tx-pager'));
   }
+  wireSwipeBack(host);   // only acts when there's no pager (no translation)
 
   host.onclick = e => {
     if (suppressTap) { suppressTap = false; return; }
@@ -684,7 +758,245 @@ export function toggleTextStatus() {
   btn?.setAttribute('aria-pressed', String(stOn));
 }
 
+/* ── Listen: reads the open passage aloud, one sentence at a time ──
+   Sentences (not the whole passage) go to TTS so requests stay short and cache
+   well. A run token lets a tap on the button, closing the text or leaving the
+   tab cancel the queue. */
+// Google Mandarin voices (Wavenet = best quality, for the main cast; Standard
+// for secondary roles). `pitch` only matters for the Web Speech fallback.
+const V = {
+  WA: { name: 'cmn-CN-Wavenet-A',  pitch: 1.2  },   // female
+  WB: { name: 'cmn-CN-Wavenet-B',  pitch: 0.8  },   // male
+  WC: { name: 'cmn-CN-Wavenet-C',  pitch: 0.7  },   // male
+  WD: { name: 'cmn-CN-Wavenet-D',  pitch: 1.1  },   // female
+  SA: { name: 'cmn-CN-Standard-A', pitch: 1.3  },   // female
+  SB: { name: 'cmn-CN-Standard-B', pitch: 0.9  },   // male
+  SC: { name: 'cmn-CN-Standard-C', pitch: 0.6  },   // male
+  SD: { name: 'cmn-CN-Standard-D', pitch: 1.0  },   // female
+};
+// Fixed voice per character, so each one sounds the same in every text. Picked
+// so that no two characters sharing a dialogue get the same voice. Only these
+// labels count as speakers: any other "xxx：" (recipe headings, a letter's
+// salutation, narration) is read aloud as normal text.
+const SPEAKER_VOICES = {
+  '玛丽': V.WA, '张红': V.WD, '大卫': V.WB, '李军': V.WC,   // main cast
+  '中村': V.SB,
+  '刘老师': V.SA, '老师': V.SA, '王老师': V.SD,
+  '安娜': V.SD, '妈妈': V.SA, '售货员': V.SD,
+  '警察': V.SC, '画家': V.SC, '工作人员': V.SC, '工人': V.SB,
+  '学生': V.SC, '学生A': V.SD, '学生B': V.SC, '同学': V.SC,
+};
+// Reading speed for passages, synthesized directly by the TTS (the app default
+// elsewhere is 0.9).
+const LISTEN_RATE = 0.75;
+let listenRun = 0;
+let listening = false;      // a reading session is active (playing or paused)
+let paused = false;
+let curLine = null;         // { mode: 'pending'|'audio'|'speech', audio, interrupted }
+let resumeWait = null;      // resolves the queue's wait while paused
+
+// Toggles the bottom bar between the tabs and the reader's play button.
+export function setReaderMode(on) {
+  document.body.classList.toggle('reader-open', on);
+  const btn = document.getElementById('txPlayBtn');
+  if (btn) btn.tabIndex = on ? 0 : -1;
+  document.querySelectorAll('.tabbar .tab').forEach(t => { t.tabIndex = on ? -1 : 0; });
+}
+
+function syncListenBtn() {
+  const btn = document.getElementById('txPlayBtn');
+  if (!btn) return;
+  const playing = listening && !paused;
+  btn.classList.toggle('active', playing);   // shows the pause icon
+  btn.setAttribute('aria-pressed', String(playing));
+  btn.setAttribute('aria-label', t(playing ? 'texts.pause' : paused ? 'texts.resume' : 'texts.listen'));
+}
+
+export function stopTextAudio() {
+  listenRun++;
+  if (stopTick) { stopTick(); stopTick = null; }
+  const wasActive = listening;
+  listening = false; paused = false;
+  if (curLine?.audio) curLine.audio.pause();
+  curLine = null;
+  if (resumeWait) { resumeWait(); resumeWait = null; }
+  if (wasActive) stopSpeaking();
+  syncListenBtn();
+}
+
+function pauseTextAudio() {
+  paused = true;
+  const c = curLine;
+  if (c?.mode === 'audio') c.audio.pause();          // freezes in place; highlight stays
+  else if (c?.mode === 'speech') { c.interrupted = true; stopSpeaking(); }   // replays this sentence on resume
+  // 'pending' (cloud audio still loading): it is paused as soon as it starts.
+  syncListenBtn();
+}
+
+function resumeTextAudio() {
+  paused = false;
+  const c = curLine;
+  if (c?.mode === 'audio') c.audio.play().catch(() => {});
+  if (resumeWait) { resumeWait(); resumeWait = null; }
+  syncListenBtn();
+}
+
+export function toggleTextListen() {
+  if (listening) return paused ? resumeTextAudio() : pauseTextAudio();
+  // Start from the selected sentence (long-press), or from the top.
+  const sel = document.querySelector('#texts-content .tx-s.sel');
+  const pEl = sel?.closest('p');
+  return startListen(pEl ? { pi: Number(pEl.dataset.p), si: Number(sel.dataset.s) } : null);
+}
+
+// A sentence was selected (long-press) while reading: jump there and keep
+// playing. While paused, the session ends so the next ▶ starts from it.
+function listenFromSelection(pi, si) {
+  if (!listening) return;
+  if (paused) { stopTextAudio(); return; }
+  stopTextAudio();
+  startListen({ pi, si });
+}
+
+async function startListen(from) {
+  const doc = openId != null ? bodyCache.get(openId) : null;
+  if (!doc) return;
+  // One entry per sentence: the text to speak, where it sits in the DOM, and a
+  // timeline of its words (start = share of the sentence's speaking time).
+  const lines = [];
+  let voice = null;           // voice of the current speaker (kept across unlabeled lines)
+  paragraphsOf(doc.zh).forEach((p, pi) => sentencesOf(tokenize(p)).forEach((s, si) => {
+    // Dialogue: "玛丽：…" is not read aloud; the label picks the voice instead.
+    // A leading stage direction "（问机场工作人员）" is skipped too.
+    let skip = 0;
+    if (si === 0) {
+      const skipParen = () => {
+        if (!/^[（(]$/.test(s[skip]?.text || '')) return;
+        const close = s.findIndex((x, i) => i > skip && /^[）)]$/.test(x.text));
+        if (close > 0) skip = close + 1;
+      };
+      skipParen();
+      const colon = s.findIndex((x, i) => i >= skip && /^[：:]$/.test(x.text));
+      const label = colon > skip ? s.slice(skip, colon).map(x => x.text).join('').trim() : '';
+      // A speaker line needs something said after the colon: a lone "刘老师："
+      // heading a letter is the salutation, so it is read.
+      const saysSomething = colon >= 0 && s.slice(colon + 1).some(x => HAN.test(x.text));
+      if (label && SPEAKER_VOICES[label] && saysSomething) {
+        voice = SPEAKER_VOICES[label];
+        skip = colon + 1;
+      }
+    }
+    const spoken = s.slice(skip);
+    const line = spoken.map(x => x.text).join('').replace(/\s+/g, '').trim();
+    if (!/[\u3400-\u9fff]/.test(line)) return;
+    // Hanzi count 1 each; punctuation is a short pause (0.6). Dictionary words
+    // (.tx-w) and Han runs outside `words` (.tx-u) are the highlight units;
+    // `wi` is the unit's index within the whole sentence (skipped ones included).
+    const isUnit = x => x.word || x.han;
+    let total = 0, wi = 0;
+    s.slice(0, skip).forEach(x => { if (isUnit(x)) wi++; });
+    const units = [];
+    for (const tok of spoken) {
+      const w = isUnit(tok) ? [...tok.text].length : 0.6;
+      if (isUnit(tok)) units.push({ start: total, wi: wi++ });
+      total += w;
+    }
+    units.forEach(u => { u.start /= total; });
+    lines.push({ line, pi, si, units, chars: total, voice });
+  }));
+  if (!lines.length) return;
+  // Voices were assigned over the whole text above, so starting midway keeps
+  // every character on the same voice.
+  let start = from ? lines.findIndex(L => L.pi > from.pi || (L.pi === from.pi && L.si >= from.si)) : 0;
+  if (start < 0) start = 0;
+  const run = ++listenRun;
+  listening = true;
+  syncListenBtn();
+  for (let i = start; i < lines.length;) {
+    if (run !== listenRun) return;
+    // Paused between sentences: wait here until resumed (or stopped).
+    if (paused) {
+      await new Promise(r => { resumeWait = r; });
+      continue;
+    }
+    const L = lines[i];
+    const line = curLine = { mode: 'pending', audio: null, interrupted: false };
+    await new Promise(resolve => {
+      let started = false, audio = null, raf = 0, t0 = 0, shown = -1, words = [];
+      const host = document.getElementById('texts-content');
+      const pick = () => [...(host?.querySelectorAll(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"] :is(.tx-w, .tx-u)`) || [])];
+      const sentEl = () => host?.querySelector(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"]`);
+      const clear = () => { cancelAnimationFrame(raf); setPlaying(null); setReadingSentence(null); };
+      stopTick = clear;
+      const tick = () => {
+        if (run !== listenRun) return;
+        if (!words.length || !words[0].isConnected) { words = pick(); shown = -1; }   // list re-rendered under us
+        if (!readingSentEl?.isConnected) setReadingSentence(sentEl());
+        // Prefer real audio progress; without a usable duration, estimate ~0.27s/char.
+        const dur = audio && isFinite(audio.duration) && audio.duration > 0 ? audio.duration : L.chars * 0.27 * (0.9 / LISTEN_RATE);
+        const cur = audio ? audio.currentTime : (performance.now() - t0) / 1000;
+        const p = Math.min(0.999, Math.max(0, cur / dur));
+        let idx = 0;
+        for (let i = 0; i < L.units.length; i++) if (L.units[i].start <= p) idx = i;
+        const el = words[L.units[idx]?.wi];
+        if (idx !== shown && el) {
+          shown = idx;
+          setPlaying(el);
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      const finish = () => { clear(); resolve(); };
+      speak(L.line, on => {
+        if (on) {
+          t0 = performance.now();   // (re)start the estimate when the voice really starts
+          if (!started) { started = true; words = pick(); raf = requestAnimationFrame(tick); }
+        }
+        else if (started) finish();
+      }, a => {
+        audio = a;
+        if (a) {
+          line.mode = 'audio'; line.audio = a;
+          // Paused while it was still loading: hold it as soon as play() kicks in.
+          a.addEventListener('play', () => { if (paused && run === listenRun) a.pause(); }, { once: true });
+        } else {
+          line.mode = 'speech';
+          // Web Speech fallback starting while paused: cut it right away.
+          if (paused) Promise.resolve().then(() => { line.interrupted = true; stopSpeaking(); });
+        }
+      }, { rate: LISTEN_RATE, ...(L.voice && { voice: L.voice.name, pitch: L.voice.pitch }) });
+      // Safety net: if playback never reports back, don't hang the queue.
+      setTimeout(() => { if (!started) finish(); }, 8000);
+    });
+    if (curLine === line) curLine = null;
+    if (!line.interrupted) i++;   // an interrupted sentence is replayed after resume
+  }
+  if (run === listenRun) { listening = false; paused = false; syncListenBtn(); }
+}
+
+// The sentence being read gets a gray background (same as a selected one).
+let readingSentEl = null;
+function setReadingSentence(el) {
+  if (readingSentEl && readingSentEl !== el) readingSentEl.classList.remove('tx-reading');
+  readingSentEl = el;
+  el?.classList.add('tx-reading');
+}
+
+// Only one word is lit at a time; bring it into view if it scrolled away.
+let playingEl = null, stopTick = null;
+function setPlaying(el) {
+  if (playingEl && playingEl !== el) playingEl.classList.remove('tx-playing');
+  playingEl = el;
+  if (!el) return;
+  el.classList.add('tx-playing');
+  const sc = document.getElementById('texts-scroll');
+  if (sc) {
+    const r = el.getBoundingClientRect(), s = sc.getBoundingClientRect();
+    if (r.top < s.top + 40 || r.bottom > s.bottom - 40) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
 export function closeText() {
+  stopTextAudio();
   openId = null;
   renderTexts();
 }

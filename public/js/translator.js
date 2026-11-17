@@ -214,14 +214,15 @@ if ('speechSynthesis' in window) {
 
 // Speaks Chinese text via the Web Speech API (fallback). `onState` (optional)
 // is called with true when playback starts and false when it ends.
-function speakWebSpeech(text, onState) {
+function speakWebSpeech(text, onState, pitch = 1, rate = 0.9) {
   if (!('speechSynthesis' in window) || !text) { onState?.(false); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-CN';
   const voice = getChineseVoice();
   if (voice) u.voice = voice;
-  u.rate = 0.9;
+  u.rate = rate;
+  u.pitch = pitch;
   if (onState) {
     u.onstart = () => onState(true);
     u.onend   = () => onState(false);
@@ -244,16 +245,18 @@ function b64ToUrl(b64, mime) {
 }
 
 // Resolves to a playable object URL, hitting localStorage then the network.
-async function fetchTtsUrl(text) {
-  if (ttsMem.has(text)) return ttsMem.get(text);
-  const lsKey = 'tts:' + text;
+async function fetchTtsUrl(text, voice, rate) {
+  // Default voice/rate keep the original cache keys; others are cached apart.
+  const key = (voice ? voice + '|' : '') + (rate ? 'r' + rate + '|' : '') + text;
+  if (ttsMem.has(key)) return ttsMem.get(key);
+  const lsKey = 'tts:' + key;
   let b64 = null;
   try { b64 = localStorage.getItem(lsKey); } catch { /* ignore */ }
   if (!b64) {
     const res = await fetch(`${SUPA_URL}/functions/v1/tts`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, ...(voice && { voice }), ...(rate && { rate }) }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.audio) throw new Error(data.error || 'TTS ' + res.status);
@@ -261,9 +264,12 @@ async function fetchTtsUrl(text) {
     try { localStorage.setItem(lsKey, b64); } catch { /* quota full — skip persisting */ }
   }
   const url = b64ToUrl(b64, 'audio/mpeg');
-  ttsMem.set(text, url);
+  ttsMem.set(key, url);
   return url;
 }
+
+// Stops any Chinese audio started with speak() (cloud TTS or Web Speech).
+export function stopSpeaking() { stopPlayback(); }
 
 function stopPlayback() {
   if (stopCurrent) { stopCurrent(); stopCurrent = null; }
@@ -289,24 +295,35 @@ function setMediaSession(text) {
 
 // Speaks Chinese text. Tries cloud TTS first, falls back to Web Speech on any
 // failure. `onState` (optional) toggles UI feedback (true while playing).
-export async function speak(text, onState) {
+// `onAudio` (optional) receives the <audio> element once it is ready (for
+// progress-synced UI), or null when the Web Speech fallback is used.
+export async function speak(text, onState, onAudio, opts = {}) {
   if (!text) return;
   stopPlayback();
   onState?.(true);
   let cleared = false;
   const done = () => { if (!cleared) { cleared = true; onState?.(false); } };
+  let audio = null;
   try {
-    const url = await fetchTtsUrl(text);
-    const audio = new Audio(url);
+    const url = await fetchTtsUrl(text, opts.voice, opts.rate);
+    audio = new Audio(url);
+    onAudio?.(audio);
     setMediaSession(text);
     stopCurrent = () => { audio.pause(); done(); };
     audio.onended = () => { done(); stopCurrent = null; };
     audio.onerror = () => { done(); stopCurrent = null; };
     await audio.play();
   } catch (e) {
+    // play() interrupted by a pause()/stop (e.g. the reader's pause button): the
+    // audio itself is fine, so don't switch to the fallback voice.
+    if (audio && e?.name === 'AbortError') return;
     console.warn('Cloud TTS failed, using Web Speech fallback:', e);
-    done();
-    speakWebSpeech(text, onState);
+    if (audio) { audio.onended = audio.onerror = null; audio.pause(); }
+    stopCurrent = null;
+    onAudio?.(null);
+    // Report "ended" only when the fallback voice actually finishes, so callers
+    // queueing sentences don't race ahead and cancel it.
+    speakWebSpeech(text, on => { if (on) onState?.(true); else done(); }, opts.pitch, opts.rate);
   }
 }
 

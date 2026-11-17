@@ -11,7 +11,7 @@ import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from '
 import { maybeShowGroupsCoach } from './coach.js';
 import { openStrokeOrder } from './stroke-order.js';
 import { startTour } from './tour.js';
-import { renderTexts, closeText, toggleTextHighlight, toggleTextPinyin, toggleTextStatus } from './texts.js';
+import { renderTexts, closeText, toggleTextHighlight, toggleTextPinyin, toggleTextStatus, toggleTextListen, stopTextAudio, setReaderMode } from './texts.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -1436,6 +1436,7 @@ function movePill() {
 
 export function showTab(tab) {
   activeTab = tab;
+  if (tab !== 'texts') { stopTextAudio(); setReaderMode(false); }   // leaving Texts: tabs come back
   [scrCards, scrGroups, scrTexts, scrPhrases, scrTranslate, scrProfile].forEach(s => s.classList.remove('active'));
   [tabCards, tabGroups, tabTexts, tabPhrases, tabTranslate, tabProfile].forEach(t => t.classList.remove('active'));
   if (tab === 'cards')          { scrCards.classList.add('active');     tabCards.classList.add('active'); }
@@ -1544,6 +1545,7 @@ document.getElementById('textsBack').onclick = closeText;
 document.getElementById('textsHlBtn').onclick = toggleTextHighlight;
 document.getElementById('textsPyBtn').onclick = toggleTextPinyin;
 document.getElementById('textsStBtn').onclick = toggleTextStatus;
+document.getElementById('txPlayBtn').onclick = toggleTextListen;
 tabTranslate.onclick = () => showTab('translator');
 tabProfile.onclick   = () => showTab('profile');
 
@@ -1594,6 +1596,7 @@ tabProfile.onclick   = () => showTab('profile');
 
   barEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (document.body.classList.contains('reader-open')) return;   // bar shows only the play button
     // Ignore touches starting in the bottom safe-area (the iOS home-indicator
     // zone). Swiping along the bottom edge to switch apps lives there and would
     // otherwise drag the tab pill / switch tabs.
