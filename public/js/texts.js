@@ -2,7 +2,7 @@ import { t } from './i18n.js';
 import { state } from './state.js';
 import { hskLabel, supa } from './config.js';
 import { isAvailable } from './cards.js';
-import { speak, stopSpeaking } from './translator.js';
+import { speak, stopSpeaking, ttsPublicUrl, DEFAULT_TTS_VOICE, prefetchTts, unlockAudio } from './translator.js';
 import { openWordModal, animateGridWrap, EYE_SVG, EYE_OFF_SVG } from './ui.js';
 
 /* ── TEXTS: graded reading passages ──
@@ -41,9 +41,9 @@ async function loadTextBody(id) {
   bodyState.set(id, 'loading');
   try {
     await window._supabaseReady;
-    const { data, error } = await supa.from('texts').select('text, text_en, text_es').eq('id', id).single();
+    const { data, error } = await supa.from('texts').select('text, text_en, text_es, audio_url').eq('id', id).single();
     if (error) throw error;
-    bodyCache.set(id, { zh: data.text || '', en: data.text_en || '', es: data.text_es || '' });
+    bodyCache.set(id, { zh: data.text || '', en: data.text_en || '', es: data.text_es || '', audioUrl: data.audio_url || '' });
     bodyState.delete(id);
   } catch (e) {
     console.error('text failed to load:', e);
@@ -872,7 +872,27 @@ const SPEAKER_VOICES = {
 };
 // Reading speed for passages, synthesized directly by the TTS (the app default
 // elsewhere is 0.9).
+// NOTE: LISTEN_RATE, SPEAKER_VOICES and the line building in startListen() are
+// mirrored in scripts/build_text_audio.py, which pre-generates each text's
+// audio. Change them together (and re-run the script).
 const LISTEN_RATE = 0.75;
+
+// Loads a text's audio manifest (texts.audio_url, built by the script) once:
+// Map "voice|sentence" → public clip URL. null when there is none or it fails.
+async function loadClipManifest(doc) {
+  if (!doc?.audioUrl) return null;
+  if (doc.clips !== undefined) return doc.clips;
+  try {
+    const res = await fetch(doc.audioUrl);
+    if (!res.ok) throw new Error('manifest ' + res.status);
+    const m = await res.json();
+    doc.clips = new Map((m.lines || []).map(l => [`${l.voice}|${l.text}`, ttsPublicUrl(l.path)]));
+  } catch (e) {
+    console.warn('text audio manifest failed, using live TTS:', e);
+    doc.clips = null;
+  }
+  return doc.clips;
+}
 let listenRun = 0;
 let listening = false;      // a reading session is active (playing or paused)
 let paused = false;
@@ -925,8 +945,15 @@ function resumeTextAudio() {
   syncListenBtn();
 }
 
+// One <audio> element for the whole reading session, unlocked by the ▶ tap so
+// iOS lets every following sentence play on it (a new element per sentence,
+// created outside the tap, can be blocked).
+let readerAudio = null;
+const getReaderAudio = () => (readerAudio ||= Object.assign(new Audio(), { preload: 'auto' }));
+
 export function toggleTextListen() {
   if (listening) return paused ? resumeTextAudio() : pauseTextAudio();
+  unlockAudio(getReaderAudio());   // must run synchronously inside the tap
   // Start from the selected sentence (long-press), or from the top.
   const sel = document.querySelector('#texts-content .tx-s.sel');
   const pEl = sel?.closest('p');
@@ -989,6 +1016,7 @@ async function startListen(from) {
     lines.push({ line, pi, si, units, chars: total, voice });
   }));
   if (!lines.length) return;
+  const clipFor = L => clips?.get(`${L.voice?.name || DEFAULT_TTS_VOICE}|${L.line}`);
   // Voices were assigned over the whole text above, so starting midway keeps
   // every character on the same voice.
   let start = from ? lines.findIndex(L => L.pi > from.pi || (L.pi === from.pi && L.si >= from.si)) : 0;
@@ -996,6 +1024,10 @@ async function startListen(from) {
   const run = ++listenRun;
   listening = true;
   syncListenBtn();
+  // Pre-generated audio (texts.audio_url → manifest): clips are played straight
+  // from Storage. Sentences missing from it fall back to the TTS API.
+  const clips = await loadClipManifest(doc);
+  if (run !== listenRun) return;
   for (let i = start; i < lines.length;) {
     if (run !== listenRun) return;
     // Paused between sentences: wait here until resumed (or stopped).
@@ -1005,8 +1037,11 @@ async function startListen(from) {
     }
     const L = lines[i];
     const line = curLine = { mode: 'pending', audio: null, interrupted: false };
+    const speakOpts = l => ({ rate: LISTEN_RATE, clipUrl: clipFor(l), audioEl: getReaderAudio(),
+      ...(l.voice && { voice: l.voice.name, pitch: l.voice.pitch }) });
     await new Promise(resolve => {
       let started = false, audio = null, raf = 0, t0 = 0, shown = -1, words = [];
+      let finished = false, wd = 0;
       const host = document.getElementById('texts-content');
       const pick = () => [...(host?.querySelectorAll(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"] :is(.tx-w, .tx-u)`) || [])];
       const sentEl = () => host?.querySelector(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"]`);
@@ -1029,7 +1064,30 @@ async function startListen(from) {
         }
         raf = requestAnimationFrame(tick);
       };
-      const finish = () => { clear(); resolve(); };
+      const finish = () => {
+        if (finished) return;
+        finished = true; clearInterval(wd); clear(); resolve();
+      };
+      // Watchdog: a sentence that stops making progress (clip download hangs,
+      // audio stalls, or the fallback voice never reports its end) is skipped
+      // instead of blocking the whole reading. Pauses don't count.
+      let lastMove = performance.now(), lastTime = -1;
+      wd = setInterval(() => {
+        // Stale (stopped / jumped elsewhere): just release this await; the UI
+        // already belongs to the new reading, so don't clear() it.
+        if (run !== listenRun) { finished = true; clearInterval(wd); cancelAnimationFrame(raf); return resolve(); }
+        const now = performance.now();
+        if (paused) { lastMove = now; return; }
+        if (line.mode === 'audio' && audio && audio.currentTime !== lastTime) { lastTime = audio.currentTime; lastMove = now; }
+        const limit = line.mode === 'pending' ? 15000                        // loading the clip
+                    : line.mode === 'speech'  ? Math.max(8000, L.chars * 600) // no progress events
+                    : 8000;                                                   // audio not advancing
+        if (now - lastMove > limit) {
+          console.warn('texts: sentence stuck, skipping:', L.line);
+          stopSpeaking();   // also invalidates a clip still loading
+          finish();
+        }
+      }, 1000);
       speak(L.line, on => {
         if (on) {
           t0 = performance.now();   // (re)start the estimate when the voice really starts
@@ -1038,21 +1096,24 @@ async function startListen(from) {
             paintSentenceTr(L.pi, L.si);   // the box follows the sentence being read
           }
         }
-        else if (started) finish();
+        // Ignore the end of a stale sentence (the watchdog releases it).
+        else if (started && run === listenRun) finish();
       }, a => {
         audio = a;
+        lastMove = performance.now();   // switched from loading to playing
         if (a) {
           line.mode = 'audio'; line.audio = a;
           // Paused while it was still loading: hold it as soon as play() kicks in.
           a.addEventListener('play', () => { if (paused && run === listenRun) a.pause(); }, { once: true });
+          // Load the next sentence while this one plays, so there's no gap.
+          const next = lines[i + 1];
+          if (next) prefetchTts(next.line, speakOpts(next));
         } else {
           line.mode = 'speech';
           // Web Speech fallback starting while paused: cut it right away.
           if (paused) Promise.resolve().then(() => { line.interrupted = true; stopSpeaking(); });
         }
-      }, { rate: LISTEN_RATE, ...(L.voice && { voice: L.voice.name, pitch: L.voice.pitch }) });
-      // Safety net: if playback never reports back, don't hang the queue.
-      setTimeout(() => { if (!started) finish(); }, 8000);
+      }, speakOpts(L));
     });
     if (curLine === line) curLine = null;
     if (!line.interrupted) i++;   // an interrupted sentence is replayed after resume

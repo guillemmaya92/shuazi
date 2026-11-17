@@ -244,15 +244,70 @@ function b64ToUrl(b64, mime) {
   return URL.createObjectURL(new Blob([bytes], { type: mime || 'audio/mpeg' }));
 }
 
-// Resolves to a playable object URL, hitting localStorage then the network.
-async function fetchTtsUrl(text, voice, rate) {
-  // Default voice/rate keep the original cache keys; others are cached apart.
+// Shared audio store: pre-generated clips live in the public Storage bucket
+// `tts` at v1/<sha256(voice|rate|text)>.mp3 (uploaded by
+// scripts/build_text_audio.py). Keep cachePath() identical to clip_path() there.
+export const DEFAULT_TTS_VOICE = 'cmn-CN-Wavenet-A';
+const TTS_CACHE = 'shuazi-tts-v1';   // Cache Storage name (kept across deploys, see sw.js)
+export const ttsPublicUrl = path => `${SUPA_URL}/storage/v1/object/public/tts/${path}`;
+
+async function cachePath(voice, rate, text) {
+  const r = Math.min(2, Math.max(0.5, Number(rate) || 0.9));
+  const data = new TextEncoder().encode(`${voice || DEFAULT_TTS_VOICE}|${r}|${text}`);
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+  return 'v1/' + [...hash].map(b => b.toString(16).padStart(2, '0')).join('') + '.mp3';
+}
+
+// Device cache (Cache Storage: far more room than localStorage). Returns the
+// clip at `url` as a Blob — from the cache, else from the network (then kept) —
+// or null when it doesn't exist.
+async function cachedClip(url) {
+  const cache = await (window.caches?.open(TTS_CACHE).catch(() => null) ?? null);
+  const hit = await cache?.match(url).catch(() => null);
+  if (hit) return hit.blob();
+  const res = await fetch(url).catch(() => null);
+  if (!res || !res.ok) return null;
+  cache?.put(url, res.clone()).catch(() => {});
+  return res.blob();
+}
+
+// Resolves to a playable object URL. Order: memory → device cache / shared
+// Storage (direct `clipUrl` from a text's manifest, or the computed path) →
+// old localStorage entries → the `tts` Edge Function (live Google TTS; the
+// result is then kept in the device cache).
+const ttsPending = new Map();   // key -> in-flight promise (dedupes prefetch + play)
+
+function fetchTtsUrl(text, voice, rate, clipUrl) {
+  // Default voice/rate keep the original memory/localStorage keys.
   const key = (voice ? voice + '|' : '') + (rate ? 'r' + rate + '|' : '') + text;
-  if (ttsMem.has(key)) return ttsMem.get(key);
-  const lsKey = 'tts:' + key;
-  let b64 = null;
-  try { b64 = localStorage.getItem(lsKey); } catch { /* ignore */ }
-  if (!b64) {
+  if (ttsMem.has(key)) return Promise.resolve(ttsMem.get(key));
+  if (ttsPending.has(key)) return ttsPending.get(key);
+  const p = resolveTtsUrl(key, text, voice, rate, clipUrl).finally(() => ttsPending.delete(key));
+  ttsPending.set(key, p);
+  return p;
+}
+
+// Warms the cache for a clip that will be needed soon (e.g. the next sentence),
+// so playback moves on without a gap. Errors are ignored here.
+export function prefetchTts(text, opts = {}) {
+  if (text) fetchTtsUrl(text, opts.voice, opts.rate, opts.clipUrl).catch(() => {});
+}
+
+async function resolveTtsUrl(key, text, voice, rate, clipUrl) {
+  let blob = clipUrl ? await cachedClip(clipUrl) : null;
+
+  let publicUrl = null;
+  if (!blob && crypto?.subtle) {
+    publicUrl = ttsPublicUrl(await cachePath(voice, rate, text));
+    blob = await cachedClip(publicUrl);
+  }
+  if (!blob) {
+    // Legacy per-device cache (read only; new clips go to Cache Storage).
+    let b64 = null;
+    try { b64 = localStorage.getItem('tts:' + key); } catch { /* ignore */ }
+    if (b64) blob = await (await fetch(b64ToUrl(b64, 'audio/mpeg'))).blob();
+  }
+  if (!blob) {
     const res = await fetch(`${SUPA_URL}/functions/v1/tts`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
@@ -260,10 +315,15 @@ async function fetchTtsUrl(text, voice, rate) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.audio) throw new Error(data.error || 'TTS ' + res.status);
-    b64 = data.audio;
-    try { localStorage.setItem(lsKey, b64); } catch { /* quota full — skip persisting */ }
+    const bytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+    blob = new Blob([bytes], { type: 'audio/mpeg' });
+    if (publicUrl) {
+      window.caches?.open(TTS_CACHE)
+        .then(c => c.put(publicUrl, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })))
+        .catch(() => {});
+    }
   }
-  const url = b64ToUrl(b64, 'audio/mpeg');
+  const url = URL.createObjectURL(blob);
   ttsMem.set(key, url);
   return url;
 }
@@ -271,7 +331,24 @@ async function fetchTtsUrl(text, voice, rate) {
 // Stops any Chinese audio started with speak() (cloud TTS or Web Speech).
 export function stopSpeaking() { stopPlayback(); }
 
+// A tiny silent WAV. Playing it on a user tap "unlocks" an <audio> element on
+// iOS, so later clips can play on it without a fresh tap.
+// (25 ms of 8 kHz mono silence; built from 'RIFF' + 'data' with 200 zero samples.)
+const SILENT_WAV = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YZABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export function unlockAudio(el) {
+  if (!el) return;
+  el.onended = el.onerror = null;
+  el.src = SILENT_WAV;
+  el.play().catch(() => {});
+}
+
+// Bumped on every stop / new speak(): a speak() whose clip finishes loading
+// after that is stale and must not start playing (it would talk over the new
+// one or steal its controls).
+let playToken = 0;
+
 function stopPlayback() {
+  playToken++;
   if (stopCurrent) { stopCurrent(); stopCurrent = null; }
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
@@ -297,16 +374,21 @@ function setMediaSession(text) {
 // failure. `onState` (optional) toggles UI feedback (true while playing).
 // `onAudio` (optional) receives the <audio> element once it is ready (for
 // progress-synced UI), or null when the Web Speech fallback is used.
+// `opts.audioEl` (optional): play on this existing <audio> element instead of a
+// new one — the reader reuses one element unlocked on the ▶ tap (iOS).
 export async function speak(text, onState, onAudio, opts = {}) {
   if (!text) return;
   stopPlayback();
+  const token = playToken;
   onState?.(true);
   let cleared = false;
   const done = () => { if (!cleared) { cleared = true; onState?.(false); } };
   let audio = null;
   try {
-    const url = await fetchTtsUrl(text, opts.voice, opts.rate);
-    audio = new Audio(url);
+    const url = await fetchTtsUrl(text, opts.voice, opts.rate, opts.clipUrl);
+    if (token !== playToken) { done(); return; }   // stopped / superseded while loading
+    audio = opts.audioEl || new Audio();
+    audio.src = url;
     onAudio?.(audio);
     setMediaSession(text);
     stopCurrent = () => { audio.pause(); done(); };
@@ -317,6 +399,7 @@ export async function speak(text, onState, onAudio, opts = {}) {
     // play() interrupted by a pause()/stop (e.g. the reader's pause button): the
     // audio itself is fine, so don't switch to the fallback voice.
     if (audio && e?.name === 'AbortError') return;
+    if (token !== playToken) { done(); return; }   // superseded: the newer speak() owns playback
     console.warn('Cloud TTS failed, using Web Speech fallback:', e);
     if (audio) { audio.onended = audio.onerror = null; audio.pause(); }
     stopCurrent = null;

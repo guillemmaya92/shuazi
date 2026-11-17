@@ -41,7 +41,8 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== SHELL_CACHE).map(k => caches.delete(k))
+        // Old shell caches go; the TTS audio cache (shuazi-tts-*) is kept across deploys.
+        keys.filter(k => k !== SHELL_CACHE && !k.startsWith('shuazi-tts')).map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   );
