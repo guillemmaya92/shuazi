@@ -270,6 +270,23 @@ button { font:inherit; color:inherit; border:none; background:none; cursor:point
 .tx-play.active .tx-play-ic { display:none; }
 .tx-play.active .tx-pause-ic { display:block; }
 .tx-play:active { scale:.92; }
+/* "+" button: new text from a photo (Texts list, bottom right) */
+.texts-fab {
+  position:absolute; right:max(16px, var(--safe-r)); bottom:16px; z-index:5;
+  width:48px; height:48px; padding:0; border:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--blue); color:#fff;
+  box-shadow:0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent);
+  transition:scale .25s cubic-bezier(.34,1.45,.5,1);
+  -webkit-tap-highlight-color:transparent; cursor:pointer;
+}
+.texts-fab:active { scale:.92; }
+body.reader-open .texts-fab:not(.texts-del-fab):not(.texts-audio-fab) { display:none !important; }
+/* Admin: start/retry the audio of the open text — sits to the left of the delete button */
+.texts-audio-fab { right:calc(max(16px, var(--safe-r)) + 58px); }
+.texts-fab:disabled { opacity:.5; }
+/* Admin-only delete button inside an open text (same spot as the "+" in the list) */
+.texts-del-fab { background:#c04050; box-shadow:0 4px 14px rgba(192,64,80,.35); }
 body.reader-open .tab,
 body.reader-open .tab-pill { opacity:0; pointer-events:none; }
 body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
@@ -674,6 +691,10 @@ body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
 .texts-item.read { background:var(--green-bg); border-color:rgba(104,191,138,.3); }
 .texts-item.read .texts-item-title { color:var(--green); }
 .texts-item.read .texts-item-meta  { color:var(--green); opacity:.6; }
+/* Review ("repaso"): same blue as the review tiles in Groups. */
+.texts-item.review { background:var(--blue-bg); border-color:rgba(100,160,230,.3); }
+.texts-item.review .texts-item-title { color:var(--blue); }
+.texts-item.review .texts-item-meta  { color:var(--blue); opacity:.6; }
 .texts-done {
   display:flex; align-items:center; justify-content:center; gap:6px;
   margin:18px auto 8px; min-height:40px; padding:0 18px; border-radius:999px;
@@ -682,6 +703,7 @@ body.reader-open .tx-play { opacity:1; pointer-events:auto; scale:1; }
 }
 .texts-done:active { opacity:.7; transform:scale(.97); }
 .texts-done.active { background:var(--green-bg); border-color:var(--green); color:var(--green); }
+.texts-done.review { background:var(--blue-bg); border-color:var(--blue); color:var(--blue); }
 .texts-msg { padding:32px 8px; text-align:center; font-size:.8rem; color:var(--faint); }
 /* Long-press on a sentence shows its translation, so native text selection and
    the iOS callout are disabled in the reader. */
@@ -818,7 +840,9 @@ input, textarea, [contenteditable="true"],
   -webkit-text-fill-color:var(--txt);
 }
 .search-bar-wrap input::placeholder { color:var(--faint); opacity:.5; }
-#searchClear { display:grid; place-items:center; color:var(--faint); padding:0; }
+#searchClear, #textsSearchClear { display:grid; place-items:center; color:var(--faint); padding:0; }
+/* The Texts search field is type="search": drop the browser's own clear "x" (we have ours) */
+#textsSearchInput::-webkit-search-cancel-button { display:none; -webkit-appearance:none; }
 
 .hsk-group { display:flex; flex-direction:column; gap:8px; }
 .hsk-group-header {
@@ -974,6 +998,16 @@ input, textarea, [contenteditable="true"],
 .radical-tile.active .tc { color:#3e9c8f; -webkit-text-fill-color:#3e9c8f; }
 .radical-tile.active .tp { color:#3e9c8f; opacity:.7; }
 .char-grid.radical-filtered .radical-tile:not(.active) { display:none; }
+/* Texts → Filters → Source (same pattern as Radicals / Components) */
+.srcbadge { background:var(--blue-bg); color:var(--blue); border:1px solid rgba(100,160,230,.3); }
+.char-grid.source-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.char-tile.source-tile { aspect-ratio:auto; min-height:0; width:auto; max-width:100%; padding:7px 12px; flex-direction:row; gap:5px; white-space:nowrap; }
+.source-tile .tc { font-family:inherit; font-size:.8rem; font-weight:600; line-height:1.2; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.source-tile .tp { margin-top:0; flex-shrink:0; }
+.source-tile.active { background:rgba(100,160,230,.2); border-color:rgba(100,160,230,.5); }
+.source-tile.active .tc { color:var(--blue); -webkit-text-fill-color:var(--blue); }
+.source-tile.active .tp { color:var(--blue); opacity:.7; }
+.char-grid.source-filtered .source-tile:not(.active) { display:none; }
 .component-tile.active { background:rgba(120,120,130,.22); border-color:rgba(120,120,130,.5); }
 .component-tile.active .tc { color:#7e7e88; -webkit-text-fill-color:#7e7e88; }
 .component-tile.active .tp { color:#7e7e88; opacity:.7; }
@@ -1081,6 +1115,17 @@ body.account-open .account-scrim { pointer-events: auto; }
 .settings-item > svg:first-child { color:var(--muted); flex-shrink:0; }
 #settingsLearnBtn > svg:first-child { color:#b04030; }   /* slightly dark red */
 .settings-item .settings-chevron { color:var(--faint); flex-shrink:0; }
+/* On/off switch inside a settings row (role="switch") */
+.settings-item .switch {
+  flex:0 0 auto; position:relative; width:38px; height:22px; border-radius:999px;
+  background:var(--bdr); transition:background 160ms ease;
+}
+.settings-item .switch::after {
+  content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform 160ms ease;
+}
+.settings-item[aria-checked="true"] .switch { background:var(--blue); }
+.settings-item[aria-checked="true"] .switch::after { transform:translateX(16px); }
 .settings-item > .settings-item-value { flex:0 0 auto; color:var(--muted); font-weight:600; }
 /* Review modal — star rating + comment */
 .review-stars { display:flex; justify-content:center; gap:8px; touch-action:none; }

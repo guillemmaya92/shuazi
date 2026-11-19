@@ -14,6 +14,7 @@
 import { t } from './i18n.js';
 import { showTab, tourPrepareGroups, tourCollapseGroups, tourOpenHsk1, tourOpenRadicals, tourSetSort, setTourSuppressModal } from './ui.js';
 import { playDemoSwipe } from './coach.js';
+import { closeText } from './texts.js';
 
 const SEEN_KEY = 'tour-completed';
 export const tourSeen = () => { try { return localStorage.getItem(SEEN_KEY) === '1'; } catch { return false; } };
@@ -143,7 +144,14 @@ const STEPS = [
   { section: 'groups', tab: 'groups', prepare: () => tourPrepareGroups(),
     locate: () => waitFor(() => document.getElementById('sortBtn')),
     title: 'tour.groups2.title', body: 'tour.groups2.body', pad: 8, radius: 999 },
-  // 3 · SLANG — highlight the bottom "Slang" tab with the message above it…
+  // 3 · TEXTS — highlight the bottom "Texts" tab: you can read passages and listen to
+  // them. If a text was left open (its reader hides the tab bar), close it first so the
+  // tab is there to be highlighted.
+  { section: 'texts', tab: 'texts', cardPos: 'bottom', cardLift: true,
+    prepare: () => { if (document.body.classList.contains('reader-open')) closeText(); },
+    locate: () => waitFor(() => document.getElementById('tab-texts')),
+    title: 'tour.texts.title', body: 'tour.texts.body', pad: 6, radius: 16 },
+  // 4 · SLANG — highlight the bottom "Slang" tab with the message above it…
   { section: 'slang', tab: 'slang', cardPos: 'bottom', cardLift: true,
     locate: () => waitFor(() => document.getElementById('tab-slang')),
     title: 'tour.slang.title', body: 'tour.slang.body', pad: 6, radius: 16 },
@@ -151,17 +159,17 @@ const STEPS = [
   { section: 'slang', tab: 'slang', dim: false, cardPos: 'bottom',
     title: 'tour.slangSwipe.title', body: 'tour.slangSwipe.body' },
 
-  // 4 · TRANSLATE — highlight the bottom "Translate" tab with the message above it.
+  // 5 · TRANSLATE — highlight the bottom "Translate" tab with the message above it.
   { section: 'translate', tab: 'translator', cardPos: 'bottom', cardLift: true,
     locate: () => waitFor(() => document.getElementById('tab-translator')),
     title: 'tour.translate.title', body: 'tour.translate.body', pad: 6, radius: 16 },
 
-  // 5 · PROFILE — highlight the bottom "Profile" tab with the message above it.
+  // 6 · PROFILE — highlight the bottom "Profile" tab with the message above it.
   { section: 'deck', tab: 'profile', cardPos: 'bottom', cardLift: true,
     locate: () => waitFor(() => document.getElementById('tab-profile')),
     title: 'tour.profile.title', body: 'tour.profile.body', pad: 6, radius: 16 },
 
-  // 6 · DECK & PROGRESS (profile)
+  // 7 · DECK & PROGRESS (profile)
   { section: 'deck', tab: 'profile',
     locate: async () => {
       const el = await waitFor(() => document.querySelector('#profile-scroll .groups-filter-row'));
@@ -188,7 +196,7 @@ const STEPS = [
     title: 'tour.deck3.title', body: 'tour.deck3.body', pad: 8, radius: 16 },
 ];
 
-// One progress dot per section (Welcome, Cards, Groups, Slang, Translate, Deck)
+// One progress dot per section (Welcome, Cards, Groups, Texts, Slang, Translate, Deck)
 // instead of one per step — 17 dots was too many. Order follows first appearance.
 const SECTIONS = [...new Set(STEPS.map(s => s.section))];
 

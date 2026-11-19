@@ -276,6 +276,7 @@ loadCritical(bootMode).then(() => {
       render();
       renderGroups();
       renderProfile();
+      refreshTexts();   // show/hide the admin-only "+" in Texts
     }
   });
 
@@ -295,15 +296,18 @@ loadCritical(bootMode).then(() => {
         stats();
         renderGroups();
         renderProfile();
+        refreshTexts();
       }
       if (event === 'SIGNED_OUT') {
         state.userPlan = 'free';
+        state.isAdmin = false;
         state.known.clear(); state.unknown.clear();
         state.deck = rebuildDeck();
         render();
         stats();
         renderGroups();
         renderProfile();
+        refreshTexts();
       }
     });
   });

@@ -20,9 +20,10 @@ export async function checkAccount(email) {
 }
 
 export async function loadUserPlan() {
-  if (!state.supaUser) { state.userPlan = 'free'; return; }
-  const { data } = await supa.from('profiles').select('plan').eq('id', state.supaUser.id).single();
+  if (!state.supaUser) { state.userPlan = 'free'; state.isAdmin = false; return; }
+  const { data } = await supa.from('profiles').select('plan, is_admin').eq('id', state.supaUser.id).single();
   state.userPlan = data?.plan ?? 'free';
+  state.isAdmin = data?.is_admin === true;   // UI hint only; RLS + the Edge Function enforce it
 }
 
 // Sends the browser-derived hints to the profile-sync Edge Function, which adds

@@ -11,7 +11,7 @@ import { mountVirtualGrid, destroyAllVirtualGrids, VIRTUALIZE_THRESHOLD } from '
 import { maybeShowGroupsCoach } from './coach.js';
 import { openStrokeOrder } from './stroke-order.js';
 import { startTour } from './tour.js';
-import { renderTexts, closeText, toggleTextHighlight, toggleTextPinyin, toggleTextStatus, toggleTextListen, stopTextAudio, setReaderMode } from './texts.js';
+import { renderTexts, syncTextWordStatus, getAdminDelete, setAdminDelete, closeText, toggleTextHighlight, toggleTextPinyin, toggleTextStatus, toggleTextListen, stopTextAudio, setReaderMode } from './texts.js';
 
 // Speaker icon + helper for the per-modal "listen" button (mirrors cards.js).
 const MODAL_LISTEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.7 6.6 8.2H3v7.6h3.6L11 19.3z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.5 6.5a9 9 0 0 1 0 11"/></svg>';
@@ -1126,6 +1126,7 @@ function setItemStatus(item, key, status) {
     state.deck.push(isWord ? { ...item, char: key, isWord: true } : item);
   }
   stats();   // refresh header + profile counters; persists state
+  syncTextWordStatus(key);   // repaint the word in an open text (green / blue)
   const scrollEl = document.getElementById('groups-scroll');
   const y = scrollEl ? scrollEl.scrollTop : 0;
   renderGroups();   // refresh grid tiles, group counts and progress bars
@@ -2302,7 +2303,28 @@ profileLangBtn?.addEventListener('click', () => {
   const scrim = document.getElementById('settingsScrim');
   if (!panel || !scrim) return;
 
+  // Admin-only switch: show/hide the delete button inside an open text.
+  const adminDelBtn = document.getElementById('settingsAdminDelBtn');
+  const paintAdminDel = () => {
+    if (!adminDelBtn) return;
+    adminDelBtn.style.display = state.supaUser && state.isAdmin ? '' : 'none';
+    adminDelBtn.setAttribute('aria-checked', String(getAdminDelete()));
+  };
+  adminDelBtn?.addEventListener('click', () => {
+    setAdminDelete(!getAdminDelete());
+    paintAdminDel();
+  });
+  // The panel can be revealed by the button, by swiping from Profile, or by going
+  // back from Account — all of them just toggle classes on <body>. Repaint on any
+  // of those instead of in each opener (a swipe used to skip it).
+  new MutationObserver(() => {
+    const c = document.body.classList;
+    if (c.contains('settings-open') || c.contains('settings-dragging')) paintAdminDel();
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  paintAdminDel();
+
   const openSettings = () => {
+    paintAdminDel();
     document.body.classList.add('settings-open');
     panel.setAttribute('aria-hidden', 'false');
   };

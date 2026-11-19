@@ -48,6 +48,7 @@ export const state = {
   schedule:      {},   // SRS: item name (char/word) → { interval, ease, reps, due, last }
   supaUser:      null,
   userPlan:      'free',
+  isAdmin:       false,
   activeHskLevels: new Set(_initialHsk),
   activeStatuses:  new Set(_initialStatuses),
   gridSort:      'pinyin',

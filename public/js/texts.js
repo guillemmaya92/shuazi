@@ -4,13 +4,15 @@ import { hskLabel, supa } from './config.js';
 import { isAvailable } from './cards.js';
 import { speak, stopSpeaking, ttsPublicUrl, DEFAULT_TTS_VOICE, prefetchTts, unlockAudio } from './translator.js';
 import { openWordModal, animateGridWrap, EYE_SVG, EYE_OFF_SVG } from './ui.js';
+import { initTextCreate, startTextAudio } from './text-create.js';
+import { setupPullRefresh } from './pull-refresh.js';
 
 /* ── TEXTS: graded reading passages ──
    Loaded from the Supabase `texts` table. The list only fetches light columns;
    a passage's `text` is fetched when it is opened. `text` is pre-segmented with
    "|" between words and a line break between paragraphs; it is matched against
    the `words` table and tapping a word opens its detail panel. */
-let TEXTS = [];                 // list rows: id, title, title_en, title_es, hsk, position
+let TEXTS = [];                 // list rows: id, title, title_en, title_es, hsk, position, source
 let listState = 'idle';         // idle | loading | ready | error
 const bodyCache = new Map();    // id -> passage text
 const bodyState = new Map();    // id -> 'loading' | 'error'
@@ -22,8 +24,9 @@ async function loadTextList() {
     await window._supabaseReady;
     const { data, error } = await supa
       .from('texts')
-      .select('id, title, title_en, title_es, hsk, position')
-      .order('hsk').order('position');
+      .select('id, title, title_en, title_es, hsk, position, source, audio_url')
+      .eq('published', true)   // admins can also read hidden rows (RLS), so filter explicitly
+      .order('hsk').order('position').order('id');   // `id` breaks ties: position may repeat
     if (error) throw error;
     TEXTS = data || [];
     listState = 'ready';
@@ -74,6 +77,246 @@ try { pyOn = localStorage.getItem('shuazi-text-py') === '1'; } catch (e) {}
 // Background by learning state (known = green, review = blue). Persisted; off by default.
 let stOn = false;
 try { stOn = localStorage.getItem('shuazi-text-st') === '1'; } catch (e) {}
+
+/* ── Source filter ──
+   Same pattern as Radicals / Components in Groups: a "Filters" section with a
+   collapsible group of tiles; tapping a tile filters the list to that source
+   (tap again to clear), and the other tiles hide while one is active. */
+const NO_SOURCE = '__no_source__';   // key for texts without a source
+let activeSource = null;             // a source key, or null = all
+let sourcesCollapsed = true;
+const srcOf = x => (x.source || '').trim();
+const srcKey = x => srcOf(x) || NO_SOURCE;
+
+// [{ key, label, count }] — one per distinct source (plus "no source" if any text lacks one).
+function sourceOptions(list = TEXTS) {
+  const count = new Map();
+  list.forEach(x => count.set(srcKey(x), (count.get(srcKey(x)) || 0) + 1));
+  const opts = [...count.keys()].filter(k => k !== NO_SOURCE)
+    .sort((a, b) => a.localeCompare(b))
+    .map(k => ({ key: k, label: k, count: count.get(k) }));
+  if (count.has(NO_SOURCE)) opts.push({ key: NO_SOURCE, label: t('texts.srcNone'), count: count.get(NO_SOURCE) });
+  return opts;
+}
+
+// "Admin" switch (Settings, admins only): the admin buttons ("+" and delete) only
+// show while it is on. Persisted; off by default, so a stray tap can't reach them.
+let adminDel = false;
+try { adminDel = localStorage.getItem('shuazi-admin-del') === '1'; } catch (e) {}
+export const getAdminDelete = () => adminDel;
+export function setAdminDelete(on) {
+  adminDel = !!on;
+  try { localStorage.setItem('shuazi-admin-del', adminDel ? '1' : '0'); } catch (e) {}
+  refreshTexts();
+}
+
+// Admin aid (Admin switch on): a muted speaker next to the title of a text whose audio
+// is not published yet — still being generated in the background, or it failed.
+const adminTools = () => !!(state.supaUser && state.isAdmin && adminDel);
+const NO_AUDIO_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg>';
+const noAudioMark = x => adminTools() && !x.audio_url
+  ? ` <span title="${esc(t('texts.audioMissing'))}" style="display:inline-flex;vertical-align:-2px;margin-left:4px;color:var(--faint)">${NO_AUDIO_SVG}</span>`
+  : '';
+const audioStartedIds = new Set();   // texts whose audio was started this session (hides the button)
+
+/* ── Audio status ──
+   The audio is built on the server in the background and `texts.audio_url` is only
+   filled when it is complete, but the app reads that column once (list load / opening
+   a text). So: (1) texts whose audio was just started are polled until it shows up,
+   and (2) admins re-check the texts still missing audio whenever the list is shown. */
+const audioWatch = new Set();        // ids being polled
+let audioWatchSince = 0;
+let audioTimer = null;
+let lastAudioCheck = 0;
+const AUDIO_POLL_MS = 4000;
+const AUDIO_WATCH_MAX_MS = 5 * 60 * 1000;   // give up after 5 minutes
+
+// Applies fresh audio_url values to the list rows, the cached bodies and the UI.
+function applyAudioUrls(rows) {
+  let changed = false;
+  for (const r of rows || []) {
+    if (!r.audio_url) continue;
+    audioWatch.delete(r.id);
+    const row = TEXTS.find(x => x.id === r.id);
+    if (row && !row.audio_url) { row.audio_url = r.audio_url; changed = true; }
+    const doc = bodyCache.get(r.id);
+    if (doc && doc.audioUrl !== r.audio_url) {   // forget the old "no audio" answer
+      doc.audioUrl = r.audio_url;
+      delete doc.clips; delete doc.speakers;
+    }
+  }
+  if (!changed) return;
+  if (openId == null) refreshTexts();   // list: the "no audio" mark disappears
+  else {                                // reader: don't re-render it mid-reading, just hide the button
+    const btn = document.getElementById('textsAudioBtn');
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+async function pollAudio() {
+  audioTimer = null;
+  if (!audioWatch.size) return;
+  try {
+    await window._supabaseReady;
+    const { data } = await supa.from('texts').select('id, audio_url').in('id', [...audioWatch]);
+    applyAudioUrls(data);
+  } catch (e) { /* try again on the next tick */ }
+  if (audioWatch.size && Date.now() - audioWatchSince < AUDIO_WATCH_MAX_MS) audioTimer = setTimeout(pollAudio, AUDIO_POLL_MS);
+  else audioWatch.clear();
+}
+
+function watchTextAudio(id) {
+  audioWatch.add(id);
+  audioWatchSince = Date.now();
+  if (!audioTimer) audioTimer = setTimeout(pollAudio, AUDIO_POLL_MS);
+}
+
+// Admin: when the list is shown, look again at the texts that still have no audio
+// (throttled, and only repaints if something actually changed).
+async function refreshMissingAudio() {
+  if (!adminTools() || Date.now() - lastAudioCheck < 15000) return;
+  const ids = TEXTS.filter(x => !x.audio_url).map(x => x.id).slice(0, 200);
+  if (!ids.length) return;
+  lastAudioCheck = Date.now();
+  try {
+    await window._supabaseReady;
+    const { data } = await supa.from('texts').select('id, audio_url').in('id', ids);
+    applyAudioUrls(data);
+  } catch (e) { /* not critical */ }
+}
+
+async function startOpenTextAudio() {
+  const row = TEXTS.find(x => x.id === openId);
+  if (!row || !adminTools()) return;
+  const btn = document.getElementById('textsAudioBtn');
+  if (btn) btn.disabled = true;
+  try {
+    await startTextAudio(row.id);
+    audioStartedIds.add(row.id);
+    watchTextAudio(row.id);
+    window.alert(t('texts.audioStartedLater'));
+  } catch (e) {
+    console.error('text audio start failed:', e);
+    window.alert(`${t('texts.audioStartError')}\n${e.message || ''}`);
+  } finally {
+    renderTexts();
+  }
+}
+
+/* ── Search ──
+   The magnifier in the header opens a search field. It matches the Chinese title plus
+   the title in the app language: title + title_es when the app is in Spanish,
+   title + title_en otherwise. Case and accents are ignored; every word typed must
+   appear. While searching, the level sections open so the matches are visible. */
+let textQuery = '';
+const normQ = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function matchesQuery(x) {
+  const terms = normQ(textQuery).split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  // Chinese title + the title in the app language (the one shown under it).
+  const hay = normQ(`${x.title} ${state.lang === 'es' ? x.title_es : x.title_en}`);
+  return terms.every(term => hay.includes(term));
+}
+
+/* ── Sort ──
+   The header button cycles the order of the texts INSIDE each HSK level (the levels
+   stay grouped): "Id" (by the `position` field, ties by id), A–Z by the title in the
+   app language, newest first, unread first. Persisted. */
+const SORT_MODES = ['id', 'az', 'new', 'unread'];
+let textSort = 'id';
+try { const s = localStorage.getItem('shuazi-text-sort'); if (SORT_MODES.includes(s)) textSort = s; } catch (e) {}
+const sortLabelOf = mode => t('texts.sort.' + mode);
+
+function sortTexts(list) {
+  const arr = [...list];   // `list` comes ordered by hsk, position, id; every mode below sorts explicitly
+  if (textSort === 'id') {
+    // The "Id" mode follows the `position` field (ties by id), so editing `position`
+    // reorders the list.
+    arr.sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0) || a.id - b.id);
+  } else if (textSort === 'az') {
+    const key = x => (state.lang === 'es' ? x.title_es : x.title_en) || x.title || '';
+    arr.sort((a, b) => key(a).localeCompare(key(b), state.lang === 'es' ? 'es' : 'en', { sensitivity: 'base' }));
+  } else if (textSort === 'new') {
+    arr.sort((a, b) => b.id - a.id);   // ids grow with every insert
+  } else if (textSort === 'unread') {
+    // Unread first: texts marked "read" go last; "review" stays with the pending ones.
+    const done = x => (textState.get(x.id) === 'read' ? 1 : 0);
+    arr.sort((a, b) => done(a) - done(b)
+      || Number(a.position ?? 0) - Number(b.position ?? 0) || a.id - b.id);
+  }
+  return arr;
+}
+
+function wireTextSort() {
+  const btn = document.getElementById('textsSortBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    textSort = SORT_MODES[(SORT_MODES.indexOf(textSort) + 1) % SORT_MODES.length];
+    try { localStorage.setItem('shuazi-text-sort', textSort); } catch (e) {}
+    renderTexts();
+  });
+}
+
+/* ── Pull down to clear the filters ──
+   Same gesture and animation as Groups (shared pull-refresh.js): pull down from the top
+   of the list and release. It clears the filters of this screen — the source filter and
+   the search — and folds the Source group. The Profile filters (HSK level, status) are
+   settings of the whole app and are left alone, as in Groups. */
+function clearTextFilters() {
+  activeSource = null;
+  sourcesCollapsed = true;
+  textQuery = '';
+  const wrap = document.getElementById('textsSearchWrap');
+  const btn  = document.getElementById('textsSearchBtn');
+  const inp  = document.getElementById('textsSearchInput');
+  wrap?.classList.remove('open');
+  btn?.classList.remove('active');
+  btn?.setAttribute('aria-pressed', 'false');
+  if (inp) inp.value = '';
+  renderTexts();
+}
+
+let textsPullWired = false;
+function wireTextsPull() {
+  if (textsPullWired) return;
+  textsPullWired = true;
+  setupPullRefresh({
+    scroll:    document.getElementById('texts-scroll'),
+    disc:      document.getElementById('textsPull'),
+    content:   document.getElementById('textsPullFollow'),
+    onRefresh: clearTextFilters,
+    exitUp:    true,
+    haptic:    () => navigator.vibrate?.(12),
+    trigger:   96,
+    max:       132,
+    damp:      120,
+    label:     document.getElementById('textsPullLabel'),
+    pullText:  () => t('filters.pullClear'),
+    readyText: () => t('filters.releaseClear'),
+    // Only on the list: inside an open text a downward pull must not clear anything.
+    enabled:   () => !document.body.classList.contains('reader-open'),
+  });
+}
+
+function wireTextSearch() {
+  const btn   = document.getElementById('textsSearchBtn');
+  const wrap  = document.getElementById('textsSearchWrap');
+  const input = document.getElementById('textsSearchInput');
+  const clear = document.getElementById('textsSearchClear');
+  if (!btn || !wrap || !input || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  const sync = () => { btn.classList.toggle('active', wrap.classList.contains('open')); btn.setAttribute('aria-pressed', String(wrap.classList.contains('open'))); };
+  btn.addEventListener('click', () => {
+    const open = wrap.classList.toggle('open');
+    sync();
+    if (open) input.focus();
+    else { input.value = ''; textQuery = ''; renderTexts(); }
+  });
+  input.addEventListener('input', () => { textQuery = input.value; renderTexts(); });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });   // hide the phone keyboard
+  clear.addEventListener('click', () => { input.value = ''; textQuery = ''; renderTexts(); input.focus(); });
+}
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -522,33 +765,51 @@ function onWordTap(e) {
 }
 
 /* ── Read tracking ──
-   Ids of the texts the user marked as read. Kept in localStorage (works signed
-   out) and mirrored to `text_progress` when signed in. */
-const READ_KEY = 'shuazi-texts-read';
-const readIds = new Set();
-try { JSON.parse(localStorage.getItem(READ_KEY) || '[]').forEach(id => readIds.add(Number(id))); } catch (e) {}
+   Study state of each text: 'read' (green) or 'review' (blue, "repaso"); no entry =
+   not marked. Same cycle as the tiles in Groups: not marked → read → review → not
+   marked. Kept in localStorage (works signed out) and mirrored to `text_progress`
+   (column `state`) when signed in. */
+const READ_KEY = 'shuazi-texts-read';          // old format: [id, id, …] (all "read")
+const STATE_KEY = 'shuazi-texts-progress';     // { "<id>": "read" | "review" }
+const textState = new Map();                    // id -> 'read' | 'review'
+try {
+  const raw = localStorage.getItem(STATE_KEY);
+  if (raw) {
+    Object.entries(JSON.parse(raw)).forEach(([id, st]) => { if (st === 'read' || st === 'review') textState.set(Number(id), st); });
+  } else {
+    // First run after this change: the old list of read ids becomes "read".
+    JSON.parse(localStorage.getItem(READ_KEY) || '[]').forEach(id => textState.set(Number(id), 'read'));
+  }
+} catch (e) {}
 let readSyncedFor = null;   // user id whose server rows have been merged in
 
+const TEXT_STATES = ['read', 'review'];
+// The status key the Profile filters use for a text (same keys as words: left / know / review).
+const textStatusKey = id => { const st = textState.get(id); return st === 'read' ? 'know' : st === 'review' ? 'review' : 'left'; };
+const nextTextState = st => (st === 'read' ? 'review' : st === 'review' ? null : 'read');
+const countRead = ids => ids.filter(id => textState.get(id) === 'read').length;
+
 function saveReadLocal() {
-  try { localStorage.setItem(READ_KEY, JSON.stringify([...readIds])); } catch (e) {}
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(Object.fromEntries(textState))); } catch (e) {}
 }
 
-// Once per signed-in user: merge the server's rows into the local set and push
-// any local-only marks up, then repaint the list.
+// Once per signed-in user: merge the server's rows into the local map and push
+// any local-only marks up, then repaint the list. If both sides have the text, the
+// server's state wins.
 async function syncReadFromServer() {
   const uid = state.supaUser?.id;
   if (!uid || readSyncedFor === uid) return;
   readSyncedFor = uid;
   try {
-    const { data, error } = await supa.from('text_progress').select('text_id').eq('user_id', uid);
+    const { data, error } = await supa.from('text_progress').select('text_id, state').eq('user_id', uid);
     if (error) throw error;
-    const remote = new Set((data || []).map(r => r.text_id));
-    const localOnly = [...readIds].filter(id => !remote.has(id));
-    remote.forEach(id => readIds.add(id));
+    const remote = new Map((data || []).filter(r => TEXT_STATES.includes(r.state)).map(r => [r.text_id, r.state]));
+    const localOnly = [...textState].filter(([id]) => !remote.has(id));
+    remote.forEach((st, id) => textState.set(id, st));
     saveReadLocal();
     if (localOnly.length) {
       await supa.from('text_progress').upsert(
-        localOnly.map(text_id => ({ user_id: uid, text_id, state: 'read', updated_at: new Date().toISOString() })),
+        localOnly.map(([text_id, st]) => ({ user_id: uid, text_id, state: st, updated_at: new Date().toISOString() })),
         { onConflict: 'user_id,text_id' });
     }
     refreshTexts();
@@ -558,48 +819,54 @@ async function syncReadFromServer() {
   }
 }
 
+const CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const REVIEW_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>';
+
+// The button at the end of an open text: shows the current state, tap cycles it.
 function paintDoneBtn(btn, id) {
   if (!btn) return;
-  const done = readIds.has(id);
-  btn.classList.toggle('active', done);
-  btn.setAttribute('aria-pressed', String(done));
-  btn.innerHTML = (done
-    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>'
-    : '') + `<span>${esc(t(done ? 'texts.markedRead' : 'texts.markRead'))}</span>`;
+  const st = textState.get(id) || null;
+  btn.classList.toggle('active', st === 'read');
+  btn.classList.toggle('review', st === 'review');
+  btn.setAttribute('aria-pressed', String(st !== null));
+  btn.innerHTML = (st === 'read' ? CHECK_SVG : st === 'review' ? REVIEW_SVG : '')
+    + `<span>${esc(t(st === 'read' ? 'texts.markedRead' : st === 'review' ? 'texts.markedReview' : 'texts.markRead'))}</span>`;
 }
 
 async function toggleRead(id, btn) {
-  const done = !readIds.has(id);
-  if (done) readIds.add(id); else readIds.delete(id);
+  const next = nextTextState(textState.get(id));
+  if (next) textState.set(id, next); else textState.delete(id);
   saveReadLocal();
   paintDoneBtn(btn, id);
   const uid = state.supaUser?.id;
   if (!uid) return;
   try {
-    const q = done
-      ? supa.from('text_progress').upsert({ user_id: uid, text_id: id, state: 'read', updated_at: new Date().toISOString() }, { onConflict: 'user_id,text_id' })
+    const q = next
+      ? supa.from('text_progress').upsert({ user_id: uid, text_id: id, state: next, updated_at: new Date().toISOString() }, { onConflict: 'user_id,text_id' })
       : supa.from('text_progress').delete().eq('user_id', uid).eq('text_id', id);
     const { error } = await q;
     if (error) throw error;
   } catch (e) {
+    // 'review' needs the text_progress.state check to allow it (scripts/supabase_texts.sql).
     console.error('text progress save failed:', e);
   }
 }
 
-// After a long-press toggle in the list: recolor the item and refresh its
-// level's "n/m read" count and both progress bars without re-rendering.
+// After a long-press in the list: recolor the item and refresh its level's
+// "n/m read" count and both progress bars without re-rendering.
 function paintListItem(btn, id) {
-  btn.classList.toggle('read', readIds.has(id));
+  const st = textState.get(id);
+  btn.classList.toggle('read', st === 'read');
+  btn.classList.toggle('review', st === 'review');
   const group = btn.closest('.hsk-group');
   if (!group) return;
   const ids   = [...group.querySelectorAll('.texts-item')].map(el => Number(el.dataset.id));
-  const readN = ids.filter(x => readIds.has(x)).length;
+  const readN = countRead(ids);
   const pct   = ids.length ? Math.round(readN / ids.length * 100) : 0;
   const count = group.querySelector('.hsk-group-label .count');
   if (count) count.textContent = `${readN}/${ids.length} ${t('texts.read')}`;
   group.querySelectorAll('.hsk-prog-fill, .hsk-full-bar-fill').forEach(f => { f.style.width = pct + '%'; });
 }
-
 // Same eye icons as the Groups pinyin toggle, but highlighted when ON (like the
 // other reader toggles): open eye + highlighted = pinyin shown, crossed eye = hidden.
 function syncPyBtn() {
@@ -628,6 +895,42 @@ export function renderTexts() {
   if (text && !isAvailable(text.hsk)) text = null;   // locked level (e.g. plan changed): never open
   if (openId != null && !text) openId = null;   // list changed under us
   back.style.display = text ? '' : 'none';
+  wireTextsPull();
+  // Sort + search: only in the list view (an open text hides them).
+  wireTextSort();
+  const sortBtn = document.getElementById('textsSortBtn');
+  if (sortBtn) {
+    sortBtn.style.display = text ? 'none' : '';
+    const lbl = document.getElementById('textsSortLabel');
+    if (lbl) lbl.textContent = sortLabelOf(textSort);
+  }
+  wireTextSearch();
+  const searchBtn  = document.getElementById('textsSearchBtn');
+  const searchWrap = document.getElementById('textsSearchWrap');
+  if (searchBtn)  searchBtn.style.display  = text ? 'none' : '';
+  if (searchWrap) searchWrap.style.display = text ? 'none' : '';
+  // "+" (new text from a photo): list view only, admins only (profiles.is_admin).
+  const addBtn = document.getElementById('textsAddBtn');
+  if (addBtn) {
+    addBtn.style.display = !text && state.supaUser && state.isAdmin && adminDel ? '' : 'none';
+    if (!addBtn.dataset.wired) {
+      addBtn.dataset.wired = '1';
+      initTextCreate(addBtn, id => { listState = 'idle'; if (id != null) watchTextAudio(id); renderTexts(); });
+    }
+  }
+  // Delete (open text, admins only).
+  const delBtn = document.getElementById('textsDelBtn');
+  if (delBtn) {
+    delBtn.style.display = text && state.supaUser && state.isAdmin && adminDel ? '' : 'none';
+    delBtn.onclick = deleteOpenText;
+  }
+  // Generate / retry audio (open text without published audio, admins only).
+  const audioBtn = document.getElementById('textsAudioBtn');
+  if (audioBtn) {
+    audioBtn.style.display = text && adminTools() && !text.audio_url && !audioStartedIds.has(text.id) ? '' : 'none';
+    audioBtn.disabled = false;
+    audioBtn.onclick = startOpenTextAudio;
+  }
   hlBtn.style.display = text ? '' : 'none';
   pyBtn.style.display = text ? '' : 'none';
   stBtn.style.display = text ? '' : 'none';
@@ -662,21 +965,59 @@ export function renderTexts() {
       host.innerHTML = `<div class="texts-msg">${esc(t('texts.empty'))}</div>`;
       return;
     }
-    const levels = [...new Set(TEXTS.map(x => x.hsk))].sort((a, b) => a - b);
+    refreshMissingAudio();   // admin: pick up audio that finished in the background
+    // Filters → Source (only when there is something to choose between).
+    // Profile → Filters → HSK applies here too: levels the user switched off are hidden
+    // (locked levels still show their lock placeholder, same rule as Groups).
+    // Profile → Filters → status (Faltan / Hecho / Repaso) applies too. A text has the same
+    // three states as a word: not marked = left, read = know (hecho), review = review.
+    const byHsk = TEXTS.filter(x => !isAvailable(x.hsk)
+      || (state.activeHskLevels.has(x.hsk) && state.activeStatuses.has(textStatusKey(x.id))));
+    const srcOpts = sourceOptions(byHsk);
+    if (activeSource && !srcOpts.some(o => o.key === activeSource)) activeSource = null;   // source vanished
+    // Search by title. Locked levels are left out of the results: their titles are never shown.
+    const searching = !!normQ(textQuery).trim();
+    const visible = byHsk.filter(x => (!activeSource || srcKey(x) === activeSource)
+      && (!searching || (isAvailable(x.hsk) && matchesQuery(x))));
+    const filtersHTML = srcOpts.length < 2 ? '' : `
+      <div class="groups-section-title">
+        <div class="groups-section-titletext">${esc(t('groups.filtersTitle'))}<span class="groups-section-sub">${esc(t('texts.srcHint'))}</span></div>
+      </div>
+      <div class="hsk-group" id="textsSrcGroup">
+        <div class="hsk-group-header">
+          <div class="hsk-group-label">
+            <span class="badge srcbadge">${esc(t('badge.source'))}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--faint);flex-shrink:0" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <span class="count">${srcOpts.length} ${esc(t('count.sources'))}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg class="chevron ${sourcesCollapsed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="char-grid-wrap ${sourcesCollapsed ? 'collapsed' : ''}">
+          <div class="char-grid source-grid${activeSource ? ' source-filtered' : ''}">${srcOpts.map(o => `
+            <button class="char-tile source-tile${o.key === activeSource ? ' active' : ''}" type="button" data-src="${esc(o.key)}" aria-pressed="${o.key === activeSource}">
+              <div class="tc">${esc(o.label)}</div><div class="tp">(${o.count})</div>
+            </button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    const levels = [...new Set(visible.map(x => x.hsk))].sort((a, b) => a - b);
     // Same collapsible HSK sections as the Groups screen (shared classes + animation).
     const sectionTitleHTML = `
       <div class="groups-section-title">
         <div class="groups-section-titletext">${esc(t('texts.sectionTitle'))}<span class="groups-section-sub">${esc(t('texts.markHint'))}</span></div>
         <div class="groups-legend">
           <span class="groups-legend-item"><span class="groups-legend-dot known-dot"></span>${esc(t('texts.readLegend'))}</span>
+          <span class="groups-legend-item"><span class="groups-legend-dot review-dot"></span>${esc(t('stat.review'))}</span>
         </div>
       </div>`;
-    host.innerHTML = sectionTitleHTML + levels.map(lv => {
+    host.innerHTML = filtersHTML + sectionTitleHTML + (levels.length ? '' : `<div class="texts-msg">${esc(t('texts.noResults'))}</div>`) + levels.map(lv => {
       const locked = !isAvailable(lv);   // same rule as Groups: free plan = FREE_HSK only
       // Locked levels never render their titles: only the lock placeholder.
-      const items  = locked ? [] : TEXTS.filter(x => x.hsk === lv);
-      const closed = locked || collapsedLevels.has(lv);
-      const readN  = items.filter(x => readIds.has(x.id)).length;
+      const items  = locked ? [] : sortTexts(visible.filter(x => x.hsk === lv));
+      const closed = locked || (!searching && collapsedLevels.has(lv));   // searching opens the sections
+      const readN  = countRead(items.map(x => x.id));
       const pct    = items.length ? Math.round(readN / items.length * 100) : 0;
       const lockHTML = locked ? `
           <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0">
@@ -700,8 +1041,8 @@ export function renderTexts() {
         <div class="hsk-full-bar"><div class="hsk-full-bar-fill hsk-${lv}-fill" style="width:${pct}%"></div></div>
         <div class="char-grid-wrap ${closed ? 'collapsed' : ''}">
           <div class="texts-items">${items.map(x => `
-            <button class="texts-item${readIds.has(x.id) ? ' read' : ''}" type="button" data-id="${x.id}">
-              <span class="texts-item-title">${esc(x.title)}</span>
+            <button class="texts-item${textState.get(x.id) === 'read' ? ' read' : textState.get(x.id) === 'review' ? ' review' : ''}" type="button" data-id="${x.id}">
+              <span class="texts-item-title">${esc(x.title)}${noAudioMark(x)}</span>
               <span class="texts-item-meta">${esc(glossTitle(x))}</span>
             </button>`).join('')}
           </div>${lockHTML}
@@ -709,7 +1050,25 @@ export function renderTexts() {
       </div>`;
     }).join('');
 
-    host.querySelectorAll('.hsk-group').forEach(g => {
+    const srcGroup = host.querySelector('#textsSrcGroup');
+    if (srcGroup) {
+      const wrap = srcGroup.querySelector('.char-grid-wrap');
+      const chev = srcGroup.querySelector('.chevron');
+      srcGroup.querySelector('.hsk-group-header').onclick = () => {
+        sourcesCollapsed = !sourcesCollapsed;
+        animateGridWrap(wrap, !sourcesCollapsed);
+        chev.classList.toggle('open', !sourcesCollapsed);
+      };
+      srcGroup.querySelectorAll('.source-tile').forEach(b => {
+        b.onclick = () => {
+          activeSource = activeSource === b.dataset.src ? null : b.dataset.src;
+          sourcesCollapsed = false;   // keep the grid open, like Radicals / Components
+          renderTexts();
+          if (navigator.vibrate) navigator.vibrate(30);
+        };
+      });
+    }
+    host.querySelectorAll('.hsk-group[data-lv]').forEach(g => {
       if (g.dataset.locked) return;
       const lv   = Number(g.dataset.lv);
       const wrap = g.querySelector('.char-grid-wrap');
@@ -728,7 +1087,7 @@ export function renderTexts() {
     });
     host.querySelectorAll('.texts-item').forEach(b => {
       const id = Number(b.dataset.id);
-      // Long-press (450ms, like the Groups tiles) toggles read/unread in place;
+      // Long-press (450ms, like the Groups tiles) cycles not marked → read → review in place;
       // a normal tap opens the text. The click that follows a long-press is eaten.
       let timer = null, longPressed = false, sx = 0, sy = 0;
       const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
@@ -879,7 +1238,16 @@ const LISTEN_RATE = 0.75;
 
 // Loads a text's audio manifest (texts.audio_url, built by the script) once:
 // Map "voice|sentence" → public clip URL. null when there is none or it fails.
-async function loadClipManifest(doc) {
+async function loadClipManifest(doc, id) {
+  // The text was opened before its audio existed: look again (at most every 20 s), so
+  // the audio is used as soon as it is ready without reloading the app.
+  if (doc && !doc.audioUrl && !(doc.audioCheckedAt > Date.now() - 20000)) {
+    doc.audioCheckedAt = Date.now();
+    try {
+      const { data } = await supa.from('texts').select('audio_url').eq('id', id).single();
+      if (data?.audio_url) doc.audioUrl = data.audio_url;
+    } catch (e) { /* keep using the live voice */ }
+  }
   if (!doc?.audioUrl) return null;
   if (doc.clips !== undefined) return doc.clips;
   try {
@@ -887,12 +1255,19 @@ async function loadClipManifest(doc) {
     if (!res.ok) throw new Error('manifest ' + res.status);
     const m = await res.json();
     doc.clips = new Map((m.lines || []).map(l => [`${l.voice}|${l.text}`, ttsPublicUrl(l.path)]));
+    // Speakers outside the fixed cast (new names): { name: voice name }, chosen when
+    // the audio was generated (see supabase/functions/text-audio.js).
+    doc.speakers = m.speakers && typeof m.speakers === 'object' ? m.speakers : {};
   } catch (e) {
     console.warn('text audio manifest failed, using live TTS:', e);
     doc.clips = null;
+    doc.speakers = {};
   }
   return doc.clips;
 }
+
+// Voice entry (name + pitch) for a voice name stored in a manifest.
+const voiceByName = name => Object.values(V).find(v => v.name === name) || (name ? { name, pitch: 1 } : null);
 let listenRun = 0;
 let listening = false;      // a reading session is active (playing or paused)
 let paused = false;
@@ -972,6 +1347,15 @@ function listenFromSelection(pi, si) {
 async function startListen(from) {
   const doc = openId != null ? bodyCache.get(openId) : null;
   if (!doc) return;
+  const run = ++listenRun;
+  listening = true;
+  syncListenBtn();
+  // The manifest comes first: besides the clips it carries the voices of speakers
+  // that are not in the fixed cast, which decide how the lines are built below.
+  const clips = await loadClipManifest(doc, openId);
+  if (run !== listenRun) return;
+  const extraSpeakers = doc.speakers || {};
+  const speakerVoice = label => SPEAKER_VOICES[label] || voiceByName(extraSpeakers[label]);
   // One entry per sentence: the text to speak, where it sits in the DOM, and a
   // timeline of its words (start = share of the sentence's speaking time).
   const lines = [];
@@ -992,8 +1376,8 @@ async function startListen(from) {
       // A speaker line needs something said after the colon: a lone "刘老师："
       // heading a letter is the salutation, so it is read.
       const saysSomething = colon >= 0 && s.slice(colon + 1).some(x => HAN.test(x.text));
-      if (label && SPEAKER_VOICES[label] && saysSomething) {
-        voice = SPEAKER_VOICES[label];
+      if (label && speakerVoice(label) && saysSomething) {
+        voice = speakerVoice(label);
         skip = colon + 1;
       }
     }
@@ -1015,19 +1399,14 @@ async function startListen(from) {
     units.forEach(u => { u.start /= total; });
     lines.push({ line, pi, si, units, chars: total, voice });
   }));
-  if (!lines.length) return;
+  if (!lines.length) { listening = false; syncListenBtn(); return; }
+  // Pre-generated audio (texts.audio_url → manifest, loaded above): clips are played
+  // straight from Storage. Sentences missing from it fall back to the TTS API.
   const clipFor = L => clips?.get(`${L.voice?.name || DEFAULT_TTS_VOICE}|${L.line}`);
   // Voices were assigned over the whole text above, so starting midway keeps
   // every character on the same voice.
   let start = from ? lines.findIndex(L => L.pi > from.pi || (L.pi === from.pi && L.si >= from.si)) : 0;
   if (start < 0) start = 0;
-  const run = ++listenRun;
-  listening = true;
-  syncListenBtn();
-  // Pre-generated audio (texts.audio_url → manifest): clips are played straight
-  // from Storage. Sentences missing from it fall back to the TTS API.
-  const clips = await loadClipManifest(doc);
-  if (run !== listenRun) return;
   for (let i = start; i < lines.length;) {
     if (run !== listenRun) return;
     // Paused between sentences: wait here until resumed (or stopped).
@@ -1045,7 +1424,8 @@ async function startListen(from) {
       const host = document.getElementById('texts-content');
       const pick = () => [...(host?.querySelectorAll(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"] :is(.tx-w, .tx-u)`) || [])];
       const sentEl = () => host?.querySelector(`p[data-p="${L.pi}"] .tx-s[data-s="${L.si}"]`);
-      const clear = () => { cancelAnimationFrame(raf); setPlaying(null); setReadingSentence(null); };
+      let cleanupPlaying = null;   // removes the 'playing' listener from the shared <audio>
+      const clear = () => { cancelAnimationFrame(raf); cleanupPlaying?.(); cleanupPlaying = null; setPlaying(null); setReadingSentence(null); };
       stopTick = clear;
       const tick = () => {
         if (run !== listenRun) return;
@@ -1075,7 +1455,7 @@ async function startListen(from) {
       wd = setInterval(() => {
         // Stale (stopped / jumped elsewhere): just release this await; the UI
         // already belongs to the new reading, so don't clear() it.
-        if (run !== listenRun) { finished = true; clearInterval(wd); cancelAnimationFrame(raf); return resolve(); }
+        if (run !== listenRun) { finished = true; clearInterval(wd); cancelAnimationFrame(raf); cleanupPlaying?.(); cleanupPlaying = null; return resolve(); }
         const now = performance.now();
         if (paused) { lastMove = now; return; }
         if (line.mode === 'audio' && audio && audio.currentTime !== lastTime) { lastTime = audio.currentTime; lastMove = now; }
@@ -1088,13 +1468,25 @@ async function startListen(from) {
           finish();
         }
       }, 1000);
+      // Highlighting (word colour, gray sentence, translation box) begins only when the
+      // voice really starts: speak() reports "started" as soon as the sentence is
+      // requested, i.e. while the clip is still downloading, so lighting up then would
+      // colour the first words before any sound.
+      let lit = false;
+      const beginHighlight = () => {
+        if (lit || finished || run !== listenRun || paused) return;
+        lit = true;
+        t0 = performance.now();   // reference for the estimate used only by the Web Speech fallback
+        words = pick();
+        raf = requestAnimationFrame(tick);
+        paintSentenceTr(L.pi, L.si);   // the box follows the sentence being read
+      };
+      const onPlaying = () => beginHighlight();
       speak(L.line, on => {
         if (on) {
-          t0 = performance.now();   // (re)start the estimate when the voice really starts
-          if (!started) {
-            started = true; words = pick(); raf = requestAnimationFrame(tick);
-            paintSentenceTr(L.pi, L.si);   // the box follows the sentence being read
-          }
+          started = true;   // lets the end of this sentence be honoured below
+          // Web Speech fallback: this second "on" is the voice really starting.
+          if (line.mode === 'speech') beginHighlight();
         }
         // Ignore the end of a stale sentence (the watchdog releases it).
         else if (started && run === listenRun) finish();
@@ -1103,6 +1495,10 @@ async function startListen(from) {
         lastMove = performance.now();   // switched from loading to playing
         if (a) {
           line.mode = 'audio'; line.audio = a;
+          // The sound has begun: light up the words. (After a pause the first 'playing'
+          // fires on resume, since beginHighlight does nothing while paused.)
+          a.addEventListener('playing', onPlaying);
+          cleanupPlaying = () => a.removeEventListener('playing', onPlaying);
           // Paused while it was still loading: hold it as soon as play() kicks in.
           a.addEventListener('play', () => { if (paused && run === listenRun) a.pause(); }, { once: true });
           // Load the next sentence while this one plays, so there's no gap.
@@ -1143,6 +1539,37 @@ function setPlaying(el) {
   }
 }
 
+// Admin: permanently deletes the open text from the database. Its "read" marks go
+// with it (text_progress.text_id is `on delete cascade`). Its audio manifest is
+// removed too; the sentence clips are left alone because they are shared by content
+// (another text can use the same sentence and voice).
+async function deleteOpenText() {
+  const row = TEXTS.find(x => x.id === openId);
+  if (!row || !state.isAdmin) return;
+  if (!window.confirm(`${t('texts.deleteConfirm')}\n\n${row.title}`)) return;
+  const btn = document.getElementById('textsDelBtn');
+  if (btn) btn.disabled = true;
+  try {
+    await window._supabaseReady;
+    // RLS makes an unauthorised delete succeed with 0 rows, so ask for the rows back.
+    const { data, error } = await supa.from('texts').delete().eq('id', row.id).select('id');
+    if (error) throw error;
+    if (!data?.length) throw new Error('0 rows deleted (missing delete policy?)');
+    // Best effort: a leftover manifest is harmless (nothing points to it any more).
+    supa.storage.from('tts').remove([`texts/${row.id}.json`]).catch(() => {});
+    TEXTS = TEXTS.filter(x => x.id !== row.id);
+    bodyCache.delete(row.id);
+    textState.delete(row.id);
+    saveReadLocal();
+    closeText();
+  } catch (e) {
+    console.error('text delete failed:', e);
+    window.alert(`${t('texts.deleteError')}\n${e.message || ''}`);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 export function closeText() {
   stopTextAudio();
   openId = null;
@@ -1151,6 +1578,17 @@ export function closeText() {
 
 // Called once the words table has finished loading, so an already-open reader
 // picks up its tokenization without the user having to leave and come back.
+// A word's study status changed (e.g. from its modal): repaint every occurrence
+// in the open text right away, in place, so scroll position, the pager and any
+// open translation are untouched.
+export function syncTextWordStatus(word) {
+  document.querySelectorAll('#texts-content .tx-w').forEach(el => {
+    if (el.dataset.w !== word) return;
+    el.classList.toggle('tx-known', state.known.has(word));
+    el.classList.toggle('tx-review', !state.known.has(word) && state.unknown.has(word));
+  });
+}
+
 export function refreshTexts() {
   if (document.getElementById('screen-texts')?.classList.contains('active')) renderTexts();
 }

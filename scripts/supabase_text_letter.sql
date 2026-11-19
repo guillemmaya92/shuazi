@@ -1,10 +1,10 @@
 -- ── Seed: 给刘老师的信 (HSK 4) ────────────────────────────────────────────────
 -- Run in the Supabase SQL editor after scripts/supabase_texts.sql. Safe to re-run:
--- it upserts by (hsk, position). Change `hsk` / `position` below if you want it
--- listed under another level or in another order.
+-- it only inserts when no text with this title and level exists. Change `hsk` /
+-- `position` below if you want it listed under another level or in another order.
 
 insert into public.texts (title, title_en, title_es, hsk, position, text, text_en, text_es)
-values (
+select v.* from (values (
   '给刘老师的信',
   'A Letter to Teacher Liu',
   'Una carta para el profesor Liu',
@@ -70,11 +70,5 @@ Profesor, ¿le va bien el trabajo? ¡Le deseo buena salud!
 Su alumna: Mary
 
 10 de abril$es$
-)
-on conflict (hsk, position) do update
-  set title    = excluded.title,
-      title_en = excluded.title_en,
-      title_es = excluded.title_es,
-      text     = excluded.text,
-      text_en  = excluded.text_en,
-      text_es  = excluded.text_es;
+)) as v(title, title_en, title_es, hsk, position, text, text_en, text_es)
+where not exists (select 1 from public.texts x where x.title = v.title and x.hsk = v.hsk);

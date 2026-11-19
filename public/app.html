@@ -55,7 +55,7 @@
        the FOUC/flash the old preload+swap hack caused (it triggered a second
        fetch that could fail with ERR_TOO_MANY_RETRIES and not apply in time). -->
   <link rel="stylesheet" href="./styles.css"/>
-  <title>刷字 ShuaziApp</title>
+  <title>刷字 shuazi</title>
   <meta name="description" content="Shuazi is a Chinese learning app focused on Hanzi flashcards and character exploration. It helps learners build vocabulary and improve character recognition through an interactive flashcard system, while also providing an interactive dictionary of Chinese characters and radicals for deeper insight into the Chinese writing system."/>
   <link rel="canonical" href="https://app.shuaziapp.com/"/>
 
@@ -282,12 +282,54 @@
         <button class="icon-btn" id="textsHlBtn" aria-label="Underline words by HSK level" aria-pressed="false" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M4 21h16"/></svg>
         </button>
+        <button class="icon-btn sort-btn" id="textsSortBtn" aria-label="Sort texts" data-i18n-aria="texts.sortAria">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M19 12l-3-3 3 3 3-3"/></svg>
+          <span id="textsSortLabel" style="font-size:.6rem;font-weight:700;letter-spacing:.04em;margin-left:2px"></span>
+        </button>
+        <button class="icon-btn" id="textsSearchBtn" aria-label="Search texts" data-i18n-aria="texts.searchAria" aria-pressed="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </button>
         <button class="icon-btn" id="themeBtnTx" aria-label="Theme">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
         </button>
         </div>
       </div>
-      <div class="groups-scroll" id="texts-scroll"><div id="texts-content"></div></div>
+      <div class="search-bar-wrap" id="textsSearchWrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--faint)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="textsSearchInput" type="search" placeholder="Search texts…" data-i18n-ph="texts.searchPh" aria-label="Search texts" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"/>
+        <button id="textsSearchClear" type="button" aria-label="Clear">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="groups-scroll" id="texts-scroll">
+        <div id="textsPull" class="pull-disc" aria-hidden="true">
+          <svg class="pull-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <line x1="12" y1="6" x2="12" y2="2.5"/>
+            <line x1="15" y1="6.8" x2="16.75" y2="3.77"/>
+            <line x1="17.2" y1="9" x2="20.23" y2="7.25"/>
+            <line x1="18" y1="12" x2="21.5" y2="12"/>
+            <line x1="17.2" y1="15" x2="20.23" y2="16.75"/>
+            <line x1="15" y1="17.2" x2="16.75" y2="20.23"/>
+            <line x1="12" y1="18" x2="12" y2="21.5"/>
+            <line x1="9" y1="17.2" x2="7.25" y2="20.23"/>
+            <line x1="6.8" y1="15" x2="3.77" y2="16.75"/>
+            <line x1="6" y1="12" x2="2.5" y2="12"/>
+            <line x1="6.8" y1="9" x2="3.77" y2="7.25"/>
+            <line x1="9" y1="6.8" x2="7.25" y2="3.77"/>
+          </svg>
+        </div>
+        <div id="textsPullLabel" class="pull-label" aria-hidden="true"></div>
+        <div id="textsPullFollow" class="pull-follow"><div id="texts-content"></div></div>
+      </div>
+      <button class="texts-fab texts-audio-fab" id="textsAudioBtn" type="button" aria-label="Generate audio" data-i18n-aria="texts.audioGenerate" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+      </button>
+      <button class="texts-fab texts-del-fab" id="textsDelBtn" type="button" aria-label="Delete text" data-i18n-aria="texts.delete" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+      <button class="texts-fab" id="textsAddBtn" type="button" aria-label="New text" data-i18n-aria="texts.new" style="display:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
 
     <!-- ── SCREEN 3: PHRASES ── -->
@@ -650,6 +692,12 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
       <span data-i18n="settings.hanzi">汉字雨</span>
       <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <!-- Admin only (shown from JS): enables the delete button inside an open text -->
+    <button class="settings-item" id="settingsAdminDelBtn" type="button" role="switch" aria-checked="false" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span data-i18n="settings.adminDelete">Admin</span>
+      <span class="switch" aria-hidden="true"></span>
     </button>
   </div>
   <div class="settings-panel-foot">

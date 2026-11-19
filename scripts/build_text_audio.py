@@ -99,8 +99,14 @@ def sentences_of(paragraph):
     return out
 
 
-def build_lines(text):
-    """Mirror of the line building in startListen() (texts.js)."""
+def build_lines(text, extra_speakers=None):
+    """Mirror of the line building in startListen() (texts.js).
+
+    `extra_speakers` ({name: voice}) are speakers outside SPEAKER_VOICES that the app's
+    `text-audio` function chose for a text; they come from that text's manifest.
+    """
+    extra_speakers = extra_speakers or {}
+    voice_of = lambda label: SPEAKER_VOICES.get(label) or extra_speakers.get(label)
     lines, voice = [], None
     for pi, p in enumerate(paragraphs_of(text)):
         for si, s in enumerate(sentences_of(p)):
@@ -113,8 +119,8 @@ def build_lines(text):
                 colon = next((i for i in range(skip, len(s)) if s[i] in "：:"), -1)
                 label = "".join(s[skip:colon]).strip() if colon > skip else ""
                 says = colon >= 0 and any(HAN_RE.match(c) for c in s[colon + 1:])
-                if label and label in SPEAKER_VOICES and says:
-                    voice = SPEAKER_VOICES[label]
+                if label and voice_of(label) and says:
+                    voice = voice_of(label)
                     skip = colon + 1
             line = re.sub(r"\s+", "", "".join(s[skip:])).strip()
             if not CJK_RE.search(line):
@@ -170,7 +176,13 @@ def main():
 
     made = reused = failed = 0
     for t in texts:
-        lines = build_lines(t.get("text") or "")
+        # Keep the voices the app already chose for speakers outside the fixed cast.
+        st, prev = http("GET", f"{public}texts/{t['id']}.json", timeout=30)
+        try:
+            extra = (json.loads(prev).get("speakers") or {}) if st == 200 else {}
+        except (ValueError, AttributeError):
+            extra = {}
+        lines = build_lines(t.get("text") or "", extra)
         if not lines:
             print(f"[{t['id']}] {t['title']}: sin frases, se omite")
             continue
@@ -213,6 +225,7 @@ def main():
             "version": 1,
             "text_id": t["id"],
             "rate": LISTEN_RATE,
+            **({"speakers": extra} if extra else {}),
             "lines": [{k: ln[k] for k in ("p", "s", "voice", "text", "path")} for ln in lines],
         }
         raw = json.dumps(manifest, ensure_ascii=False, separators=(",", ":")).encode("utf-8")

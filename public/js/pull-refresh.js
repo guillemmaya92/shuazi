@@ -14,7 +14,7 @@
 export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
                                    trigger = 56, max = 92, damp = 80,
                                    label = null, pullText = '', readyText = '',
-                                   exitUp = false }) {
+                                   exitUp = false, enabled = null }) {
   if (!scroll || !disc) return;
 
   const TRIGGER = trigger;   // pull distance (px, after damping) that fires
@@ -61,7 +61,8 @@ export function setupPullRefresh({ scroll, disc, content, onRefresh, haptic,
 
   scroll.addEventListener('touchstart', e => {
     // Only arm at the very top, single finger, and not mid-refresh.
-    if (e.touches.length !== 1 || scroll.scrollTop > 0 || disc.classList.contains('spinning')) {
+    // `enabled` (optional) lets a screen switch the gesture off in some states.
+    if ((enabled && !enabled()) || e.touches.length !== 1 || scroll.scrollTop > 0 || disc.classList.contains('spinning')) {
       active = false; return;
     }
     startY = e.touches[0].clientY; startX = e.touches[0].clientX;

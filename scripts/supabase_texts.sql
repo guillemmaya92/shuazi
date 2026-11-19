@@ -1,6 +1,7 @@
 -- ── Texts (graded reading passages) ──────────────────────────────────────────
 -- Run once in the Supabase SQL editor (Dashboard → SQL). Safe to re-run:
--- tables/policies are created only if missing, and the seed upserts by (hsk, position).
+-- tables/policies are created only if missing, and the seed is inserted only if a text
+-- with the same title and level does not exist yet.
 --
 -- `text` holds the passage already segmented: "|" marks word boundaries and a
 -- blank line separates paragraphs. Generate it with scripts/segment_text.py.
@@ -13,15 +14,15 @@ create table if not exists public.texts (
   title_en   text,
   title_es   text,
   hsk        smallint    not null check (hsk between 1 and 7),
-  position   integer     not null default 0,       -- order within its HSK level
+  position   numeric(6,3) not null default 0,      -- order within its HSK level (11.2 = lesson 11, part 2)
   text       text        not null,                 -- "|"-segmented, paragraphs split by blank line
   text_en    text,                                 -- English translation
   text_es    text,                                 -- Spanish translation
   source     text,
   audio_url  text,
   published  boolean     not null default true,
-  created_at timestamptz not null default now(),
-  unique (hsk, position)
+  created_at timestamptz not null default now()
+  -- hsk and position are free: no UNIQUE (hsk, position). Order is by hsk, position, id.
 );
 
 create index if not exists texts_hsk_pos_idx on public.texts (hsk, position);
@@ -39,7 +40,7 @@ create policy "texts public read"
 create table if not exists public.text_progress (
   user_id    uuid        not null references auth.users(id) on delete cascade,
   text_id    integer     not null references public.texts(id) on delete cascade,
-  state      text        not null default 'read' check (state in ('read')),
+  state      text        not null default 'read' check (state in ('read', 'review')),
   updated_at timestamptz not null default now(),
   primary key (user_id, text_id)
 );
@@ -57,7 +58,7 @@ create policy "own delete" on public.text_progress for delete to authenticated u
 
 -- ── Seed: 一、我喜欢“快” (HSK 2) ──────────────────────────────────────────────
 insert into public.texts (title, title_en, title_es, hsk, position, text, text_en, text_es)
-values (
+select v.* from (values (
   '一、我喜欢“快”',
   '1. I Like “Fast”',
   '1. Me gusta “rápido”',
@@ -105,11 +106,5 @@ Creo que “rápido” es algo bueno. Si mi dueña trabaja rápido, puede hacer 
 Todas las mañanas, mi dueña y yo vamos a la empresa en metro. En el metro de Pekín hay muchísima gente. Daqing suele ir de pie, mirando el móvil. Nadie en el metro habla: unos duermen, otros miran el móvil, y en sus caras no hay sonrisas.
 
 Al llegar a la empresa, Daqing empieza a trabajar. Sus manos vuelan sobre mi cuerpo al escribir; en un momento abre muchas cosas y al siguiente las cierra muy rápido.$es$
-)
-on conflict (hsk, position) do update
-  set title    = excluded.title,
-      title_en = excluded.title_en,
-      title_es = excluded.title_es,
-      text     = excluded.text,
-      text_en  = excluded.text_en,
-      text_es  = excluded.text_es;
+)) as v(title, title_en, title_es, hsk, position, text, text_en, text_es)
+where not exists (select 1 from public.texts x where x.title = v.title and x.hsk = v.hsk);
